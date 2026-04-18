@@ -19,7 +19,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "Ainz Launcher",
+		Title:  "pLauncher",
 		Width:  1280,
 		Height: 768,
 		AssetServer: &assetserver.Options{

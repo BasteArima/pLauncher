@@ -34,12 +34,22 @@
     let isEditing = false; // Переменная-флаг для режима редактирования
     let isDragging = false; // Состояние для визуального эффекта Drag & Drop
     let activeFilter = 'all';
+    let originalGameSnapshot = ""; // Храним слепок игры для сравнения
 
     $: filteredGames = games.filter(g => {
-        if (activeFilter === 'no_cover') return !g.cover_path;
+        if (activeFilter === 'ready') return g.exec_path !== '';
+        if (activeFilter === 'no_cover') return g.cover_path === '';
         if (activeFilter === 'no_desc') return !g.description;
-        if (activeFilter === 'ready') return !!g.exec_path;
-        return true; // 'all'
+        return true; // для 'all' и 'recent_added'
+    }).sort((a, b) => {
+        if (activeFilter === 'recent_added') {
+            return (b.added_at || 0) - (a.added_at || 0); // Только по добавлению
+        }
+        // По умолчанию: сначала запущенные, потом добавленные
+        if (b.last_launched_at !== a.last_launched_at) {
+            return (b.last_launched_at || 0) - (a.last_launched_at || 0);
+        }
+        return (b.added_at || 0) - (a.added_at || 0);
     });
     let toast = { show: false, message: "", type: "success" };
 
@@ -60,6 +70,23 @@
         } catch (err) {
             console.error("Ошибка копирования: ", err);
             showToast("Не удалось скопировать текст", "error");
+        }
+    }
+
+    // Измени свою функцию toggleEdit (или кнопку отмены) на это:
+    function toggleEdit() {
+        if (isEditing) {
+            if (JSON.stringify(selectedGame) === originalGameSnapshot) {
+                isEditing = false; // Ничего не изменилось, просто закрываем
+            } else {
+                if (confirm("Отменить несохраненные изменения?")) {
+                    selectedGame = JSON.parse(originalGameSnapshot);
+                    isEditing = false;
+                }
+            }
+        } else {
+            originalGameSnapshot = JSON.stringify(selectedGame);
+            isEditing = true;
         }
     }
 
@@ -85,28 +112,22 @@
         }, 3000);
     }
 
-    // --- ЛОГИКА РЕДАКТИРОВАНИЯ ---
-    function toggleEditMode() {
-        if (isEditing) {
-            // Если мы УЖЕ в режиме редактирования и жмем на карандаш - спрашиваем
-            if (confirm("Выйти из режима редактирования? Несохраненные изменения будут потеряны.")) {
-                isEditing = false;
-                // Возвращаем данные к тому состоянию, которое сейчас в базе данных
-                selectedGame = games.find(g => g.id === selectedGame.id);
+    async function handleSmartPlay() {
+        if (!selectedGame.exec_path) {
+            const path = await SelectExecutable(selectedGame.folder_path);
+            if (path) {
+                selectedGame.exec_path = path;
+                await UpdateGame(selectedGame);
+                originalGameSnapshot = JSON.stringify(selectedGame); // Обновляем слепок
+                showToast(".exe файл привязан!", "success");
             }
         } else {
-            isEditing = true;
+            // Вызываем наш обновленный метод Launch (теперь с 3 аргументами!)
+            Launch(selectedGame.id, selectedGame.exec_path, selectedGame.folder_path);
         }
     }
 
-    function cancelEdit() {
-        if (confirm("Отменить изменения?")) {
-            isEditing = false;
-            // Сбрасываем локальные изменения
-            selectedGame = games.find(g => g.id === selectedGame.id);
-        }
-    }
-
+    // --- ЛОГИКА РЕДАКТИРОВАНИЯ ---
     async function handleUpdateMetadata() {
         if (!parseUrl || !selectedGame) return;
         parsing = true;
@@ -207,10 +228,31 @@
         }
     }
 
+    // Обработка боковых кнопок мыши
+    function handleGlobalMouseDown(e) {
+        // e.button === 3 это "Назад", e.button === 4 это "Вперед"
+        if (e.button === 3 || e.button === 4) {
+            e.preventDefault(); // Блокируем стандартное поведение браузера
+
+            if (e.button === 3) { // Назад
+                if (lightboxImage) {
+                    closeLightbox();
+                } else if (selectedGame && !isEditing) {
+                    applyFilter(activeFilter); // Возвращаемся в сетку
+                }
+            } else if (e.button === 4) { // Вперед
+                if (lightboxImage) {
+                    nextLightboxImage();
+                }
+            }
+        }
+    }
+
     function selectGame(game) {
         selectedGame = game;
         isEditing = false; // Выключаем редактор при смене игры
         parseUrl = "";
+        originalGameSnapshot = JSON.stringify(game);
     }
 
     async function handleSaveChanges() {
@@ -285,33 +327,6 @@
             alert(err);
         }
     }
-
-    async function handleLaunch() {
-        if (!selectedGame) return;
-
-        if (!selectedGame.exec_path) {
-            try {
-                const exes = await FindExecutables(selectedGame.folder_path);
-                if (exes && exes.length > 0) {
-                    selectedGame.exec_path = exes[0];
-                    // ДОБАВЛЯЕМ СОХРАНЕНИЕ В БАЗУ:
-                    await UpdateGame(selectedGame);
-                } else {
-                    alert("Не удалось найти .exe файл в папке игры!");
-                    return;
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        try {
-            await Launch(selectedGame.exec_path, selectedGame.folder_path);
-        } catch (err) {
-            alert("Ошибка запуска: " + err);
-        }
-    }
-
 
     // --- ЛОГИКА ГАЛЕРЕИ (LIGHTBOX) ---
     let lightboxImage = null;
@@ -419,7 +434,7 @@
         }
     }
 </script>
-<svelte:window on:keydown={handleKeydown}/>
+<svelte:window on:keydown={handleKeydown} on:mousedown={handleGlobalMouseDown}/>
 <div
         class="flex h-screen overflow-hidden bg-slate-900 text-slate-300 font-sans relative"
         on:dragover={onDragOver}
@@ -464,6 +479,7 @@
             <button on:click={() => applyFilter('all')} class="text-left px-3 py-2 rounded transition-colors text-sm {activeFilter === 'all' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}">
                 🌟 Все игры
             </button>
+            <button on:click={() => applyFilter('recent_added')} class="...">🆕 Недавно добавленные </button>
             <button on:click={() => applyFilter('no_cover')} class="text-left px-3 py-2 rounded transition-colors text-sm {activeFilter === 'no_cover' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}">
                 🖼️ Без обложки
             </button>
@@ -524,9 +540,10 @@
                         {/if}
 
                         <button
-                                on:click={handleLaunch}
-                                class="w-full mt-6 bg-green-600 hover:bg-green-500 text-white text-xl font-bold py-4 px-4 rounded shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all">
-                            ИГРАТЬ
+                                on:click={handleSmartPlay}
+                                class="w-full block mt-4 font-black py-4 rounded shadow-lg transition-transform hover:scale-[1.02] active:scale-95 {selectedGame.exec_path ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-orange-600 hover:bg-orange-500 text-white'}"
+                        >
+                            {selectedGame.exec_path ? '▶ ИГРАТЬ' : '🔍 УКАЗАТЬ .EXE'}
                         </button>
 
                         <div class="flex gap-2 mt-3">
@@ -537,7 +554,7 @@
                             </button>
 
                             <button
-                                    on:click={toggleEditMode}
+                                    on:click={toggleEdit}
                                     class="{isEditing ? 'bg-indigo-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'} font-semibold py-2 px-4 rounded transition-colors text-sm"
                                     title="Редактировать">
                                 ✏️
@@ -556,7 +573,7 @@
                                 <button on:click={handleSaveChanges} class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors flex justify-center items-center gap-2">
                                     <span>💾</span> Сохранить изменения
                                 </button>
-                                <button on:click={cancelEdit} class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded transition-colors">
+                                <button on:click={toggleEdit} class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded transition-colors">
                                     Отмена
                                 </button>
                             </div>
@@ -712,11 +729,9 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div class="grid gap-6 grid-cols-[repeat(auto-fill,minmax(165px,1fr))]">
                 {#each filteredGames as game}
-                    <div
-                            class="group cursor-pointer bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(99,102,241,0.2)]"
-                            on:click={() => selectGame(game)}>
+                    <div class="group cursor-pointer bg-slate-800 flex flex-col h-full rounded-lg overflow-hidden border border-slate-700 hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(99,102,241,0.2)]" on:click={() => selectGame(game)}>
 
                         <div class="aspect-[3/4] bg-slate-900 relative">
                             {#if game.cover_path}
@@ -731,7 +746,14 @@
 
                         <div class="p-3 bg-slate-800">
                             <h3 class="font-bold text-white truncate">{game.title}</h3>
-                            <p class="text-xs text-slate-400 truncate">{game.version || 'v?'}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-slate-400 truncate">{game.version || 'v?'}</span>
+                                {#if game.exec_path}
+                                    <span class="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold border border-green-500/30 tracking-wider">EXE</span>
+                                {:else}
+                                    <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30 tracking-wider" title="Требуется указать .exe">NO EXE</span>
+                                {/if}
+                            </div>
                         </div>
                     </div>
                 {/each}

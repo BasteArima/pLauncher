@@ -16,7 +16,7 @@ export function GetGames():Promise<Array<models.Game>>;
 
 export function GetScanPath():Promise<string>;
 
-export function Launch(arg1:string,arg2:string):Promise<void>;
+export function Launch(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function OpenFolder(arg1:string):Promise<void>;
 

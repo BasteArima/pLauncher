@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"game-launcher/internal/db"
 	"game-launcher/internal/models"
@@ -143,6 +144,7 @@ func (s *Scanner) parseOldJSON(jsonPath, gameFolderPath string) (*models.Game, e
 		ExecPath:    "", // Пока пусто, заполним это на этапе 4 (Системный контроллер)
 		FolderPath:  gameFolderPath,
 		TimePlayed:  0,
+		AddedAt:     time.Now().Unix(),
 	}
 
 	// Защита от пустых названий (как в старом скрипте "Untitled")

@@ -93,6 +93,10 @@ func (r *SQLiteRepo) initSchema() error {
 		return fmt.Errorf("ошибка создания таблицы settings: %w", err)
 	}
 
+	// Накатываем новые колонки (если их еще нет)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN added_at INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN last_launched_at INTEGER DEFAULT 0;`)
+
 	return nil
 }
 
@@ -104,8 +108,8 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	imagesJSON, _ := json.Marshal(g.Images)
 
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -115,12 +119,14 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		images=excluded.images,
 		exec_path=excluded.exec_path,
 		folder_path=excluded.folder_path,
-		time_played=excluded.time_played;
+		time_played=excluded.time_played,
+		last_launched_at=excluded.last_launched_at;
 	`
+	// Обрати внимание: added_at не обновляется при конфликте, чтобы сохранить дату первого добавления!
 
 	_, err := r.db.ExecContext(ctx, query,
 		g.ID, g.Title, g.Description, g.Version, string(langsJSON),
-		g.CoverPath, string(imagesJSON), g.ExecPath, g.FolderPath, g.TimePlayed,
+		g.CoverPath, string(imagesJSON), g.ExecPath, g.FolderPath, g.TimePlayed, g.AddedAt, g.LastLaunchedAt,
 	)
 
 	if err != nil {
@@ -131,7 +137,7 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 
 // GetAllGames извлекает все игры из базы
 func (r *SQLiteRepo) GetAllGames(ctx context.Context) ([]*models.Game, error) {
-	query := `SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played FROM games`
+	query := `SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at FROM games`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -147,7 +153,7 @@ func (r *SQLiteRepo) GetAllGames(ctx context.Context) ([]*models.Game, error) {
 
 		err := rows.Scan(
 			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
-			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed,
+			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка чтения строки: %w", err)
@@ -206,7 +212,7 @@ func (r *SQLiteRepo) SetSetting(ctx context.Context, key, value string) error {
 func (r *SQLiteRepo) SearchGames(ctx context.Context, searchQuery string) ([]*models.Game, error) {
 	// Используем оператор LIKE и оборачиваем запрос в знаки процента (поиск подстроки)
 	query := `
-	SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played 
+	SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at 
 	FROM games 
 	WHERE title LIKE ? 
 	ORDER BY title ASC`
@@ -225,7 +231,7 @@ func (r *SQLiteRepo) SearchGames(ctx context.Context, searchQuery string) ([]*mo
 
 		err := rows.Scan(
 			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
-			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed,
+			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка чтения строки: %w", err)

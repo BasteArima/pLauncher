@@ -84,7 +84,17 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 }
 
 // Launch запускает игру
-func (a *App) Launch(exePath string, folderPath string) error {
+func (a *App) Launch(gameID string, exePath string, folderPath string) error {
+	// Сохраняем время запуска
+	if games, err := a.repo.GetAllGames(a.ctx); err == nil {
+		for _, g := range games {
+			if g.ID == gameID {
+				g.LastLaunchedAt = time.Now().Unix()
+				a.repo.SaveGame(a.ctx, g)
+				break
+			}
+		}
+	}
 	return a.launcher.LaunchGame(exePath, folderPath)
 }
 
@@ -290,6 +300,7 @@ func (a *App) AddGamesFromDrop(paths []string) (int, error) {
 			Languages:  []string{}, // Инициализируем пустые массивы
 			Images:     []string{},
 			ExecPath:   autoFindExecutable(p),
+			AddedAt:    time.Now().Unix(),
 		}
 
 		if err := a.repo.SaveGame(a.ctx, newGame); err == nil {

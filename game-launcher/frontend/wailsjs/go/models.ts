@@ -11,6 +11,8 @@ export namespace models {
 	    exec_path: string;
 	    folder_path: string;
 	    time_played: number;
+	    added_at: number;
+	    last_launched_at: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Game(source);
@@ -28,6 +30,8 @@ export namespace models {
 	        this.exec_path = source["exec_path"];
 	        this.folder_path = source["folder_path"];
 	        this.time_played = source["time_played"];
+	        this.added_at = source["added_at"];
+	        this.last_launched_at = source["last_launched_at"];
 	    }
 	}
 
