@@ -76,27 +76,24 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 	}
 
 	// 3. Собираем ссылки на картинки (только из первого, главного поста)
-	var imageURLs []string
+	var coverURL string
+	var screenshotURLs []string
+
 	doc.Find("article.message-body").First().Find("img.bbImage").Each(func(i int, s *goquery.Selection) {
 		src := ""
 
-		// Логика поиска фулл-сайза:
-		// 1. Сначала проверяем, обернута ли картинка в ссылку <a> (там всегда лежит оригинал)
+		// Логика поиска фулл-сайза
 		parent := s.Parent()
 		if parent.Is("a") {
 			if href, exists := parent.Attr("href"); exists && strings.HasPrefix(href, "http") {
 				src = href
 			}
 		}
-
-		// 2. Если ссылки нет, ищем в data-src (оригинал для ленивой загрузки)
 		if src == "" {
 			if dataSrc, exists := s.Attr("data-src"); exists && strings.HasPrefix(dataSrc, "http") {
 				src = dataSrc
 			}
 		}
-
-		// 3. Фоллбэк: берем обычный src (если картинка вставлена напрямую без миниатюр)
 		if src == "" {
 			if origSrc, exists := s.Attr("src"); exists && strings.HasPrefix(origSrc, "http") {
 				src = origSrc
@@ -105,43 +102,45 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 
 		// Если нашли нормальную ссылку и это не смайлик
 		if src != "" && !strings.Contains(src, "smilies") {
-			// Убираем возможный мусор в ссылке, который иногда оставляет xenforo
 			src = strings.ReplaceAll(src, "/thumb/", "/")
 
-			isDup := false
-			for _, u := range imageURLs {
-				if u == src {
-					isDup = true
-					break
+			// Если обложки еще нет - первая картинка становится обложкой
+			if coverURL == "" {
+				coverURL = src
+			} else {
+				// Остальные идут в скриншоты (с проверкой на дубликаты)
+				isDup := (src == coverURL)
+				for _, u := range screenshotURLs {
+					if u == src {
+						isDup = true
+						break
+					}
 				}
-			}
-			if !isDup {
-				imageURLs = append(imageURLs, src)
+				if !isDup {
+					screenshotURLs = append(screenshotURLs, src)
+				}
 			}
 		}
 	})
 
-	// 4. Скачиваем картинки (1 обложка + до 5 скриншотов для галереи)
-	if len(imageURLs) > 0 {
-		limit := 10
-		if len(imageURLs) < limit {
-			limit = len(imageURLs)
+	// 4. Скачиваем обложку отдельно
+	if coverURL != "" {
+		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
+		if len(coverPaths) > 0 {
+			game.CoverPath = coverPaths[0]
+		}
+	}
+
+	// 5. Скачиваем скриншоты (берем до 9 штук)
+	if len(screenshotURLs) > 0 {
+		limit := 9
+		if len(screenshotURLs) < limit {
+			limit = len(screenshotURLs)
 		}
 
-		urlsToDownload := imageURLs[:limit]
-		localPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-
-		if len(localPaths) > 0 {
-			// Гарантированно первая картинка из поста становится обложкой
-			game.CoverPath = localPaths[0]
-
-			// Остальные уходят в скриншоты
-			if len(localPaths) > 1 {
-				game.Images = localPaths[1:]
-			} else {
-				game.Images = []string{}
-			}
-		}
+		urlsToDownload := screenshotURLs[:limit]
+		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
+		game.Images = screenshotPaths
 	}
 
 	return game, nil

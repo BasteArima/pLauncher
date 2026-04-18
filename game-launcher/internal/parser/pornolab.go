@@ -78,7 +78,8 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 		}
 	}
 
-	var imageURLs []string
+	var coverURL string
+	var screenshotURLs []string
 
 	// Собираем картинки
 	doc.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
@@ -88,15 +89,15 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 		}
 
 		if src != "" {
-			// АНТИ-МУСОР: Игнорируем иконки флагов, движков и плашки самого порнолаба
+			// АНТИ-МУСОР
 			if strings.Contains(src, "static.pornolab.net") || strings.Contains(src, "smilies") {
-				return // Пропускаем эту итерацию
+				return
 			}
 
 			// ХАК ДЛЯ FASTPIC
 			src = strings.ReplaceAll(src, "/thumb/", "/big/")
 
-			// ХАК ДЛЯ IMGBOX (превращаем миниатюры _t в оригиналы _o)
+			// ХАК ДЛЯ IMGBOX
 			if strings.Contains(src, "imgbox.com") && strings.HasSuffix(src, "_t.jpg") {
 				src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
 				src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
@@ -114,36 +115,43 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 				src = "https://pornolab.net" + src
 			}
 
-			isDup := false
-			for _, u := range imageURLs {
-				if u == src {
-					isDup = true
-					break
+			// Первая картинка — обложка
+			if coverURL == "" {
+				coverURL = src
+			} else {
+				// Остальные — скриншоты
+				isDup := (src == coverURL)
+				for _, u := range screenshotURLs {
+					if u == src {
+						isDup = true
+						break
+					}
 				}
-			}
-			if !isDup {
-				imageURLs = append(imageURLs, src)
+				if !isDup {
+					screenshotURLs = append(screenshotURLs, src)
+				}
 			}
 		}
 	})
 
-	if len(imageURLs) > 0 {
-		limit := 10
-		if len(imageURLs) < limit {
-			limit = len(imageURLs)
+	// Скачиваем обложку
+	if coverURL != "" {
+		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
+		if len(coverPaths) > 0 {
+			game.CoverPath = coverPaths[0]
+		}
+	}
+
+	// Скачиваем скриншоты
+	if len(screenshotURLs) > 0 {
+		limit := 9
+		if len(screenshotURLs) < limit {
+			limit = len(screenshotURLs)
 		}
 
-		urlsToDownload := imageURLs[:limit]
-		localPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-
-		if len(localPaths) > 0 {
-			game.CoverPath = localPaths[0]
-			if len(localPaths) > 1 {
-				game.Images = localPaths[1:]
-			} else {
-				game.Images = []string{}
-			}
-		}
+		urlsToDownload := screenshotURLs[:limit]
+		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
+		game.Images = screenshotPaths
 	}
 
 	return game, nil

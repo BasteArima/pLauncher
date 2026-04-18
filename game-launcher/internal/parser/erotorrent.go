@@ -60,46 +60,57 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 		game.Description = "Описание не найдено."
 	}
 
-	var imageURLs []string
+	var coverURL string
+	var screenshotURLs []string
 
 	// 4. Ищем обложку (афишу)
 	coverSrc, exists := doc.Find("div.left_full_img img.poster").Attr("src")
 	if exists {
-		// erotorrent часто отдает относительные пути (начинаются с /), делаем их абсолютными
 		if strings.HasPrefix(coverSrc, "/") {
 			coverSrc = "https://erotorrent.ru" + coverSrc
 		}
-		imageURLs = append(imageURLs, coverSrc)
+		coverURL = coverSrc
 	}
 
-	// 5. Ищем фулл-сайз скриншоты (достаем из атрибута href у тега <a>, а не из img)
+	// 5. Ищем фулл-сайз скриншоты
 	doc.Find("div.body_screen ul.screen li a").Each(func(i int, s *goquery.Selection) {
 		if href, exists := s.Attr("href"); exists {
 			if strings.HasPrefix(href, "/") {
 				href = "https://erotorrent.ru" + href
 			}
-			imageURLs = append(imageURLs, href)
+
+			// Защита от дубликатов (если скриншот вдруг совпадает с обложкой)
+			isDup := (href == coverURL)
+			for _, u := range screenshotURLs {
+				if u == href {
+					isDup = true
+					break
+				}
+			}
+			if !isDup {
+				screenshotURLs = append(screenshotURLs, href)
+			}
 		}
 	})
 
-	// 6. Скачиваем картинки (обложка + скриншоты)
-	if len(imageURLs) > 0 {
-		limit := 10
-		if len(imageURLs) < limit {
-			limit = len(imageURLs)
+	// 6. Скачиваем обложку
+	if coverURL != "" {
+		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
+		if len(coverPaths) > 0 {
+			game.CoverPath = coverPaths[0]
+		}
+	}
+
+	// 7. Скачиваем скриншоты
+	if len(screenshotURLs) > 0 {
+		limit := 9
+		if len(screenshotURLs) < limit {
+			limit = len(screenshotURLs)
 		}
 
-		urlsToDownload := imageURLs[:limit]
-		localPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-
-		if len(localPaths) > 0 {
-			game.CoverPath = localPaths[0] // Первое изображение всегда идет на обложку
-			if len(localPaths) > 1 {
-				game.Images = localPaths[1:] // Остальные в галерею
-			} else {
-				game.Images = []string{}
-			}
-		}
+		urlsToDownload := screenshotURLs[:limit]
+		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
+		game.Images = screenshotPaths
 	}
 
 	return game, nil
