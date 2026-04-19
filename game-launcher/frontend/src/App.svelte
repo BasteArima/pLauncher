@@ -499,35 +499,41 @@
     <main class="flex-1 overflow-y-auto p-8 relative">
 
         {#if selectedGame}
-            <div class="animate-fade-in">
+            {#if selectedGame.cover_path && !isEditing}
+                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img src={`/${selectedGame.cover_path.replaceAll('\\', '/')}`} alt="bg" class="w-full h-full object-cover blur-[5px] scale-110 opacity-30" />
+                    <div class="absolute inset-0 bg-gradient-to-b from-slate-900/50 via-slate-900/80 to-slate-900"></div>
+                </div>
+            {/if}
+
+            <div class="animate-fade-in relative z-10">
                 <button on:click={() => selectedGame = null}
-                        class="mb-4 text-indigo-400 hover:text-indigo-300 transition-colors">
+                        class="mb-6 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 font-semibold">
                     &larr; Назад к библиотеке
                 </button>
 
-                <div class="flex gap-8">
-                    <div class="w-1/3">
+                <div class="flex gap-10">
+                    <div class="w-[300px] shrink-0 flex flex-col">
                         {#if selectedGame.cover_path}
-                            <div class="aspect-[3/4] bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden relative group">
+                            <div class="aspect-[3/4] w-full bg-slate-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50 overflow-hidden relative group mb-6">
                                 <img src={`/${selectedGame.cover_path.replaceAll('\\', '/')}`} alt="cover"
                                      class="w-full h-full object-cover"/>
 
                                 {#if isEditing}
-                                    <div class="absolute inset-0 bg-black/60 flex flex-col gap-3 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="absolute inset-0 bg-black/70 flex flex-col gap-3 items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm">
                                         <button on:click|stopPropagation={handleSelectCover}
                                                 class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded shadow w-3/4 transition-colors">
                                             Сменить фото
                                         </button>
-
                                         <button on:click|stopPropagation={handleRemoveCover}
-                                                class="bg-red-600/80 hover:bg-red-500 text-white font-bold py-2 px-6 rounded shadow w-3/4 transition-colors border border-red-500/50">
+                                                class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded shadow w-3/4 transition-colors">
                                             Удалить
                                         </button>
                                     </div>
                                 {/if}
                             </div>
                         {:else}
-                            <div class="aspect-[3/4] bg-slate-800 rounded-lg shadow-2xl flex flex-col items-center justify-center text-slate-600 relative group">
+                            <div class="aspect-[3/4] w-full bg-slate-800/50 backdrop-blur rounded-xl shadow-2xl flex flex-col items-center justify-center text-slate-600 relative group mb-6 border border-slate-700/50">
                                 <span class="text-6xl mb-4 opacity-30">🖼️</span>
                                 <p class="font-semibold uppercase tracking-wider text-sm">Нет обложки</p>
                                 {#if isEditing}
@@ -539,163 +545,113 @@
                             </div>
                         {/if}
 
-                        <button
-                                on:click={handleSmartPlay}
-                                class="w-full block mt-4 font-black py-4 rounded shadow-lg transition-transform hover:scale-[1.02] active:scale-95 {selectedGame.exec_path ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-orange-600 hover:bg-orange-500 text-white'}"
-                        >
-                            {selectedGame.exec_path ? '▶ ИГРАТЬ' : '🔍 УКАЗАТЬ .EXE'}
-                        </button>
-
-                        <div class="flex gap-2 mt-3">
+                        <div class="bg-slate-800/50 backdrop-blur-md rounded-xl p-4 border border-slate-700/50 shadow-lg">
                             <button
-                                    on:click={handleOpenFolder}
-                                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2 px-4 rounded transition-colors text-sm">
-                                📁 Открыть папку
+                                    on:click={handleSmartPlay}
+                                    class="w-full flex items-center justify-center gap-3 font-black py-4 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.2)] transition-all hover:-translate-y-1 active:translate-y-0 text-lg tracking-wider {selectedGame.exec_path ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white shadow-emerald-500/20' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white'}"
+                            >
+                                {#if selectedGame.exec_path}
+                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    ИГРАТЬ
+                                {:else}
+                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                    УКАЗАТЬ .EXE
+                                {/if}
                             </button>
 
-                            <button
-                                    on:click={toggleEdit}
-                                    class="{isEditing ? 'bg-indigo-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'} font-semibold py-2 px-4 rounded transition-colors text-sm"
-                                    title="Редактировать">
-                                ✏️
-                            </button>
-
-                            <button
-                                    on:click={handleRemoveGame}
-                                    class="bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white font-semibold py-2 px-4 rounded transition-colors text-sm"
-                                    title="Удалить из лаунчера">
-                                🗑️
-                            </button>
-                        </div>
-
-                        {#if isEditing}
-                            <div class="flex flex-col gap-2 mt-4 animate-fade-in border-t border-slate-700 pt-4">
-                                <button on:click={handleSaveChanges} class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors flex justify-center items-center gap-2">
-                                    <span>💾</span> Сохранить изменения
+                            <div class="flex gap-2 mt-3">
+                                <button on:click={handleOpenFolder} class="flex-1 bg-slate-700/50 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 rounded-lg transition-colors text-sm flex items-center justify-center gap-2 border border-slate-600/50" title="Открыть папку">
+                                    📁 Папка
                                 </button>
-                                <button on:click={toggleEdit} class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded transition-colors">
-                                    Отмена
+                                <button on:click={toggleEdit} class="{isEditing ? 'bg-indigo-600 text-white' : 'bg-slate-700/50 hover:bg-slate-600 text-slate-200'} font-semibold py-2.5 px-4 rounded-lg transition-colors border border-slate-600/50" title="Редактировать">
+                                    ✏️
+                                </button>
+                                <button on:click={handleRemoveGame} class="bg-slate-700/50 hover:bg-red-900/50 text-slate-400 hover:text-red-400 font-semibold py-2.5 px-4 rounded-lg transition-colors border border-slate-600/50" title="Удалить из лаунчера">
+                                    🗑️
                                 </button>
                             </div>
-                        {/if}
-                    </div>
 
-                    <div class="w-2/3 relative">
-                        {#if isEditing}
-                            <input type="text" bind:value={selectedGame.title}
-                                   class="w-full text-4xl font-bold bg-slate-800 text-white border border-slate-600 rounded px-3 py-2 mb-2 focus:border-indigo-500 focus:outline-none"
-                                   placeholder="Название игры"/>
-
-                            <div class="flex flex-col gap-2 mb-6 border-b border-slate-700 pb-4">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-indigo-400">Версия:</span>
-                                    <input type="text" bind:value={selectedGame.version}
-                                           class="bg-slate-800 text-white border border-slate-600 rounded px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none w-24"
-                                           placeholder="1.0"/>
-                                </div>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <span class="text-indigo-400 whitespace-nowrap">.exe файл:</span>
-                                    <input type="text" bind:value={selectedGame.exec_path} class="flex-1 bg-slate-800 text-white border border-slate-600 rounded px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none" placeholder="C:\Games\Game\run.exe" />
-                                    <button
-                                            on:click={handleSelectExecutable}
-                                            class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded border border-slate-600 transition-colors"
-                                            title="Выбрать файл">
-                                        📁
+                            {#if isEditing}
+                                <div class="flex flex-col gap-2 mt-4 animate-fade-in border-t border-slate-700/50 pt-4">
+                                    <button on:click={handleSaveChanges} class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-colors">
+                                        Сохранить
+                                    </button>
+                                    <button on:click={toggleEdit} class="w-full bg-slate-700/50 hover:bg-slate-600 text-slate-300 font-bold py-2 rounded transition-colors border border-slate-600/50">
+                                        Отмена
                                     </button>
                                 </div>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col min-w-0">
+                        {#if isEditing}
+                            <input type="text" bind:value={selectedGame.title} class="w-full text-4xl font-black bg-slate-800/80 backdrop-blur text-white border border-slate-600 rounded-lg px-4 py-3 mb-4 focus:border-indigo-500 focus:outline-none shadow-lg" placeholder="Название игры"/>
+
+                            <div class="flex flex-col gap-3 mb-6 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 shadow-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-slate-400 font-semibold uppercase tracking-wider text-xs w-20">Версия:</span>
+                                    <input type="text" bind:value={selectedGame.version} class="bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none w-32" placeholder="1.0"/>
+                                </div>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <span class="text-slate-400 font-semibold uppercase tracking-wider text-xs w-20">.exe путь:</span>
+                                    <input type="text" bind:value={selectedGame.exec_path} class="flex-1 bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none font-mono text-xs" placeholder="C:\Games\Game\run.exe" />
+                                    <button on:click={handleSelectExecutable} class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-md border border-slate-600 transition-colors" title="Выбрать файл">📁</button>
+                                </div>
                             </div>
 
-                            <textarea bind:value={selectedGame.description} rows="6"
-                                      class="w-full bg-slate-800 text-white border border-slate-600 rounded px-3 py-2 mb-4 text-lg leading-relaxed focus:border-indigo-500 focus:outline-none resize-y"
-                                      placeholder="Описание игры..."></textarea>
+                            <textarea bind:value={selectedGame.description} rows="6" class="w-full bg-slate-800/80 backdrop-blur text-slate-300 border border-slate-600 rounded-xl px-4 py-4 mb-4 text-lg leading-relaxed focus:border-indigo-500 focus:outline-none resize-y shadow-lg" placeholder="Описание игры..."></textarea>
 
                         {:else}
-                            <h2
-                                    class="text-4xl font-bold text-white mb-2 cursor-pointer hover:text-indigo-300 transition-colors group relative inline-block"
-                                    on:click={() => copyToClipboard(selectedGame.title, 'Название')}
-                                    title="Нажмите, чтобы скопировать"
-                            >
-                                {selectedGame.title}
-                                <span class="opacity-0 group-hover:opacity-100 text-xl font-normal text-indigo-400 absolute -right-8 top-1 transition-opacity">📋</span>
-                            </h2>
+                            <div class="mt-4 mb-6">
+                                <h2 class="text-5xl font-black text-white mb-3 cursor-pointer hover:text-indigo-300 transition-colors group relative inline-block drop-shadow-xl break-words whitespace-normal max-w-full" on:click={() => copyToClipboard(selectedGame.title, 'Название')} title="Скопировать">
+                                    {selectedGame.title}
+                                    <span class="opacity-0 group-hover:opacity-100 text-xl font-normal text-indigo-400 absolute -right-8 top-2 transition-opacity">📋</span>
+                                </h2>
+                                <div class="flex items-center gap-4 text-slate-300 font-medium">
+                                    <span class="bg-slate-800/80 backdrop-blur px-3 py-1 rounded-full border border-slate-700/50 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors" on:click={() => copyToClipboard(selectedGame.version, 'Версия')}>
+                                        Версия: <span class="text-white">{selectedGame.version || 'Неизвестно'}</span>
+                                    </span>
+                                </div>
+                            </div>
 
-                            <p
-                                    class="text-indigo-400 mb-6 border-b border-slate-700 pb-4 cursor-pointer hover:text-indigo-300 transition-colors w-max group relative"
-                                    on:click={() => copyToClipboard(selectedGame.version, 'Версия')}
-                                    title="Нажмите, чтобы скопировать"
-                            >
-                                Версия: {selectedGame.version || 'Неизвестно'}
-                                <span class="opacity-0 group-hover:opacity-100 text-sm ml-2 transition-opacity">📋</span>
-                            </p>
-
-                            <div class="relative group mb-8">
-                                <p
-                                        class="text-lg leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-slate-800/80 p-3 -mx-3 rounded-lg transition-colors border border-transparent hover:border-slate-600"
-                                        on:click={() => copyToClipboard(selectedGame.description, 'Описание')}
-                                        title="Нажмите, чтобы скопировать"
-                                >
+                            <div class="relative group mb-10">
+                                <p class="text-lg text-slate-300 leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-slate-800/40 backdrop-blur-sm p-4 -mx-4 rounded-xl transition-all border border-transparent hover:border-slate-700/50" on:click={() => copyToClipboard(selectedGame.description, 'Описание')}>
                                     {selectedGame.description || 'Описание отсутствует.'}
                                 </p>
-                                <span class="opacity-0 group-hover:opacity-100 absolute top-3 right-0 text-slate-400 pointer-events-none bg-slate-900/80 px-2 py-1 rounded text-sm transition-opacity">
-                            📋 Копировать
-                          </span>
                             </div>
                         {/if}
 
                         {#if (selectedGame.images && selectedGame.images.length > 0) || isEditing}
-                            <div class="mb-8">
-                                <h3 class="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Скриншоты</h3>
+                            <div class="mb-10">
+                                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    Скриншоты
+                                </h3>
                                 <div class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-
                                     {#each selectedGame.images || [] as img, i}
-                                        <div class="relative flex-shrink-0 w-48 aspect-video bg-slate-900 rounded border border-slate-700 overflow-hidden group hover:border-indigo-500 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all">
-                                            <img
-                                                    src={`/${img.replaceAll('\\', '/')}`}
-                                                    alt="screenshot"
-                                                    class="w-full h-full object-cover cursor-pointer"
-                                                    on:click={() => { if (!isEditing) openLightbox(i) }}
-                                            />
-
+                                        <div class="relative flex-shrink-0 w-64 aspect-video bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden group hover:border-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all shadow-lg">
+                                            <img src={`/${img.replaceAll('\\', '/')}`} alt="screenshot" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500" on:click={() => { if (!isEditing) openLightbox(i) }}/>
                                             {#if isEditing}
-                                                <button
-                                                        on:click|stopPropagation={() => handleRemoveScreenshot(i)}
-                                                        class="absolute top-1 right-1 bg-red-600 hover:bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-sm font-bold shadow-lg"
-                                                        title="Удалить скриншот"
-                                                >
-                                                    ✕
-                                                </button>
+                                                <button on:click|stopPropagation={() => handleRemoveScreenshot(i)} class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-sm font-bold shadow-lg backdrop-blur-sm" title="Удалить скриншот">✕</button>
                                             {/if}
                                         </div>
                                     {/each}
-
                                     {#if isEditing}
-                                        <div
-                                                class="flex-shrink-0 w-48 aspect-video bg-slate-800 rounded border-2 border-dashed border-slate-600 hover:border-indigo-500 flex flex-col items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-indigo-400"
-                                                on:click={handleAddScreenshots}
-                                        >
+                                        <div class="flex-shrink-0 w-64 aspect-video bg-slate-800/50 backdrop-blur rounded-lg border-2 border-dashed border-slate-600 hover:border-indigo-500 flex flex-col items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-indigo-400 shadow-lg" on:click={handleAddScreenshots}>
                                             <span class="text-4xl mb-1 font-light">+</span>
                                             <span class="text-xs font-bold uppercase tracking-wider">Добавить</span>
                                         </div>
                                     {/if}
-
                                 </div>
                             </div>
                         {/if}
 
-                        <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 shadow-inner">
-                            <h3 class="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Обновить
-                                метаданные из интернета</h3>
+                        <div class="mt-auto bg-slate-800/40 backdrop-blur-md p-5 rounded-xl border border-slate-700/50 shadow-lg">
+                            <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Обновить метаданные из сети</h3>
                             <div class="flex gap-3">
-                                <input
-                                        type="text"
-                                        bind:value={parseUrl}
-                                        placeholder="Вставьте ссылку..."
-                                        class="flex-1 bg-slate-900 border border-slate-600 text-white rounded px-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors"
-                                />
-                                <button
-                                        on:click={handleUpdateMetadata}
-                                        disabled={parsing || !parseUrl}
-                                        class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded shadow transition-all disabled:opacity-50">
+                                <input type="text" bind:value={parseUrl} placeholder="Вставьте ссылку на игру..." class="flex-1 bg-slate-900/80 border border-slate-600/50 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition-colors shadow-inner"/>
+                                <button on:click={handleUpdateMetadata} disabled={parsing || !parseUrl} class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-6 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                     {parsing ? 'Скачивание...' : 'Обновить'}
                                 </button>
                             </div>
@@ -731,27 +687,29 @@
 
             <div class="grid gap-6 grid-cols-[repeat(auto-fill,minmax(165px,1fr))]">
                 {#each filteredGames as game}
-                    <div class="group cursor-pointer bg-slate-800 flex flex-col h-full rounded-lg overflow-hidden border border-slate-700 hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(99,102,241,0.2)]" on:click={() => selectGame(game)}>
+                    <div
+                            class="group relative cursor-pointer bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(99,102,241,0.2)]"
+                            on:click={() => selectGame(game)}>
 
-                        <div class="aspect-[3/4] bg-slate-900 relative">
+                        <div class="aspect-[3/4] w-full bg-slate-900 relative">
                             {#if game.cover_path}
                                 <img src={`/${game.cover_path.replaceAll('\\', '/')}`} alt={game.title}
-                                     class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"/>
+                                     class="absolute inset-0 w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity"/>
                             {:else}
-                                <div class="w-full h-full flex items-center justify-center text-slate-600 text-sm p-4 text-center">
+                                <div class="absolute inset-0 flex items-center justify-center text-slate-600 text-sm p-4 text-center">
                                     {game.title}
                                 </div>
                             {/if}
                         </div>
 
-                        <div class="p-3 bg-slate-800">
-                            <h3 class="font-bold text-white truncate">{game.title}</h3>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="text-xs text-slate-400 truncate">{game.version || 'v?'}</span>
+                        <div class="p-3 bg-slate-800/95 backdrop-blur absolute bottom-0 left-0 right-0 border-t border-slate-700/50 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                            <h3 class="font-bold text-white line-clamp-1 mb-1 shadow-sm">{game.title}</h3>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-slate-400 truncate pr-2">{game.version || 'v?'}</span>
                                 {#if game.exec_path}
-                                    <span class="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold border border-green-500/30 tracking-wider">EXE</span>
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-widest bg-green-500/20 text-green-400 border border-green-500/30">EXE</span>
                                 {:else}
-                                    <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30 tracking-wider" title="Требуется указать .exe">NO EXE</span>
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-widest bg-red-500/20 text-red-400 border border-red-500/30">NO EXE</span>
                                 {/if}
                             </div>
                         </div>
