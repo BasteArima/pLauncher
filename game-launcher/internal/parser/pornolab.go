@@ -3,9 +3,7 @@ package parser
 import (
 	"context"
 	"fmt"
-	"html"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"game-launcher/internal/models"
@@ -28,131 +26,150 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка запроса к pornolab: %w", err)
+		return nil, fmt.Errorf("pornolab request error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("pornolab вернул статус %d", resp.StatusCode)
+		return nil, fmt.Errorf("pornolab returned status %d", resp.StatusCode)
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
-	reader := decoder.Reader(resp.Body)
-
-	doc, err := goquery.NewDocumentFromReader(reader)
+	doc, err := goquery.NewDocumentFromReader(decoder.Reader(resp.Body))
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения HTML: %w", err)
+		return nil, fmt.Errorf("HTML read error: %w", err)
 	}
 
 	game := &models.Game{
 		Languages: []string{},
 	}
 
-	// 1. УМНЫЙ ПАРСИНГ ЗАГОЛОВКА
-	// Ищем текст с размером шрифта 24px (стандарт для заголовков раздач на трекере)
-	titleSelection := doc.Find("span[style*='font-size: 24px']").First()
-	if titleSelection.Length() > 0 {
-		game.Title = cleanText(titleSelection.Text())
-	} else {
-		// Резервный вариант, если стили не прописаны
-		game.Title = cleanText(doc.Find("div.post-user-message > span").First().Text())
+	// Заголовок раздачи (#topic-title / h1.maintitle) имеет стабильный формат:
+	//   "Название [версия] (разработчик) [cen] [год, теги] [языки]"
+	// Из него надёжно достаются название, версия и языки — в отличие от
+	// разнородного оформления самого поста.
+	rawTitle := cleanText(doc.Find("h1.maintitle, #topic-title").First().Text())
+	if rawTitle != "" {
+		game.Title = cleanReleaseTitle(rawTitle)
+		game.Version = versionFromTitle(rawTitle)
+		game.Languages = parseReleaseLanguages(rawTitle)
+		game.Tags = parseReleaseTags(rawTitle)
 	}
 
-	htmlContent, err := doc.Find("div.post-user-message").Html()
-	if err == nil {
-		// Парсим Версию
-		reVersion := regexp.MustCompile(`(?i)(?:<span class="post-b">)?\s*Версия\s*(?:</span>)?:\s*(.*?)\s*<br`)
-		versionMatch := reVersion.FindStringSubmatch(htmlContent)
-		if len(versionMatch) > 1 {
-			game.Version = cleanText(stripHTMLTags(versionMatch[1]))
-		}
-
-		// Умная регулярка на Описание (устойчивая к вложенным тегам и hr)
-		reDesc := regexp.MustCompile(`(?is)Описание.*?(?:</span>)*\s*:\s*(?:</span>)*\s*(.*?)\s*(?:<span class="post-hr">|<hr|<div class="sp-wrap">|$)`)
-		descMatch := reDesc.FindStringSubmatch(htmlContent)
-		if len(descMatch) > 1 {
-			rawDesc := stripHTMLTags(descMatch[1])
-			game.Description = cleanText(html.UnescapeString(rawDesc))
-		} else {
-			game.Description = "Описание не найдено."
-		}
+	// Запасной вариант названия — крупный заголовок внутри поста
+	if game.Title == "" {
+		game.Title = cleanText(doc.Find("span[style*='font-size: 24px'], span[style*='font-size:24px']").First().Text())
 	}
 
+	post := doc.Find("div.post-user-message").First()
+
+	// Описание берём из тела поста, вырезав спойлеры/картинки/разделители
+	game.Description = extractPornolabDescription(post)
+	if game.Description == "" {
+		game.Description = ""
+	}
+
+	// Языки: если в заголовке не нашлись — пробуем по тексту поста
+	if len(game.Languages) == 0 {
+		game.Languages = detectLanguages(post.Text())
+	}
+	if game.Languages == nil {
+		game.Languages = []string{}
+	}
+
+	// Картинки: реальный URL хранится в атрибуте title тега var.postImg
+	// (в src на сохранённых страницах подставляется локальный путь).
 	var coverURL string
 	var screenshotURLs []string
 
-	// Собираем картинки
 	doc.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
 		src, _ := s.Attr("title")
 		if src == "" {
 			src, _ = s.Attr("src")
 		}
+		if src == "" {
+			return
+		}
 
-		if src != "" {
-			// АНТИ-МУСОР
-			if strings.Contains(src, "static.pornolab.net") || strings.Contains(src, "smilies") {
+		// АНТИ-МУСОР: баннеры трекера и смайлы
+		if strings.Contains(src, "static.pornolab.net") || strings.Contains(src, "smilies") {
+			return
+		}
+
+		// ХАК ДЛЯ FASTPIC: thumb -> big
+		src = strings.ReplaceAll(src, "/thumb/", "/big/")
+
+		// ХАК ДЛЯ IMGBOX: thumbnail -> original
+		if strings.Contains(src, "imgbox.com") {
+			src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
+			src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
+			src = strings.Replace(src, "_t.jpg", "_o.jpg", 1)
+			src = strings.Replace(src, "_t.png", "_o.png", 1)
+		}
+
+		if strings.HasPrefix(src, "//") {
+			src = "https:" + src
+		} else if strings.HasPrefix(src, "/") {
+			src = "https://pornolab.net" + src
+		}
+
+		if coverURL == "" {
+			coverURL = src
+			return
+		}
+		if src == coverURL {
+			return
+		}
+		for _, u := range screenshotURLs {
+			if u == src {
 				return
 			}
-
-			// ХАК ДЛЯ FASTPIC
-			src = strings.ReplaceAll(src, "/thumb/", "/big/")
-
-			// ХАК ДЛЯ IMGBOX
-			if strings.Contains(src, "imgbox.com") && strings.HasSuffix(src, "_t.jpg") {
-				src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
-				src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
-				src = strings.Replace(src, "_t.jpg", "_o.jpg", 1)
-			}
-			if strings.Contains(src, "imgbox.com") && strings.HasSuffix(src, "_t.png") {
-				src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
-				src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
-				src = strings.Replace(src, "_t.png", "_o.png", 1)
-			}
-
-			if strings.HasPrefix(src, "//") {
-				src = "https:" + src
-			} else if strings.HasPrefix(src, "/") {
-				src = "https://pornolab.net" + src
-			}
-
-			// Первая картинка — обложка
-			if coverURL == "" {
-				coverURL = src
-			} else {
-				// Остальные — скриншоты
-				isDup := (src == coverURL)
-				for _, u := range screenshotURLs {
-					if u == src {
-						isDup = true
-						break
-					}
-				}
-				if !isDup {
-					screenshotURLs = append(screenshotURLs, src)
-				}
-			}
 		}
+		screenshotURLs = append(screenshotURLs, src)
 	})
 
-	// Скачиваем обложку
-	if coverURL != "" {
-		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
-		if len(coverPaths) > 0 {
-			game.CoverPath = coverPaths[0]
-		}
-	}
-
-	// Скачиваем скриншоты
-	if len(screenshotURLs) > 0 {
-		limit := 9
-		if len(screenshotURLs) < limit {
-			limit = len(screenshotURLs)
-		}
-
-		urlsToDownload := screenshotURLs[:limit]
-		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-		game.Images = screenshotPaths
-	}
-
+	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil
+}
+
+// extractPornolabDescription достаёт прозу описания из тела поста.
+// Спойлеры (.sp-wrap) — это «Скриншоты», «Патчноут», «Порядок установки» —
+// и картинки удаляются, после чего берётся текст после метки «Описание»
+// либо после рамки спецификаций (╚════╝).
+func extractPornolabDescription(post *goquery.Selection) string {
+	if post.Length() == 0 {
+		return ""
+	}
+	clone := post.Clone()
+	clone.Find(".sp-wrap, var.postImg, img, .post-hr").Remove()
+	text := clone.Text()
+
+	start := 0
+	if idx := caseIndex(text, "Описание"); idx >= 0 {
+		// начинаем после двоеточия, следующего за меткой
+		rest := text[idx:]
+		if c := strings.IndexByte(rest, ':'); c >= 0 {
+			start = idx + c + 1
+		} else {
+			start = idx + len("Описание")
+		}
+	} else if idx := strings.Index(text, "╚"); idx >= 0 {
+		// рамка спецификаций закрыта — описание идёт следующей строкой
+		if nl := strings.IndexByte(text[idx:], '\n'); nl >= 0 {
+			start = idx + nl + 1
+		} else {
+			start = idx + len("╚")
+		}
+	}
+
+	desc := text[start:]
+
+	// Отсекаем хвост со скриншотами, если он всё же просочился
+	for _, marker := range []string{"Скриншот", "Screenshot", "Доп. скрин"} {
+		if i := caseIndex(desc, marker); i >= 0 {
+			desc = desc[:i]
+		}
+	}
+
+	return truncateText(cleanText(desc), 2000)
 }

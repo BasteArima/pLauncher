@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"game-launcher/internal/models"
 
@@ -26,17 +25,17 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка запроса к erotorrent: %w", err)
+		return nil, fmt.Errorf("erotorrent request error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("erotorrent вернул статус %d", resp.StatusCode)
+		return nil, fmt.Errorf("erotorrent returned status %d", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения HTML: %w", err)
+		return nil, fmt.Errorf("HTML read error: %w", err)
 	}
 
 	game := &models.Game{
@@ -57,61 +56,41 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 	if desc != "" {
 		game.Description = cleanText(desc)
 	} else {
-		game.Description = "Описание не найдено."
+		game.Description = ""
+	}
+
+	// Языки: сначала пробуем коды в заголовке, затем по тексту описания
+	game.Languages = parseReleaseLanguages(title)
+	if len(game.Languages) == 0 {
+		game.Languages = detectLanguages(doc.Find("div.body_box_text").Text())
 	}
 
 	var coverURL string
 	var screenshotURLs []string
 
 	// 4. Ищем обложку (афишу)
-	coverSrc, exists := doc.Find("div.left_full_img img.poster").Attr("src")
-	if exists {
-		if strings.HasPrefix(coverSrc, "/") {
-			coverSrc = "https://erotorrent.ru" + coverSrc
-		}
-		coverURL = coverSrc
+	if coverSrc, exists := doc.Find("div.left_full_img img.poster").Attr("src"); exists {
+		coverURL = absoluteURL(coverSrc, "https://erotorrent.ru")
 	}
 
 	// 5. Ищем фулл-сайз скриншоты
 	doc.Find("div.body_screen ul.screen li a").Each(func(i int, s *goquery.Selection) {
-		if href, exists := s.Attr("href"); exists {
-			if strings.HasPrefix(href, "/") {
-				href = "https://erotorrent.ru" + href
-			}
-
-			// Защита от дубликатов (если скриншот вдруг совпадает с обложкой)
-			isDup := (href == coverURL)
-			for _, u := range screenshotURLs {
-				if u == href {
-					isDup = true
-					break
-				}
-			}
-			if !isDup {
-				screenshotURLs = append(screenshotURLs, href)
+		href, exists := s.Attr("href")
+		if !exists {
+			return
+		}
+		href = absoluteURL(href, "https://erotorrent.ru")
+		if href == coverURL {
+			return
+		}
+		for _, u := range screenshotURLs {
+			if u == href {
+				return
 			}
 		}
+		screenshotURLs = append(screenshotURLs, href)
 	})
 
-	// 6. Скачиваем обложку
-	if coverURL != "" {
-		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
-		if len(coverPaths) > 0 {
-			game.CoverPath = coverPaths[0]
-		}
-	}
-
-	// 7. Скачиваем скриншоты
-	if len(screenshotURLs) > 0 {
-		limit := 9
-		if len(screenshotURLs) < limit {
-			limit = len(screenshotURLs)
-		}
-
-		urlsToDownload := screenshotURLs[:limit]
-		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-		game.Images = screenshotPaths
-	}
-
+	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil
 }

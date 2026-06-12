@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
@@ -15,32 +16,81 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// Английский словарь — встроен, чтобы класть как готовый шаблон в data/languages при первом запуске.
+//
+//go:embed frontend/src/locales/en.json
+var exampleLocale []byte
+
 func main() {
 	app := NewApp()
 
-	err := wails.Run(&options.App{
-		Title:  "pLauncher",
-		Width:  1280,
-		Height: 768,
+	// Восстанавливаем размер окна из конфига (по умолчанию 1280x768)
+	cfg := loadConfig()
+	width, height := 1280, 768
+	if cfg.WindowWidth >= 800 && cfg.WindowHeight >= 500 {
+		width, height = cfg.WindowWidth, cfg.WindowHeight
+	}
+
+	opts := &options.App{
+		Title:     "pLauncher",
+		Width:     width,
+		Height:    height,
+		MinWidth:  900,
+		MinHeight: 560,
+		Frameless: true, // своя рамка/титлбар вместо системной
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// Убираем начальный слэш из пути
-				filePath := strings.TrimPrefix(r.URL.Path, "/")
-				if _, err := os.Stat(filePath); err == nil {
-					http.ServeFile(w, r, filePath)
-				}
+				serveMedia(app, w, r)
 			}),
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop: true, // нативный drag&drop папок (даёт абсолютные пути)
+		},
+		BackgroundColour: &options.RGBA{R: 10, G: 9, B: 18, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app,
 		},
-	})
+	}
+	if cfg.WindowMaximised {
+		opts.WindowStartState = options.Maximised
+	}
 
-	if err != nil {
+	if err := wails.Run(opts); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// serveMedia отдаёт обложки/скриншоты по URL /media/<путь> ТОЛЬКО из текущей
+// папки данных. Встроенные ассеты фронтенда Wails обслуживает до этого хендлера.
+// Ограничение каталогом + проверка на ".." закрывают path traversal.
+func serveMedia(app *App, w http.ResponseWriter, r *http.Request) {
+	const prefix = "/media/"
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		http.NotFound(w, r)
+		return
+	}
+
+	dataDir := app.GetDataDir()
+	if dataDir == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	rel := filepath.Clean(strings.TrimPrefix(r.URL.Path, prefix))
+	full := filepath.Join(dataDir, rel)
+
+	// Защита от выхода за пределы папки данных через ".."
+	if full != dataDir && !strings.HasPrefix(full, dataDir+string(os.PathSeparator)) {
+		http.NotFound(w, r)
+		return
+	}
+
+	if info, err := os.Stat(full); err != nil || info.IsDir() {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, full)
 }

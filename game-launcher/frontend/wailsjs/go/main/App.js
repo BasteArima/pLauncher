@@ -6,8 +6,24 @@ export function AddGamesFromDrop(arg1) {
   return window['go']['main']['App']['AddGamesFromDrop'](arg1);
 }
 
+export function AddScanPath(arg1) {
+  return window['go']['main']['App']['AddScanPath'](arg1);
+}
+
 export function AddSingleGameManual() {
   return window['go']['main']['App']['AddSingleGameManual']();
+}
+
+export function ChangeDataDir(arg1) {
+  return window['go']['main']['App']['ChangeDataDir'](arg1);
+}
+
+export function ClearData() {
+  return window['go']['main']['App']['ClearData']();
+}
+
+export function ConfigureDataDir(arg1) {
+  return window['go']['main']['App']['ConfigureDataDir'](arg1);
 }
 
 export function CopyCoverToData(arg1, arg2) {
@@ -22,24 +38,80 @@ export function FindExecutables(arg1) {
   return window['go']['main']['App']['FindExecutables'](arg1);
 }
 
+export function GetCollections() {
+  return window['go']['main']['App']['GetCollections']();
+}
+
+export function GetCustomLocales() {
+  return window['go']['main']['App']['GetCustomLocales']();
+}
+
+export function GetDataDir() {
+  return window['go']['main']['App']['GetDataDir']();
+}
+
+export function GetDefaultDataDir() {
+  return window['go']['main']['App']['GetDefaultDataDir']();
+}
+
+export function GetDocumentsDataDir() {
+  return window['go']['main']['App']['GetDocumentsDataDir']();
+}
+
 export function GetGames() {
   return window['go']['main']['App']['GetGames']();
 }
 
-export function GetScanPath() {
-  return window['go']['main']['App']['GetScanPath']();
+export function GetPortableDataDir() {
+  return window['go']['main']['App']['GetPortableDataDir']();
+}
+
+export function GetScanPaths() {
+  return window['go']['main']['App']['GetScanPaths']();
+}
+
+export function GetSupportedSources() {
+  return window['go']['main']['App']['GetSupportedSources']();
+}
+
+export function IsConfigured() {
+  return window['go']['main']['App']['IsConfigured']();
 }
 
 export function Launch(arg1, arg2, arg3) {
   return window['go']['main']['App']['Launch'](arg1, arg2, arg3);
 }
 
+export function OpenDataDir() {
+  return window['go']['main']['App']['OpenDataDir']();
+}
+
 export function OpenFolder(arg1) {
   return window['go']['main']['App']['OpenFolder'](arg1);
 }
 
+export function OpenLanguagesFolder() {
+  return window['go']['main']['App']['OpenLanguagesFolder']();
+}
+
 export function RemoveGame(arg1) {
   return window['go']['main']['App']['RemoveGame'](arg1);
+}
+
+export function RemoveScanPath(arg1) {
+  return window['go']['main']['App']['RemoveScanPath'](arg1);
+}
+
+export function SaveCollections(arg1) {
+  return window['go']['main']['App']['SaveCollections'](arg1);
+}
+
+export function SaveWindowSize() {
+  return window['go']['main']['App']['SaveWindowSize']();
+}
+
+export function ScanAllFolders() {
+  return window['go']['main']['App']['ScanAllFolders']();
 }
 
 export function ScanLocalFolder(arg1) {
@@ -54,6 +126,10 @@ export function SelectCoverImage() {
   return window['go']['main']['App']['SelectCoverImage']();
 }
 
+export function SelectDataFolder() {
+  return window['go']['main']['App']['SelectDataFolder']();
+}
+
 export function SelectExecutable(arg1) {
   return window['go']['main']['App']['SelectExecutable'](arg1);
 }
@@ -64,10 +140,6 @@ export function SelectFolder() {
 
 export function SelectScreenshots() {
   return window['go']['main']['App']['SelectScreenshots']();
-}
-
-export function SetScanPath(arg1) {
-  return window['go']['main']['App']['SetScanPath'](arg1);
 }
 
 export function UpdateGame(arg1) {

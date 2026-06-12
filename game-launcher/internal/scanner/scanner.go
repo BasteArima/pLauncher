@@ -2,8 +2,6 @@ package scanner
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -36,28 +34,30 @@ func NewScanner(repo db.GameRepository) *Scanner {
 	}
 }
 
-// MigrateOldGames сканирует указанную корневую директорию, ищет старые data.json
-// и сохраняет их в новую базу данных. Возвращает количество добавленных игр.
-// MigrateOldGames сканирует указанную директорию и добавляет игры ТОЛЬКО если их еще нет в базе
-func (s *Scanner) MigrateOldGames(ctx context.Context, rootPath string) (int, error) {
+// ScanFolder сканирует верхний слой подпапок rootPath и добавляет каждую как игру.
+// Если в подпапке есть старый parsed_data/data.json — подхватывает метаданные из него.
+// Игры, уже существующие в БД (по ID), пропускаются — ручные правки не затираются.
+// Возвращает количество добавленных игр.
+func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) {
 	info, err := os.Stat(rootPath)
 	if err != nil || !info.IsDir() {
-		return 0, fmt.Errorf("корневая директория не найдена: %s", rootPath)
+		return 0, fmt.Errorf("root directory not found: %s", rootPath)
 	}
 
-	// 1. Получаем все существующие игры, чтобы не затереть ручные правки
 	existingGames, err := s.repo.GetAllGames(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("не удалось получить список игр из БД: %w", err)
+		return 0, fmt.Errorf("couldn't get games from database: %w", err)
 	}
-	existingIDs := make(map[string]bool)
+	// Дедуп по нормализованному пути к папке (а не по ID), чтобы
+	// переезд/переименование папки не плодил дубликаты.
+	existingPaths := make(map[string]bool)
 	for _, g := range existingGames {
-		existingIDs[g.ID] = true
+		existingPaths[NormalizePath(g.FolderPath)] = true
 	}
 
 	entries, err := os.ReadDir(rootPath)
 	if err != nil {
-		return 0, fmt.Errorf("ошибка чтения директории %s: %w", rootPath, err)
+		return 0, fmt.Errorf("error reading directory %s: %w", rootPath, err)
 	}
 
 	count := 0
@@ -67,34 +67,43 @@ func (s *Scanner) MigrateOldGames(ctx context.Context, rootPath string) (int, er
 			continue
 		}
 
+		// Пропускаем служебные/скрытые папки
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
 		gameFolderPath := filepath.Join(rootPath, entry.Name())
 
-		// Генерируем ID (хэш от пути)
-		hash := md5.Sum([]byte(gameFolderPath))
-		gameID := hex.EncodeToString(hash[:])
-
-		// 2. Если игра уже есть в базе — ПРОПУСКАЕМ!
-		if existingIDs[gameID] {
+		if existingPaths[NormalizePath(gameFolderPath)] {
 			continue
 		}
 
-		// Если игры нет, проверяем, есть ли в ней старый data.json
-		parsedFolderPath := filepath.Join(gameFolderPath, "parsed_data")
-		jsonPath := filepath.Join(parsedFolderPath, "data.json")
+		var game *models.Game
 
-		if _, err := os.Stat(jsonPath); err != nil {
-			continue // Если старого json нет, пропускаем
+		// Если есть старый data.json — берём метаданные из него
+		jsonPath := filepath.Join(gameFolderPath, "parsed_data", "data.json")
+		if _, statErr := os.Stat(jsonPath); statErr == nil {
+			if g, perr := s.parseOldJSON(jsonPath, gameFolderPath); perr == nil {
+				game = g
+			} else {
+				log.Printf("Внимание: ошибка парсинга %s: %v", jsonPath, perr)
+			}
 		}
 
-		game, err := s.parseOldJSON(jsonPath, gameFolderPath)
-		if err != nil {
-			log.Printf("Внимание: ошибка парсинга %s: %v", jsonPath, err)
-			continue
+		// Иначе (или если json битый) создаём запись из имени папки
+		if game == nil {
+			game = &models.Game{
+				ID:         NewID(),
+				Title:      cleanFolderTitle(entry.Name()),
+				Languages:  []string{},
+				Images:     []string{},
+				FolderPath: gameFolderPath,
+				AddedAt:    time.Now().Unix(),
+			}
 		}
 
-		// ЕСЛИ В СТАРОЙ БАЗЕ НЕ БЫЛО .EXE, ИЩЕМ ЕГО СЕЙЧАС
 		if game.ExecPath == "" {
-			game.ExecPath = autoFindExecutable(gameFolderPath)
+			game.ExecPath = FindBestExecutable(gameFolderPath)
 		}
 
 		if err := s.repo.SaveGame(ctx, game); err != nil {
@@ -102,6 +111,7 @@ func (s *Scanner) MigrateOldGames(ctx context.Context, rootPath string) (int, er
 			continue
 		}
 
+		existingPaths[NormalizePath(gameFolderPath)] = true
 		count++
 	}
 
@@ -120,79 +130,43 @@ func (s *Scanner) parseOldJSON(jsonPath, gameFolderPath string) (*models.Game, e
 		return nil, err
 	}
 
-	// Генерируем ID.
-	// Чтобы ID был уникальным, но постоянным (если мы запустим сканер дважды,
-	// он должен обновить старую запись, а не создать дубликат),
-	// мы берем MD5-хэш от абсолютного пути к папке с игрой.
-	hash := md5.Sum([]byte(gameFolderPath))
-	gameID := hex.EncodeToString(hash[:])
-
-	// В старом коде на Python обложка отдельно не хранилась, бралась первая картинка
 	var coverPath string
 	if len(oldData.Images) > 0 {
 		coverPath = oldData.Images[0]
 	}
 
 	game := &models.Game{
-		ID:          gameID,
+		ID:          NewID(),
 		Title:       oldData.Title,
 		Description: oldData.Description,
 		Version:     oldData.Version,
-		Languages:   []string{}, // В старом JSON языков не было
+		Languages:   []string{},
 		CoverPath:   coverPath,
 		Images:      oldData.Images,
-		ExecPath:    "", // Пока пусто, заполним это на этапе 4 (Системный контроллер)
 		FolderPath:  gameFolderPath,
-		TimePlayed:  0,
 		AddedAt:     time.Now().Unix(),
 	}
 
-	// Защита от пустых названий (как в старом скрипте "Untitled")
 	if game.Title == "" {
-		game.Title = "Untitled"
+		game.Title = cleanFolderTitle(filepath.Base(gameFolderPath))
 	}
 
 	return game, nil
 }
 
-// autoFindExecutable ищет .exe файл: сначала в корне, затем в подпапках.
-// Игнорирует деинсталляторы и краш-репортеры.
-func autoFindExecutable(folderPath string) string {
-	entries, err := os.ReadDir(folderPath)
-	if err != nil {
-		return ""
+// cleanFolderTitle превращает имя папки в более читаемое название:
+// убирает теги версий/раздач в скобках и нормализует разделители.
+func cleanFolderTitle(name string) string {
+	title := name
+	// Срезаем хвост в квадратных скобках/фигурных: "Game [v1.2] [RUS]" -> "Game"
+	if i := strings.IndexAny(title, "[{"); i > 0 {
+		title = title[:i]
 	}
-
-	// 1. ПРИОРИТЕТ: Ищем в корне папки
-	for _, e := range entries {
-		if !e.IsDir() {
-			name := strings.ToLower(e.Name())
-			if strings.HasSuffix(name, ".exe") && !strings.Contains(name, "unins") && !strings.Contains(name, "crash") {
-				return filepath.Join(folderPath, e.Name())
-			}
-		}
+	title = strings.ReplaceAll(title, "_", " ")
+	title = strings.ReplaceAll(title, ".", " ")
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = name
 	}
-
-	// 2. ВТОРИЧНЫЙ ПОИСК: Ищем в подпапках
-	var foundExe string
-	_ = filepath.WalkDir(folderPath, func(path string, d os.DirEntry, err error) error {
-		if err != nil || path == folderPath {
-			return nil // Пропускаем ошибки и саму корневую папку (мы ее уже проверили)
-		}
-
-		// Если уже нашли файл, говорим функции WalkDir пропустить сканирование оставшихся папок
-		if foundExe != "" {
-			return filepath.SkipDir
-		}
-
-		if !d.IsDir() {
-			name := strings.ToLower(d.Name())
-			if strings.HasSuffix(name, ".exe") && !strings.Contains(name, "unins") && !strings.Contains(name, "crash") {
-				foundExe = path
-			}
-		}
-		return nil
-	})
-
-	return foundExe
+	return title
 }

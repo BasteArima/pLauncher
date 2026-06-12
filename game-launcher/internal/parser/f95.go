@@ -28,17 +28,17 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка запроса к f95: %w", err)
+		return nil, fmt.Errorf("f95 request error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("f95 вернул статус %d", resp.StatusCode)
+		return nil, fmt.Errorf("f95 returned status %d", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения HTML: %w", err)
+		return nil, fmt.Errorf("HTML read error: %w", err)
 	}
 
 	game := &models.Game{
@@ -71,9 +71,12 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 			// Расшифровываем HTML-сущности (например &amp; -> &)
 			game.Description = cleanText(html.UnescapeString(rawDesc))
 		} else {
-			game.Description = "Описание не найдено."
+			game.Description = ""
 		}
 	}
+
+	// 2.5 Определяем языки по тексту главного поста
+	game.Languages = detectLanguages(doc.Find("article.message-body div.bbWrapper").First().Text())
 
 	// 3. Собираем ссылки на картинки (только из первого, главного поста)
 	var coverURL string
@@ -123,26 +126,7 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 		}
 	})
 
-	// 4. Скачиваем обложку отдельно
-	if coverURL != "" {
-		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
-		if len(coverPaths) > 0 {
-			game.CoverPath = coverPaths[0]
-		}
-	}
-
-	// 5. Скачиваем скриншоты (берем до 9 штук)
-	if len(screenshotURLs) > 0 {
-		limit := 9
-		if len(screenshotURLs) < limit {
-			limit = len(screenshotURLs)
-		}
-
-		urlsToDownload := screenshotURLs[:limit]
-		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-		game.Images = screenshotPaths
-	}
-
+	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil
 }
 

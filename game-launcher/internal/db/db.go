@@ -19,6 +19,7 @@ type GameRepository interface {
 	SaveGame(ctx context.Context, g *models.Game) error
 	GetAllGames(ctx context.Context) ([]*models.Game, error)
 	DeleteGame(ctx context.Context, id string) error
+	DeleteAllGames(ctx context.Context) error
 	GetSetting(ctx context.Context, key string) (string, error)
 	SetSetting(ctx context.Context, key, value string) error
 	SearchGames(ctx context.Context, searchQuery string) ([]*models.Game, error)
@@ -33,18 +34,18 @@ type SQLiteRepo struct {
 func NewSQLiteRepo(dbPath string) (*SQLiteRepo, error) {
 	// Убедимся, что папка для БД существует
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
-		return nil, fmt.Errorf("ошибка создания директории БД: %w", err)
+		return nil, fmt.Errorf("database directory creation error: %w", err)
 	}
 
 	// Открываем подключение
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка открытия БД: %w", err)
+		return nil, fmt.Errorf("database open error: %w", err)
 	}
 
 	// Проверяем пинг, чтобы убедиться, что файл реально доступен
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("ошибка пинга БД: %w", err)
+		return nil, fmt.Errorf("database ping error: %w", err)
 	}
 
 	repo := &SQLiteRepo{db: db}
@@ -79,7 +80,7 @@ func (r *SQLiteRepo) initSchema() error {
 	);`
 
 	if _, err := r.db.Exec(queryGames); err != nil {
-		return fmt.Errorf("ошибка создания таблицы games: %w", err)
+		return fmt.Errorf("games table creation error: %w", err)
 	}
 
 	// НОВАЯ таблица для настроек (ключ-значение)
@@ -90,15 +91,49 @@ func (r *SQLiteRepo) initSchema() error {
 	);`
 
 	if _, err := r.db.Exec(querySettings); err != nil {
-		return fmt.Errorf("ошибка создания таблицы settings: %w", err)
+		return fmt.Errorf("settings table creation error: %w", err)
 	}
 
 	// Накатываем новые колонки (если их еще нет)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN added_at INTEGER DEFAULT 0;`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN last_launched_at INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN tags TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN favorite INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_fit TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_pos TEXT DEFAULT '';`)
 
 	return nil
 }
+
+// scanGames читает строки результата в слайс игр (общая логика для Get/Search).
+func scanGames(rows *sql.Rows) ([]*models.Game, error) {
+	var games []*models.Game
+	for rows.Next() {
+		var g models.Game
+		var langsJSON, imagesJSON, tagsJSON string
+		var favorite int
+
+		err := rows.Scan(
+			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
+			&g.CoverPath, &imagesJSON, &tagsJSON, &g.ExecPath, &g.FolderPath,
+			&favorite, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt, &g.CoverFit, &g.CoverPos,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("row read error: %w", err)
+		}
+
+		json.Unmarshal([]byte(langsJSON), &g.Languages)
+		json.Unmarshal([]byte(imagesJSON), &g.Images)
+		json.Unmarshal([]byte(tagsJSON), &g.Tags)
+		g.Favorite = favorite != 0
+
+		games = append(games, &g)
+	}
+	return games, rows.Err()
+}
+
+// gameColumns — единый список колонок для SELECT (порядок важен для scanGames).
+const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos`
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
@@ -106,10 +141,15 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	// Это стандартный подход, который не нагружает сборщик мусора (GC).
 	langsJSON, _ := json.Marshal(g.Languages)
 	imagesJSON, _ := json.Marshal(g.Images)
+	tagsJSON, _ := json.Marshal(g.Tags)
+	favorite := 0
+	if g.Favorite {
+		favorite = 1
+	}
 
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -117,60 +157,37 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		languages=excluded.languages,
 		cover_path=excluded.cover_path,
 		images=excluded.images,
+		tags=excluded.tags,
 		exec_path=excluded.exec_path,
 		folder_path=excluded.folder_path,
+		favorite=excluded.favorite,
 		time_played=excluded.time_played,
-		last_launched_at=excluded.last_launched_at;
+		last_launched_at=excluded.last_launched_at,
+		cover_fit=excluded.cover_fit,
+		cover_pos=excluded.cover_pos;
 	`
 	// Обрати внимание: added_at не обновляется при конфликте, чтобы сохранить дату первого добавления!
 
 	_, err := r.db.ExecContext(ctx, query,
 		g.ID, g.Title, g.Description, g.Version, string(langsJSON),
-		g.CoverPath, string(imagesJSON), g.ExecPath, g.FolderPath, g.TimePlayed, g.AddedAt, g.LastLaunchedAt,
+		g.CoverPath, string(imagesJSON), string(tagsJSON), g.ExecPath, g.FolderPath, favorite, g.TimePlayed, g.AddedAt, g.LastLaunchedAt, g.CoverFit, g.CoverPos,
 	)
 
 	if err != nil {
-		return fmt.Errorf("ошибка сохранения игры %s: %w", g.Title, err)
+		return fmt.Errorf("error saving game %s: %w", g.Title, err)
 	}
 	return nil
 }
 
 // GetAllGames извлекает все игры из базы
 func (r *SQLiteRepo) GetAllGames(ctx context.Context) ([]*models.Game, error) {
-	query := `SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at FROM games`
-
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, `SELECT `+gameColumns+` FROM games`)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка запроса игр: %w", err)
+		return nil, fmt.Errorf("games query error: %w", err)
 	}
 	defer rows.Close() // Важно закрывать rows для предотвращения утечек памяти
 
-	var games []*models.Game
-
-	for rows.Next() {
-		var g models.Game
-		var langsJSON, imagesJSON string
-
-		err := rows.Scan(
-			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
-			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("ошибка чтения строки: %w", err)
-		}
-
-		// Десериализуем JSON обратно в слайсы строк
-		json.Unmarshal([]byte(langsJSON), &g.Languages)
-		json.Unmarshal([]byte(imagesJSON), &g.Images)
-
-		games = append(games, &g)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return games, nil
+	return scanGames(rows)
 }
 
 // DeleteGame удаляет игру из базы данных по её ID
@@ -178,7 +195,15 @@ func (r *SQLiteRepo) DeleteGame(ctx context.Context, id string) error {
 	query := `DELETE FROM games WHERE id = ?`
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("ошибка при удалении игры: %w", err)
+		return fmt.Errorf("error deleting game: %w", err)
+	}
+	return nil
+}
+
+// DeleteAllGames очищает таблицу игр (используется при «Очистить данные»)
+func (r *SQLiteRepo) DeleteAllGames(ctx context.Context) error {
+	if _, err := r.db.ExecContext(ctx, `DELETE FROM games`); err != nil {
+		return fmt.Errorf("error clearing games table: %w", err)
 	}
 	return nil
 }
@@ -211,37 +236,14 @@ func (r *SQLiteRepo) SetSetting(ctx context.Context, key, value string) error {
 // SearchGames ищет игры, в названии которых есть совпадения с запросом
 func (r *SQLiteRepo) SearchGames(ctx context.Context, searchQuery string) ([]*models.Game, error) {
 	// Используем оператор LIKE и оборачиваем запрос в знаки процента (поиск подстроки)
-	query := `
-	SELECT id, title, description, version, languages, cover_path, images, exec_path, folder_path, time_played, added_at, last_launched_at 
-	FROM games 
-	WHERE title LIKE ? 
-	ORDER BY title ASC`
+	query := `SELECT ` + gameColumns + ` FROM games WHERE title LIKE ? ORDER BY title ASC`
 
 	searchTerm := "%" + searchQuery + "%"
 	rows, err := r.db.QueryContext(ctx, query, searchTerm)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка поиска игр: %w", err)
+		return nil, fmt.Errorf("games search error: %w", err)
 	}
 	defer rows.Close()
 
-	var games []*models.Game
-	for rows.Next() {
-		var g models.Game
-		var langsJSON, imagesJSON string
-
-		err := rows.Scan(
-			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
-			&g.CoverPath, &imagesJSON, &g.ExecPath, &g.FolderPath, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("ошибка чтения строки: %w", err)
-		}
-
-		json.Unmarshal([]byte(langsJSON), &g.Languages)
-		json.Unmarshal([]byte(imagesJSON), &g.Images)
-
-		games = append(games, &g)
-	}
-
-	return games, nil
+	return scanGames(rows)
 }

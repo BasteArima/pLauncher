@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"game-launcher/internal/models"
@@ -28,108 +27,80 @@ func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка запроса к island-of-pleasure: %w", err)
+		return nil, fmt.Errorf("island-of-pleasure request error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("island-of-pleasure вернул статус %d", resp.StatusCode)
+		return nil, fmt.Errorf("island-of-pleasure returned status %d", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения HTML: %w", err)
+		return nil, fmt.Errorf("HTML read error: %w", err)
 	}
 
 	game := &models.Game{
 		Languages: []string{},
 	}
 
-	// 1. Парсим заголовок (У них есть очень удобная табличка finfo)
-	title := doc.Find("div.finfo-title:contains('Название:')").NextFiltered(".finfo-text").Text()
-	if title == "" {
-		// Запасной вариант, если таблички нет
-		title = doc.Find("h1.fstory-h1 b").Text()
+	// Поле «Название» содержит полный релизный заголовок:
+	//   "Название [версия] (год) (Rus/Eng) [движок] ..."
+	rawTitle := cleanText(doc.Find("div.finfo-title:contains('Название') + .finfo-text").First().Text())
+	if rawTitle == "" {
+		rawTitle = cleanText(doc.Find("h1.fstory-h1 b").Text())
 	}
-	game.Title = cleanText(title)
+	game.Title = cleanReleaseTitle(rawTitle)
+	game.Version = versionFromTitle(rawTitle)
+	game.Languages = parseReleaseLanguages(rawTitle)
+	game.Tags = parseReleaseTags(rawTitle)
 
-	// Берем большой блок с текстом для парсинга версии и описания
-	htmlContent, err := doc.Find("div.ss-fstory-content").Html()
-	if err == nil {
-		// 2. Парсим Версию (ищем текст после <b>Версия:</b>)
-		reVer := regexp.MustCompile(`(?i)Версия:?</b>\s*(.*?)\s*<br`)
-		verMatch := reVer.FindStringSubmatch(htmlContent)
-		if len(verMatch) > 1 {
-			game.Version = cleanText(stripHTMLTags(verMatch[1]))
-		}
-
-		// 3. Парсим Описание (от <b>Описание:</b> до двойного переноса строки или следующего <b>)
-		reDesc := regexp.MustCompile(`(?is)Описание:?</b>\s*<br[^>]*>\s*(.*?)\s*(?:<br[^>]*>\s*<br[^>]*>\s*<b>|<br[^>]*>\s*<b>|<div|$)`)
-		descMatch := reDesc.FindStringSubmatch(htmlContent)
-		if len(descMatch) > 1 {
-			rawDesc := stripHTMLTags(descMatch[1])
-			game.Description = cleanText(html.UnescapeString(rawDesc))
-		} else {
-			game.Description = "Описание не найдено."
+	// Описание — это и есть содержимое блока ss-fstory-content (начинается с «Описание:»)
+	descText := cleanText(html.UnescapeString(doc.Find("div.ss-fstory-content").First().Text()))
+	if i := caseIndex(descText, "Описание"); i >= 0 {
+		rest := descText[i:]
+		if c := strings.IndexByte(rest, ':'); c >= 0 {
+			descText = strings.TrimSpace(rest[c+1:])
 		}
 	}
+	if descText != "" {
+		game.Description = truncateText(descText, 2000)
+	} else {
+		game.Description = ""
+	}
 
-	// 4. Ищем обложку (афишу) отдельно!
+	if len(game.Languages) == 0 {
+		game.Languages = detectLanguages(doc.Find("div.ss-fstory-content").Text())
+	}
+	if game.Languages == nil {
+		game.Languages = []string{}
+	}
+
+	// Обложка (афиша)
 	var coverURL string
-	coverSrc, exists := doc.Find("div.fstory-poster img").Attr("src")
-	if exists {
-		if strings.HasPrefix(coverSrc, "/") {
-			coverSrc = "https://island-of-pleasure.site" + coverSrc
-		}
-		coverURL = coverSrc
+	if coverSrc, exists := doc.Find("div.fstory-poster img").Attr("src"); exists {
+		coverURL = absoluteURL(coverSrc, "https://island-of-pleasure.site")
 	}
 
-	// 5. Ищем фулл-сайз скриншоты в отдельный массив
+	// Фулл-сайз скриншоты
 	var screenshotURLs []string
 	doc.Find("ul.xfieldimagegallery.screens li a").Each(func(i int, s *goquery.Selection) {
 		href, exists := s.Attr("href")
-		if exists {
-			if strings.HasPrefix(href, "/") {
-				href = "https://island-of-pleasure.site" + href
-			}
-
-			// Проверка на дубликаты (чтобы скриншот не совпадал с обложкой или другим скрином)
-			isDup := false
-			if href == coverURL {
-				isDup = true
-			}
-			for _, u := range screenshotURLs {
-				if u == href {
-					isDup = true
-					break
-				}
-			}
-			if !isDup {
-				screenshotURLs = append(screenshotURLs, href)
+		if !exists {
+			return
+		}
+		href = absoluteURL(href, "https://island-of-pleasure.site")
+		if href == coverURL {
+			return
+		}
+		for _, u := range screenshotURLs {
+			if u == href {
+				return
 			}
 		}
+		screenshotURLs = append(screenshotURLs, href)
 	})
 
-	// 6. СКАЧИВАЕМ ОБЛОЖКУ (Гарантированно записываем её куда нужно)
-	if coverURL != "" {
-		coverPaths := DownloadImagesAsync(ctx, p.client, []string{coverURL}, saveDir, pageURL)
-		if len(coverPaths) > 0 {
-			game.CoverPath = coverPaths[0]
-		}
-	}
-
-	// 7. СКАЧИВАЕМ СКРИНШОТЫ
-	if len(screenshotURLs) > 0 {
-		limit := 10 // Берем 5 скриншотов
-		if len(screenshotURLs) < limit {
-			limit = len(screenshotURLs)
-		}
-
-		urlsToDownload := screenshotURLs[:limit]
-		screenshotPaths := DownloadImagesAsync(ctx, p.client, urlsToDownload, saveDir, pageURL)
-
-		game.Images = screenshotPaths
-	}
-
+	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil
 }

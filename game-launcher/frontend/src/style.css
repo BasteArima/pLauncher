@@ -2,24 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --bg-base: #0a0912;       /* почти чёрный с фиолетовым подтоном */
+    --accent: 99 102 241;     /* indigo-500 (rgb для прозрачностей) */
+}
+
 body {
-    background-color: #0f172a; /* Темный фон, slate-900 */
+    background-color: var(--bg-base);
     color: white;
     margin: 0;
     user-select: none; /* Запрещаем выделять текст мышкой */
 }
 
+/* --- Aurora: мягкое многослойное свечение поверх тёмного фона --- */
+.aurora-bg {
+    background-color: var(--bg-base);
+    background-image:
+        radial-gradient(60% 55% at 12% 0%, rgba(99, 102, 241, 0.20), transparent 70%),
+        radial-gradient(55% 50% at 95% 8%, rgba(168, 85, 247, 0.16), transparent 70%),
+        radial-gradient(70% 60% at 50% 100%, rgba(56, 189, 248, 0.10), transparent 70%);
+}
+
+/* --- Стеклянные поверхности --- */
+.glass {
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glass-strong {
+    background: rgba(17, 16, 28, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* --- Анимации --- */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.25s ease-out; }
+.animate-rise-in { animation: rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Кастомный скроллбар */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: rgba(129, 140, 248, 0.25);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: rgba(129, 140, 248, 0.45);
 }

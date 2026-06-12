@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Controller отвечает за взаимодействие с файловой системой ОС и процессами
@@ -37,13 +38,15 @@ func (c *Controller) OpenFolder(folderPath string) error {
 	// Run() заблокирует выполнение Go-программы до тех пор, пока папка не будет закрыта.
 	// Start() просто запускает процесс в фоне и идет дальше.
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("ошибка при открытии папки: %w", err)
+		return fmt.Errorf("error opening folder: %w", err)
 	}
 	return nil
 }
 
 // LaunchGame запускает исполняемый файл игры.
-func (c *Controller) LaunchGame(exePath, folderPath string) error {
+// Если задан onExit, в фоне (через cmd.Wait — без поллинга, нулевая нагрузка)
+// дожидается завершения процесса и сообщает время сессии в минутах.
+func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes int)) error {
 	cmd := exec.Command(exePath)
 
 	// Крайне важный момент для игр (особенно сделанных на Unity/RenPy):
@@ -52,12 +55,16 @@ func (c *Controller) LaunchGame(exePath, folderPath string) error {
 	cmd.Dir = folderPath
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("не удалось запустить %s: %w", exePath, err)
+		return fmt.Errorf("couldn't launch %s: %w", exePath, err)
 	}
 
-	// TODO в будущем: Если мы захотим трекать время в игре (Time Played),
-	// здесь нужно будет запустить горутину с cmd.Wait(), которая засечет
-	// время старта и время завершения процесса, а затем обновит БД.
+	if onExit != nil {
+		go func() {
+			start := time.Now()
+			cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
+			onExit(int(time.Since(start).Minutes()))
+		}()
+	}
 
 	return nil
 }
@@ -95,7 +102,7 @@ func (c *Controller) FindExecutables(folderPath string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при поиске .exe файлов: %w", err)
+		return nil, fmt.Errorf("error searching for .exe files: %w", err)
 	}
 
 	return exes, nil
