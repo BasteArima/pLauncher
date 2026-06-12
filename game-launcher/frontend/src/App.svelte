@@ -385,6 +385,58 @@
     }
     function closeCtx() { ctx = { ...ctx, show: false }; }
 
+    // --- ПКМ по текстовым полям: вырезать/копировать/вставить ---
+    // Нативное контекстное меню отключено, поэтому собираем своё.
+    function isEditableTarget(el) {
+        if (!el || el.disabled || el.readOnly) return false;
+        if (el.tagName === 'TEXTAREA') return true;
+        if (el.tagName !== 'INPUT') return false;
+        return /^(text|search|url|email|tel|password|number|)$/i.test(el.type || '');
+    }
+    function replaceSelection(el, text) {
+        const start = el.selectionStart ?? el.value.length;
+        const end = el.selectionEnd ?? el.value.length;
+        el.value = el.value.slice(0, start) + text + el.value.slice(end);
+        const pos = start + text.length;
+        el.focus();
+        el.setSelectionRange(pos, pos);
+        // Уведомляем Svelte о смене значения (двусторонний bind слушает input)
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    async function clipCopy(el) {
+        const sel = el.value.substring(el.selectionStart, el.selectionEnd);
+        try { await navigator.clipboard.writeText(sel); } catch (e) {}
+    }
+    async function clipCut(el) {
+        await clipCopy(el);
+        replaceSelection(el, '');
+    }
+    async function clipPaste(el) {
+        let text = '';
+        try { text = await navigator.clipboard.readText(); } catch (e) { return; }
+        if (text) replaceSelection(el, text);
+    }
+    function inputCtxItems(el) {
+        const hasSel = el.selectionStart != null && el.selectionStart !== el.selectionEnd;
+        const items = [];
+        if (hasSel) {
+            items.push({ label: tr('ctx.cut'), icon: '✂', action: () => clipCut(el) });
+            items.push({ label: tr('ctx.copy'), icon: '⧉', action: () => clipCopy(el) });
+        }
+        items.push({ label: tr('ctx.paste'), icon: '📋', action: () => clipPaste(el) });
+        items.push({ sep: true });
+        items.push({ label: tr('ctx.select_all'), action: () => { el.focus(); el.select(); } });
+        return items;
+    }
+    // Глобальный contextmenu: на текстовом поле — меню буфера, иначе блокируем нативное.
+    function handleGlobalContext(e) {
+        if (isEditableTarget(e.target)) {
+            openCtx(e, inputCtxItems(e.target));
+            return;
+        }
+        e.preventDefault();
+    }
+
     async function removeGameDirect(game) {
         const ok = await askConfirm({ title: tr('dlg.remove_game_title'), message: tr('dlg.remove_game_msg', { title: game.title }), confirmText: tr('btn.delete'), danger: true });
         if (!ok) return;
@@ -995,10 +1047,11 @@
             discreet = !discreet;
             return;
         }
-        // Диалог подтверждения перехватывает клавиши первым
+        // Диалог подтверждения перехватывает клавиши первым.
+        // Enter и Space = подтверждение, Escape = отмена.
         if (confirmDialog.show) {
             if (e.key === 'Escape') { e.preventDefault(); closeConfirm(false); }
-            if (e.key === 'Enter')  { e.preventDefault(); closeConfirm(true); }
+            if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') { e.preventDefault(); closeConfirm(true); }
             return;
         }
         if (lightboxImage) {
@@ -1078,7 +1131,7 @@
         class="flex flex-col h-screen overflow-hidden aurora-bg text-slate-300 font-sans relative"
         on:dragover={onDragOver}
         on:dragleave={onDragLeave}
-        on:contextmenu={(e) => e.preventDefault()}
+        on:contextmenu={handleGlobalContext}
 >
 
     <div class="h-9 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
@@ -1655,7 +1708,7 @@
 
         {#if lightboxImage}
             <div
-                    class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex items-center justify-center p-10 animate-fade-in"
+                    class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[95] flex items-center justify-center p-10 animate-fade-in"
                     on:click={closeLightbox}
             >
                 <button class="absolute top-6 right-8 text-slate-400 hover:text-white text-5xl font-light transition-colors z-50"

@@ -17,6 +17,32 @@ downloaded* and browse their collection nicely. Core jobs:
 
 The content is adult, so **discretion features matter** and covers/screenshots are private local files.
 
+## Current state (already implemented)
+
+The app is fully working. Done so far:
+- **Scanning**: multi-folder scan (`scan_paths`), each top-level subfolder becomes a game; smart `.exe`
+  pick (`FindBestExecutable`); native folder drag&drop; "+ single game".
+- **Parsers**: f95zone, pornolab (win1251), erotorrent, island-of-pleasure, Steam (official API).
+  Title/version/languages/tags from the release title; cover + up to 9 screenshots; a "?" popover in the
+  metadata box lists supported sites (`SupportedSources`).
+- **Library UI (Steam-like)**: aurora/glass dark theme; resizable + collapsible-tree sidebar with game
+  icons; home with hero banner + configurable, drag-reorderable shelves ("edit sections" mode); Steam-style
+  detail page (hero header, description, screenshots, lightbox); grid + sort.
+- **Collections**: manual + dynamic-by-tags; CRUD; sidebar groups & a `collection` shelf type come from
+  them; drag a game onto a collection to add it (works for dynamic too via pinned `game_ids`).
+- **Tags & favorites**: auto-tags from parsing + manual editing; favorites (♥) with shelf/filter.
+- **Discreet mode** (👁 / Ctrl+H) blurs all covers; "only games with a cover" toggle (✨) hides un-parsed.
+- **Cover fit/position editor** (fill/contain/stretch + X/Y), per game.
+- **Playtime tracking** via `cmd.Wait` (no polling); shown on detail; sort by playtime.
+- **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize),
+  custom context menus, custom confirm dialog (no native popups), toasts.
+- **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
+  sidebar width; sort/layout/collapsed/lang/onlyDressed in localStorage.
+- **i18n**: en/ru/es built-in + user languages from `data/languages/*.json` (README + `_example.json`
+  auto-dropped there); language picker on first run and in settings; backend errors are in English.
+
+What's NOT done yet → see "Roadmap" below.
+
 ## Stack & layout
 
 - **Wails v2.12** desktop app: **Go** backend + **Svelte 3** + **Tailwind** frontend.
@@ -109,6 +135,39 @@ wails generate module             # after changing exported Go methods / structs
 ```
 Cross-OS builds must run **on the target OS** (or CI) — Wails webview bindings are OS-native, even though
 the Go/SQLite parts are CGO-free.
+
+## Roadmap / suggested improvements (not yet implemented)
+
+Ideas the owner wants to pursue. Roughly ordered by value. Discuss/confirm scope before big ones.
+
+High value (turns the app from a gallery into a real collection tracker):
+1. **Update checking** — store each game's source URL; on demand or on a schedule, refetch the page,
+   parse the version, and flag "update available" with a badge. These (F95/tracker) games update often —
+   this is the core "don't forget what changed" feature. Reuse the existing parsers (they already return
+   a version).
+2. **Play status / backlog** — per-game status (playing / finished / dropped / want-to-play); filters and
+   shelves by status. Fits the existing dynamic-collection machinery.
+3. **Rating & notes** — personal star rating + a notes field (spoilers under a toggle).
+
+Privacy (matters for this content):
+4. **PIN/password on launch** + a global "panic" hotkey that minimizes & blurs even when unfocused;
+   optional neutral process name/icon. (Builds on the existing discreet mode / Ctrl+H.)
+5. **Blur covers by default until hover** (option) — extends discreet mode.
+
+Polish / convenience:
+6. **Auto-detect engine** (Ren'Py / Unity / RPG Maker) from folder contents → better `.exe` pick + an
+   engine tag without needing to parse a page.
+7. **Multiple executables per game** (game / config / walkthrough) with a quick-launch menu.
+8. **Relink moved games** — folder moved → offer to attach to an existing record keeping metadata
+   (IDs are random now, dedupe is by path; add a folder-name fingerprint).
+9. **Backup/export library** (JSON) + DB backup; a "library health" dashboard (no cover / no description /
+   no exe as actionable lists).
+10. **Multi-tag filter** (AND/OR, exclude) and a tag blacklist (hide unwanted genres).
+11. **Localize parser errors via codes** — currently backend errors are plain English strings; switch to
+    codes so the frontend dictionary can translate them.
+12. **Self-update for the launcher** + per-OS CI builds (GitHub Actions) for distribution.
+
+Owner's note: #1 (update checking) and #2 (statuses) are expected to give the biggest payoff.
 
 ## More detail
 

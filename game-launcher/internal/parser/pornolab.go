@@ -79,45 +79,17 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 
 	// Картинки: реальный URL хранится в атрибуте title тега var.postImg
 	// (в src на сохранённых страницах подставляется локальный путь).
+	//
+	// Скриншоты берём ТОЛЬКО из спойлера «Скриншоты/Примеры»: в самом теле поста
+	// идут декоративные картинки (постер, img-right в описании, баннер Steam, лого),
+	// которые скриншотами не являются. В спойлере лежат миниатюры fastpic/imgbox —
+	// приводим их к полноразмерному варианту (/thumb/ -> /big/, imgbox _t -> _o),
+	// т.к. ссылка <a href=".../view/...html"> ведёт на HTML-страницу, а не на картинку.
 	var coverURL string
 	var screenshotURLs []string
 
-	doc.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
-		src, _ := s.Attr("title")
-		if src == "" {
-			src, _ = s.Attr("src")
-		}
-		if src == "" {
-			return
-		}
-
-		// АНТИ-МУСОР: баннеры трекера и смайлы
-		if strings.Contains(src, "static.pornolab.net") || strings.Contains(src, "smilies") {
-			return
-		}
-
-		// ХАК ДЛЯ FASTPIC: thumb -> big
-		src = strings.ReplaceAll(src, "/thumb/", "/big/")
-
-		// ХАК ДЛЯ IMGBOX: thumbnail -> original
-		if strings.Contains(src, "imgbox.com") {
-			src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
-			src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
-			src = strings.Replace(src, "_t.jpg", "_o.jpg", 1)
-			src = strings.Replace(src, "_t.png", "_o.png", 1)
-		}
-
-		if strings.HasPrefix(src, "//") {
-			src = "https:" + src
-		} else if strings.HasPrefix(src, "/") {
-			src = "https://pornolab.net" + src
-		}
-
-		if coverURL == "" {
-			coverURL = src
-			return
-		}
-		if src == coverURL {
+	addScreenshot := func(src string) {
+		if src == "" || src == coverURL {
 			return
 		}
 		for _, u := range screenshotURLs {
@@ -126,10 +98,177 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 			}
 		}
 		screenshotURLs = append(screenshotURLs, src)
+	}
+
+	// Спойлер со скриншотами ищем по заголовку (.sp-head).
+	var screensSpoiler *goquery.Selection
+	post.Find(".sp-wrap").EachWithBreak(func(i int, sp *goquery.Selection) bool {
+		head := strings.ToLower(cleanText(sp.Find(".sp-head").First().Text()))
+		if strings.Contains(head, "скриншот") || strings.Contains(head, "примеры") ||
+			strings.Contains(head, "скринлист") || strings.Contains(head, "screenshot") {
+			screensSpoiler = sp
+			return false
+		}
+		return true
 	})
+
+	if screensSpoiler != nil {
+		// Обложка — первый постер в теле поста (вне любых спойлеров).
+		post.Find("var.postImg, img.postImg").EachWithBreak(func(i int, s *goquery.Selection) bool {
+			if s.Closest(".sp-wrap").Length() > 0 {
+				return true
+			}
+			if src := normalizePostImg(s); src != "" {
+				coverURL = src
+				return false
+			}
+			return true
+		})
+		// Скриншоты — только из найденного спойлера.
+		screensSpoiler.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
+			addScreenshot(normalizePostImg(s))
+		})
+		// Если постера вне спойлеров не оказалось — берём первый скриншот под обложку.
+		if coverURL == "" && len(screenshotURLs) > 0 {
+			coverURL = screenshotURLs[0]
+			screenshotURLs = screenshotURLs[1:]
+		}
+	} else {
+		// Фолбэк (нет спойлера со скриншотами): скриншотами считаем только миниатюры,
+		// обёрнутые в ссылку на хостинг картинок (fastpic/imgbox/…) — так из тела поста
+		// не утекают декорации (постер, img-right, баннеры). Первая «свободная» (без
+		// такой ссылки) картинка идёт под обложку.
+		post.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
+			src := normalizePostImg(s)
+			if src == "" {
+				return
+			}
+			href, _ := s.Closest("a").Attr("href")
+			if isImageHostLink(href) {
+				addScreenshot(src)
+			} else if coverURL == "" {
+				coverURL = src
+			}
+		})
+
+		// Совсем ничего «ссылочного» не нашли — откатываемся к старому поведению
+		// (первая картинка — обложка, остальные — скриншоты), чтобы не потерять
+		// галерею на постах с другой разметкой.
+		if len(screenshotURLs) == 0 {
+			coverURL = ""
+			post.Find("var.postImg, img.postImg").Each(func(i int, s *goquery.Selection) {
+				src := normalizePostImg(s)
+				if src == "" {
+					return
+				}
+				if coverURL == "" {
+					coverURL = src
+					return
+				}
+				addScreenshot(src)
+			})
+		}
+	}
+
+	// Подстраховка: обложки нет, но скриншоты есть — первый под обложку.
+	if coverURL == "" && len(screenshotURLs) > 0 {
+		coverURL = screenshotURLs[0]
+		screenshotURLs = screenshotURLs[1:]
+	}
 
 	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil
+}
+
+// normalizePostImg достаёт реальный URL картинки из var/img.postImg и приводит его
+// к полноразмерному варианту. Возвращает "" для баннеров трекера и смайлов.
+func normalizePostImg(s *goquery.Selection) string {
+	src, _ := s.Attr("title")
+	if src == "" {
+		src, _ = s.Attr("src")
+	}
+	if src == "" {
+		return ""
+	}
+
+	// АНТИ-МУСОР: баннеры трекера и смайлы
+	if strings.Contains(src, "static.pornolab.net") || strings.Contains(src, "smilies") {
+		return ""
+	}
+
+	// ХАК ДЛЯ FASTPIC: миниатюра /thumb/ -> полноразмер /big/.
+	// У миниатюры расширение всегда .jpeg, а файл в /big/ хранится с ОРИГИНАЛЬНЫМ
+	// расширением (.jpg/.png) — иначе /big/...jpeg отдаёт 404. Берём настоящее
+	// расширение из ссылки на страницу просмотра (.../HASH.jpg.html). Если ссылки
+	// нет — оставляем рабочую миниатюру, чтобы не качать заведомый 404.
+	if strings.Contains(src, "fastpic") && strings.Contains(src, "/thumb/") {
+		if ext := fastpicBigExt(s); ext != "" {
+			src = replaceURLExt(strings.Replace(src, "/thumb/", "/big/", 1), ext)
+		}
+	} else {
+		src = strings.ReplaceAll(src, "/thumb/", "/big/")
+	}
+
+	// ХАК ДЛЯ IMGBOX: thumbnail -> original
+	if strings.Contains(src, "imgbox.com") {
+		src = strings.Replace(src, "thumbs2.imgbox.com", "images2.imgbox.com", 1)
+		src = strings.Replace(src, "thumbs.imgbox.com", "images.imgbox.com", 1)
+		src = strings.Replace(src, "_t.jpg", "_o.jpg", 1)
+		src = strings.Replace(src, "_t.png", "_o.png", 1)
+	}
+
+	if strings.HasPrefix(src, "//") {
+		src = "https:" + src
+	} else if strings.HasPrefix(src, "/") {
+		src = "https://pornolab.net" + src
+	}
+	return src
+}
+
+// fastpicBigExt достаёт оригинальное расширение картинки fastpic (".jpg"/".png")
+// из ссылки на страницу просмотра вида .../HASH.jpg.html у ближайшего <a>.
+// У миниатюры расширение всегда .jpeg, поэтому полагаться на неё нельзя.
+func fastpicBigExt(s *goquery.Selection) string {
+	href, ok := s.Closest("a").Attr("href")
+	if !ok {
+		return ""
+	}
+	href = strings.TrimSuffix(strings.TrimSuffix(href, ".html"), ".HTML")
+	dot := strings.LastIndexByte(href, '.')
+	slash := strings.LastIndexByte(href, '/')
+	if dot <= slash {
+		return ""
+	}
+	ext := href[dot:]
+	if len(ext) > 5 || strings.ContainsAny(ext, "/?#") {
+		return ""
+	}
+	return ext
+}
+
+// replaceURLExt заменяет расширение в последнем сегменте URL (точки в домене не трогает).
+func replaceURLExt(rawURL, ext string) string {
+	slash := strings.LastIndexByte(rawURL, '/')
+	dot := strings.LastIndexByte(rawURL, '.')
+	if dot <= slash {
+		return rawURL
+	}
+	return rawURL[:dot] + ext
+}
+
+// isImageHostLink сообщает, ведёт ли ссылка на страницу просмотра картинки на
+// известном хостинге. Настоящие скриншоты в постах обёрнуты в такую ссылку,
+// а декоративные картинки (постер, баннеры) — нет.
+func isImageHostLink(href string) bool {
+	if href == "" {
+		return false
+	}
+	for _, h := range []string{"fastpic", "imgbox", "postimg", "imageban", "pixhost", "imgur", "ibb.co", "radikal"} {
+		if strings.Contains(href, h) {
+			return true
+		}
+	}
+	return false
 }
 
 // extractPornolabDescription достаёт прозу описания из тела поста.

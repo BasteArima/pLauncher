@@ -165,8 +165,11 @@ func DownloadImagesAsync(ctx context.Context, client *http.Client, imageURLs []s
 	return localPaths
 }
 
-// downloadInto скачивает обложку и до 9 скриншотов в saveDir и проставляет пути
-// в game. Обложка и скриншоты получают разные префиксы имён, чтобы не затирать
+// maxScreenshots — сколько скриншотов максимум скачиваем на игру.
+const maxScreenshots = 15
+
+// downloadInto скачивает обложку и до maxScreenshots скриншотов в saveDir и проставляет
+// пути в game. Обложка и скриншоты получают разные префиксы имён, чтобы не затирать
 // друг друга (раньше cover и первый скрин оба сохранялись как 0.jpg).
 func downloadInto(ctx context.Context, client *http.Client, game *models.Game, coverURL string, screenshotURLs []string, saveDir, referer string) {
 	if coverURL != "" {
@@ -175,7 +178,7 @@ func downloadInto(ctx context.Context, client *http.Client, game *models.Game, c
 		}
 	}
 	if len(screenshotURLs) > 0 {
-		limit := 9
+		limit := maxScreenshots
 		if len(screenshotURLs) < limit {
 			limit = len(screenshotURLs)
 		}
