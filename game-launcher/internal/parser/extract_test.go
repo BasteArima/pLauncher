@@ -84,3 +84,50 @@ func TestReleaseTitleParsing(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthorFromTitle(t *testing.T) {
+	cases := map[string]string{
+		"College of Mysteria [v0.13] [HappySteveGames]": "HappySteveGames",
+		"Some Game [v1.2] [Studio X]":                   "Studio X",
+		"Only Version [v1.0]":                           "", // одна скобка = версия, не автор
+		"No brackets at all":                            "",
+	}
+	for raw, want := range cases {
+		if got := authorFromTitle(raw); got != want {
+			t.Errorf("authorFromTitle(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}
+
+func TestEngineFromTokens(t *testing.T) {
+	cases := []struct {
+		tokens []string
+		want   string
+	}{
+		{[]string{"VN", "Ren'Py"}, "Ren'Py"},
+		{[]string{"Completed", "Unity"}, "Unity"},
+		{[]string{"VN", "Completed"}, ""},
+		{[]string{"RPGM"}, "RPG Maker"},
+	}
+	for _, c := range cases {
+		if got := engineFromTokens(c.tokens); got != c.want {
+			t.Errorf("engineFromTokens(%v) = %q, want %q", c.tokens, got, c.want)
+		}
+	}
+}
+
+func TestDeveloperFromHTML(t *testing.T) {
+	cases := map[string]string{
+		// pornolab: двоеточие зажато между закрывающими </span>
+		`<span class="post-color-text"><span class="post-b">Разработчик/Издатель</span>:</span> Libero<br>`: "Libero",
+		// island: метка целиком в <b>, дальше имя и ссылки через " - " / "|"
+		`<b>Разработчик/Издатель:</b> Milk Dragon Studios - <a href="x">patreon</a> | <a>itch.io</a>`: "Milk Dragon Studios",
+		`<b>Разработчик/Издатель:</b> Libero`: "Libero",
+		`<div>нет такого поля</div>`:           "",
+	}
+	for in, want := range cases {
+		if got := developerFromHTML(in); got != want {
+			t.Errorf("developerFromHTML(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

@@ -101,6 +101,8 @@ func (r *SQLiteRepo) initSchema() error {
 	r.db.Exec(`ALTER TABLE games ADD COLUMN favorite INTEGER DEFAULT 0;`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_fit TEXT DEFAULT '';`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_pos TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN author TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN engine TEXT DEFAULT '';`)
 
 	return nil
 }
@@ -117,6 +119,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 			&g.ID, &g.Title, &g.Description, &g.Version, &langsJSON,
 			&g.CoverPath, &imagesJSON, &tagsJSON, &g.ExecPath, &g.FolderPath,
 			&favorite, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt, &g.CoverFit, &g.CoverPos,
+			&g.Author, &g.Engine,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("row read error: %w", err)
@@ -133,7 +136,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 }
 
 // gameColumns — единый список колонок для SELECT (порядок важен для scanGames).
-const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos`
+const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine`
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
@@ -148,8 +151,8 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	}
 
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -164,13 +167,16 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		time_played=excluded.time_played,
 		last_launched_at=excluded.last_launched_at,
 		cover_fit=excluded.cover_fit,
-		cover_pos=excluded.cover_pos;
+		cover_pos=excluded.cover_pos,
+		author=excluded.author,
+		engine=excluded.engine;
 	`
 	// Обрати внимание: added_at не обновляется при конфликте, чтобы сохранить дату первого добавления!
 
 	_, err := r.db.ExecContext(ctx, query,
 		g.ID, g.Title, g.Description, g.Version, string(langsJSON),
 		g.CoverPath, string(imagesJSON), string(tagsJSON), g.ExecPath, g.FolderPath, favorite, g.TimePlayed, g.AddedAt, g.LastLaunchedAt, g.CoverFit, g.CoverPos,
+		g.Author, g.Engine,
 	)
 
 	if err != nil {

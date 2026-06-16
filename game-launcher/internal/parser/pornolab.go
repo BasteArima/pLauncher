@@ -77,6 +77,12 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 		game.Languages = []string{}
 	}
 
+	// Автор — поле «Разработчик/Издатель» в теле поста; движок — из тегов (Unity и т.п.).
+	if postHTML, err := post.Html(); err == nil {
+		game.Author = developerFromHTML(postHTML)
+	}
+	game.Engine = engineFromTokens(game.Tags)
+
 	// Картинки: реальный URL хранится в атрибуте title тега var.postImg
 	// (в src на сохранённых страницах подставляется локальный путь).
 	//

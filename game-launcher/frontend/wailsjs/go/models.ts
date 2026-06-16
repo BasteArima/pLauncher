@@ -25,6 +25,8 @@ export namespace models {
 	    title: string;
 	    description: string;
 	    version: string;
+	    author: string;
+	    engine: string;
 	    languages: string[];
 	    cover_path: string;
 	    cover_fit: string;
@@ -48,6 +50,8 @@ export namespace models {
 	        this.title = source["title"];
 	        this.description = source["description"];
 	        this.version = source["version"];
+	        this.author = source["author"];
+	        this.engine = source["engine"];
 	        this.languages = source["languages"];
 	        this.cover_path = source["cover_path"];
 	        this.cover_fit = source["cover_fit"];

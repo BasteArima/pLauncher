@@ -1332,6 +1332,14 @@
                                     <input type="text" bind:value={selectedGame.version} class="bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none w-40" placeholder="1.0"/>
                                 </div>
                                 <div class="flex items-center gap-3">
+                                    <span class="text-slate-400 font-semibold uppercase tracking-wider text-xs w-20">{$t("edit.author_label")}</span>
+                                    <input type="text" bind:value={selectedGame.author} class="flex-1 bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder={$t("edit.author_ph")}/>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-slate-400 font-semibold uppercase tracking-wider text-xs w-20">{$t("edit.engine_label")}</span>
+                                    <input type="text" bind:value={selectedGame.engine} class="bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none w-40" placeholder="Ren'Py"/>
+                                </div>
+                                <div class="flex items-center gap-3">
                                     <span class="text-slate-400 font-semibold uppercase tracking-wider text-xs w-20">{$t("edit.exe_label")}</span>
                                     <input type="text" bind:value={selectedGame.exec_path} class="flex-1 bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none font-mono text-xs" placeholder="C:\Games\Game\run.exe" />
                                     <button on:click={handleSelectExecutable} class="bg-white/10 hover:bg-white/20 text-slate-200 px-3 py-1.5 rounded-md border border-white/10 transition-colors" title={$t("edit.choose_file")}>📁</button>
@@ -1393,6 +1401,14 @@
                                     <span class="glass px-3 py-1 rounded-full cursor-pointer hover:bg-white/10 transition-colors" on:click={() => copyToClipboard(selectedGame.version, $t('label.version'))}>
                                         {$t("detail.version")}: <span class="text-white">{selectedGame.version || $t("detail.unknown")}</span>
                                     </span>
+                                    {#if selectedGame.engine}
+                                        <span class="glass px-3 py-1 rounded-full">{$t("detail.engine")}: <span class="text-white">{selectedGame.engine}</span></span>
+                                    {/if}
+                                    {#if selectedGame.author}
+                                        <span class="glass px-3 py-1 rounded-full cursor-pointer hover:bg-white/10 transition-colors" on:click={() => copyToClipboard(selectedGame.author, $t('detail.author'))}>
+                                            {$t("detail.author")}: <span class="text-white">{selectedGame.author}</span>
+                                        </span>
+                                    {/if}
                                     {#if selectedGame.languages && selectedGame.languages.length}
                                         <span class="glass px-3 py-1 rounded-full">{selectedGame.languages.join(', ')}</span>
                                     {/if}

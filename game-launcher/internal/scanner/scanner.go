@@ -50,9 +50,9 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 	}
 	// Дедуп по нормализованному пути к папке (а не по ID), чтобы
 	// переезд/переименование папки не плодил дубликаты.
-	existingPaths := make(map[string]bool)
+	existingByPath := make(map[string]*models.Game)
 	for _, g := range existingGames {
-		existingPaths[NormalizePath(g.FolderPath)] = true
+		existingByPath[NormalizePath(g.FolderPath)] = g
 	}
 
 	entries, err := os.ReadDir(rootPath)
@@ -73,8 +73,19 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 		}
 
 		gameFolderPath := filepath.Join(rootPath, entry.Name())
+		norm := NormalizePath(gameFolderPath)
 
-		if existingPaths[NormalizePath(gameFolderPath)] {
+		if existing := existingByPath[norm]; existing != nil {
+			// Игра уже в библиотеке — ручные правки не трогаем, но дозаполняем
+			// пустой движок авто-определением по содержимому папки.
+			if existing.Engine == "" {
+				if eng := DetectEngine(gameFolderPath); eng != "" {
+					existing.Engine = eng
+					if err := s.repo.SaveGame(ctx, existing); err != nil {
+						log.Printf("Внимание: не удалось дозаполнить движок для %s: %v", existing.Title, err)
+					}
+				}
+			}
 			continue
 		}
 
@@ -105,13 +116,16 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 		if game.ExecPath == "" {
 			game.ExecPath = FindBestExecutable(gameFolderPath)
 		}
+		if game.Engine == "" {
+			game.Engine = DetectEngine(gameFolderPath)
+		}
 
 		if err := s.repo.SaveGame(ctx, game); err != nil {
 			log.Printf("Внимание: ошибка сохранения игры %s: %v", game.Title, err)
 			continue
 		}
 
-		existingPaths[NormalizePath(gameFolderPath)] = true
+		existingByPath[norm] = game
 		count++
 	}
 

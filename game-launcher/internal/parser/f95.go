@@ -45,16 +45,29 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 		Languages: []string{},
 	}
 
-	// 1. Парсим заголовок и версию
-	rawTitle := doc.Find("h1.p-title-value").Text()
-	game.Title = cleanText(rawTitle)
+	// 1. Заголовок и версия.
+	// H1 содержит метки-префиксы (VN, Ren'Py, Completed и т.п.) отдельными
+	// ссылками <a>, а уже текстом идёт "Название [версия] [разработчик]".
+	// Убираем метки и разбираем оставшийся текст готовыми хелперами.
+	titleSel := doc.Find("h1.p-title-value").First()
+	clone := titleSel.Clone()
+	clone.Find("a, .label-append, .labelLink").Remove()
+	rawTitle := cleanText(clone.Text()) // "College of Mysteria [v0.13] [HappySteveGames]"
 
-	versionTag := doc.Find("h1.p-title-value span.label").Last().Text()
-	if versionTag != "" {
-		game.Version = cleanText(versionTag)
-		game.Title = strings.Replace(game.Title, game.Version, "", -1)
-		game.Title = strings.TrimSpace(game.Title)
+	game.Title = cleanReleaseTitle(rawTitle)
+	if game.Title == "" {
+		game.Title = rawTitle
 	}
+	game.Version = versionFromTitle(rawTitle)  // "[v0.13]" -> "v0.13"
+	game.Author = authorFromTitle(rawTitle)    // последняя скобка "[HappySteveGames]"
+
+	// Движок — из меток-префиксов h1 (VN, Ren'Py, Completed): берём первую,
+	// что распознаётся как движок.
+	var labelTokens []string
+	titleSel.Find(".labelLink").Each(func(i int, s *goquery.Selection) {
+		labelTokens = append(labelTokens, cleanText(s.Text()))
+	})
+	game.Engine = engineFromTokens(labelTokens)
 
 	// 2. УМНЫЙ парсинг описания через регулярное выражение
 	// Ищем текст внутри главного поста
@@ -72,6 +85,25 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 			game.Description = cleanText(html.UnescapeString(rawDesc))
 		} else {
 			game.Description = ""
+		}
+	}
+
+	// 2.1 Фолбэк версии: поле "Version:" в теле поста ("<b>Version</b>: 0.13").
+	if game.Version == "" && htmlContent != "" {
+		if m := regexp.MustCompile(`(?is)<b>\s*Version\s*:?\s*</b>\s*:?\s*([^<\n]+)`).FindStringSubmatch(htmlContent); len(m) > 1 {
+			game.Version = cleanText(html.UnescapeString(m[1]))
+		}
+	}
+
+	// 2.2 Фолбэк автора: поле "Developer:" в теле поста
+	// ("<b>Developer</b>: <a>HappySteve</a> - <a>Patreon</a>"). Берём часть до " - ".
+	if game.Author == "" && htmlContent != "" {
+		if m := regexp.MustCompile(`(?is)<b>\s*Developer\s*/?\s*Publisher?\s*:?\s*</b>\s*:?\s*(.*?)<br`).FindStringSubmatch(htmlContent); len(m) > 1 {
+			dev := cleanText(html.UnescapeString(stripHTMLTags(m[1])))
+			if i := strings.Index(dev, " - "); i >= 0 {
+				dev = dev[:i]
+			}
+			game.Author = cleanText(dev)
 		}
 	}
 

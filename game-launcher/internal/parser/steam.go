@@ -23,9 +23,11 @@ var steamAppID = regexp.MustCompile(`/app/(\d+)`)
 type steamResponse map[string]struct {
 	Success bool `json:"success"`
 	Data    struct {
-		Name             string `json:"name"`
-		ShortDescription string `json:"short_description"`
-		HeaderImage      string `json:"header_image"`
+		Name             string   `json:"name"`
+		ShortDescription string   `json:"short_description"`
+		HeaderImage      string   `json:"header_image"`
+		Developers       []string `json:"developers"`
+		Publishers       []string `json:"publishers"`
 		Genres           []struct {
 			Description string `json:"description"`
 		} `json:"genres"`
@@ -83,6 +85,13 @@ func (p *SteamParser) Parse(ctx context.Context, pageURL string, saveDir string)
 		if g.Description != "" {
 			game.Tags = append(game.Tags, g.Description)
 		}
+	}
+
+	// Автор — разработчик (фолбэк на издателя). Движка у Steam API нет.
+	if len(d.Developers) > 0 {
+		game.Author = cleanText(d.Developers[0])
+	} else if len(d.Publishers) > 0 {
+		game.Author = cleanText(d.Publishers[0])
 	}
 
 	// Обложка: вертикальный «капсюль» библиотеки (600x900); если его нет — header_image.

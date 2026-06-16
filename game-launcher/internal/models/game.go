@@ -6,6 +6,8 @@ type Game struct {
 	Title          string   `json:"title"`            // Название
 	Description    string   `json:"description"`      // Описание
 	Version        string   `json:"version"`          // Версия игры
+	Author         string   `json:"author"`           // Разработчик/издатель
+	Engine         string   `json:"engine"`           // Движок (Ren'Py, Unity, RPG Maker и т.п.)
 	Languages      []string `json:"languages"`        // Поддерживаемые языки
 	CoverPath      string   `json:"cover_path"`       // Локальный путь к обложке
 	CoverFit       string   `json:"cover_fit"`        // object-fit обложки: cover|contain|fill (пусто = cover)

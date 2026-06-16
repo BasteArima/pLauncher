@@ -54,6 +54,21 @@ func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string
 	game.Version = versionFromTitle(rawTitle)
 	game.Languages = parseReleaseLanguages(rawTitle)
 	game.Tags = parseReleaseTags(rawTitle)
+	game.Engine = engineFromTokens(game.Tags) // [Ren'Py] и т.п. из заголовка
+
+	// Автор — поле «Разработчик/Издатель» в теле; фолбэк — последняя скобка заголовка,
+	// если это не движок/платформа/язык/год.
+	if contentHTML, err := doc.Find("div.ss-fstory-content").First().Html(); err == nil {
+		game.Author = developerFromHTML(contentHTML)
+	}
+	if game.Author == "" {
+		if last := authorFromTitle(rawTitle); last != "" {
+			low := strings.ToLower(last)
+			if canonicalEngine(last) == "" && !singleTokenTags[low] && langCodes[low] == "" && !isYear(last) {
+				game.Author = last
+			}
+		}
+	}
 
 	// Описание — это и есть содержимое блока ss-fstory-content (начинается с «Описание:»)
 	descText := cleanText(html.UnescapeString(doc.Find("div.ss-fstory-content").First().Text()))

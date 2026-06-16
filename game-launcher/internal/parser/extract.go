@@ -1,8 +1,32 @@
 package parser
 
 import (
+	"html"
+	"regexp"
 	"strings"
 )
+
+// devLabelRe ловит значение поля «Разработчик/Издатель: <значение>» в HTML поста.
+// Допускает закрывающие теги вокруг двоеточия (pornolab: "...</span>:</span> Libero").
+var devLabelRe = regexp.MustCompile(`(?is)Разработчик[^:<]*(?:</[^>]+>)*\s*:(?:</[^>]+>)*\s*([^<\n]+)`)
+
+// developerFromHTML достаёт разработчика/издателя из HTML поста и отрезает хвост
+// со ссылками/разделителями ("Studio - Patreon", "Studio | itch.io").
+func developerFromHTML(htmlStr string) string {
+	m := devLabelRe.FindStringSubmatch(htmlStr)
+	if len(m) < 2 {
+		return ""
+	}
+	v := html.UnescapeString(m[1])
+	for _, sep := range []string{" - ", " — ", " | ", "|"} {
+		if i := strings.Index(v, sep); i >= 0 {
+			v = v[:i]
+		}
+	}
+	// хвостовые разделители/тире на случай "Studio -" без пробела перед тегом
+	v = strings.TrimRight(cleanText(v), " -—|")
+	return strings.TrimSpace(v)
+}
 
 // Эти помощники разбирают «релизные» заголовки трекеров вида:
 //   "Название [версия] (разработчик) [cen] [год, теги] [языки]"
@@ -92,6 +116,47 @@ func versionFromTitle(s string) string {
 	for i := start; i < len(runes); i++ {
 		if runes[i] == ']' {
 			return cleanText(string(runes[start:i]))
+		}
+	}
+	return ""
+}
+
+// authorFromTitle возвращает содержимое ПОСЛЕДНЕЙ группы [..], если групп ≥2.
+// Формат F95 — "Название [версия] [разработчик]": последняя скобка = автор.
+// При одной скобке это версия, поэтому автора не возвращаем.
+func authorFromTitle(s string) string {
+	groups := bracketGroups(s)
+	if len(groups) >= 2 {
+		return cleanText(groups[len(groups)-1])
+	}
+	return ""
+}
+
+// engineNames сопоставляет токены движков (в нижнем регистре) с каноническим именем.
+var engineNames = map[string]string{
+	"ren'py": "Ren'Py", "renpy": "Ren'Py",
+	"unity":         "Unity",
+	"rpgm":          "RPG Maker", "rpg maker": "RPG Maker", "rpgmaker": "RPG Maker",
+	"html":          "HTML", "flash": "Flash", "java": "Java",
+	"unreal":        "Unreal Engine", "unreal engine": "Unreal Engine",
+	"wolf rpg":      "Wolf RPG", "wolfrpg": "Wolf RPG",
+	"kirikiri":      "KiriKiri", "godot": "Godot",
+	"tyranobuilder": "TyranoBuilder", "qsp": "QSP",
+	"game maker":    "Game Maker", "gamemaker": "Game Maker", "gms": "Game Maker",
+	"construct":     "Construct",
+}
+
+// canonicalEngine возвращает каноническое имя движка для токена или "".
+func canonicalEngine(s string) string {
+	return engineNames[strings.ToLower(strings.TrimSpace(s))]
+}
+
+// engineFromTokens ищет первый известный движок среди переданных токенов
+// (метки-префиксы, теги и т.п.).
+func engineFromTokens(tokens []string) string {
+	for _, t := range tokens {
+		if e := canonicalEngine(t); e != "" {
+			return e
 		}
 	}
 	return ""

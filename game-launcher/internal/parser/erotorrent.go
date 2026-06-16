@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"game-launcher/internal/models"
 
@@ -58,6 +59,20 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 	} else {
 		game.Description = ""
 	}
+
+	// Автор — поле «Разработчик / Издатель» (ссылка на компанию). Движка на сайте нет.
+	doc.Find("span.data_1").EachWithBreak(func(i int, s *goquery.Selection) bool {
+		if !strings.Contains(s.Find("span.data_b").Text(), "Разработчик") {
+			return true
+		}
+		if a := cleanText(s.Find("a").First().Text()); a != "" {
+			game.Author = a
+		} else {
+			full := cleanText(s.Text())
+			game.Author = cleanText(strings.TrimPrefix(full, cleanText(s.Find("span.data_b").Text())))
+		}
+		return false
+	})
 
 	// Языки: сначала пробуем коды в заголовке, затем по тексту описания
 	game.Languages = parseReleaseLanguages(title)

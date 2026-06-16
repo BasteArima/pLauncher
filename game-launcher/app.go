@@ -672,6 +672,7 @@ func (a *App) AddGamesFromDrop(paths []string) (int, error) {
 			Languages:  []string{}, // Инициализируем пустые массивы
 			Images:     []string{},
 			ExecPath:   scanner.FindBestExecutable(p),
+			Engine:     scanner.DetectEngine(p),
 			AddedAt:    time.Now().Unix(),
 		}
 
