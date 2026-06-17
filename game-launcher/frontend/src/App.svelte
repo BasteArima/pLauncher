@@ -14,12 +14,16 @@
         SaveWindowSize,
         Launch,
         OpenFolder,
+        OpenURL,
         RemoveGame,
         SearchGames,
         SelectCoverImage,
         SelectFolder,
         UpdateGame,
         UpdateGameMetadata,
+        CheckGameUpdates,
+        CheckSourceUpdate,
+        CheckAllUpdates,
         SelectScreenshots,
         CopyScreenshotToData,
         SelectExecutable,
@@ -118,12 +122,14 @@
     $: filteredGames = sortGames(libGames.filter(g => {
         if (activeTag && !(g.tags || []).includes(activeTag)) return false;
         if (activeFilter === 'favorites') return g.favorite;
+        if (activeFilter === 'updates') return g.update_available;
         if (activeFilter === 'ready') return g.exec_path !== '';
         if (activeFilter === 'no_cover') return g.cover_path === '';
         if (activeFilter === 'no_desc') return !g.description;
         return true;
     }), sortBy);
     $: allGamesSorted = sortGames(libGames, sortBy);
+    $: updatesGames = libGames.filter(g => g.update_available);
 
     // --- Ширина сайдбара (resizable, как в Steam) ---
     let sidebarWidth = (() => {
@@ -236,6 +242,7 @@
         activeTag ? tr('view.tag', { tag: activeTag })
         : searchQuery.trim() ? tr('view.search')
         : activeFilter === 'favorites' ? tr('shelf.favorites')
+        : activeFilter === 'updates' ? tr('nav.updates')
         : tr('lib.title'));
 
     // Уникальные теги по всей библиотеке, отсортированные по частоте
@@ -765,6 +772,93 @@
         }
     }
 
+    // --- ССЫЛКИ ПО ПЛОЩАДКАМ ---
+    // Ссылка игры на конкретную площадку (или "" если не задана).
+    function sourceUrl(game, platform) {
+        const s = (game && game.sources || []).find(x => x.source === platform);
+        return s ? s.url : "";
+    }
+    // Список площадок с заданной ссылкой (для кликабельных бейджей в просмотре).
+    function activeSources(game) {
+        return (game && game.sources || []).filter(s => s.url);
+    }
+    // Установить/очистить ссылку на площадку в редактируемой игре.
+    function setSourceUrl(platform, url) {
+        if (!selectedGame) return;
+        url = (url || "").trim();
+        const list = selectedGame.sources ? [...selectedGame.sources] : [];
+        const i = list.findIndex(x => x.source === platform);
+        if (i >= 0) {
+            if (url) list[i] = { ...list[i], url };
+            else list.splice(i, 1);
+        } else if (url) {
+            list.push({ source: platform, url, last_version: "" });
+        }
+        selectedGame.sources = list;
+        // Основной источник: назначаем первый с ссылкой, если не задан или его ссылку убрали
+        if (!list.find(x => x.source === selectedGame.primary_source)) {
+            selectedGame.primary_source = list.length ? list[0].source : "";
+        }
+        selectedGame = selectedGame;
+    }
+    function setPrimarySource(platform) {
+        if (selectedGame) { selectedGame.primary_source = platform; selectedGame = selectedGame; }
+    }
+    function openSource(url) { if (url) OpenURL(url); }
+    // Подставить сохранённую ссылку в инпут парсера (для перепарса с этой площадки).
+    function useSourceForParse(url) { parseUrl = url || ""; }
+
+    // --- ПРОВЕРКА ОБНОВЛЕНИЙ ---
+    let checkingUpdates = false;
+    function reselect(fallback) {
+        if (selectedGame) selectedGame = games.find(x => x.id === selectedGame.id) || fallback || selectedGame;
+    }
+    async function handleCheckGameUpdates() {
+        if (!selectedGame || checkingUpdates) return;
+        checkingUpdates = true;
+        try {
+            await CheckGameUpdates(selectedGame.id);
+            await loadGames();
+            reselect();
+            showToast(selectedGame && selectedGame.update_available
+                ? tr('toast.update_found', { v: selectedGame.update_version })
+                : tr('toast.update_none'), 'success');
+        } catch (err) { showToast(tr('toast.update_fail', { err }), 'error'); }
+        finally { checkingUpdates = false; }
+    }
+    async function handleCheckSource(platform) {
+        if (!selectedGame || checkingUpdates) return;
+        checkingUpdates = true;
+        try {
+            await CheckSourceUpdate(selectedGame.id, platform);
+            await loadGames();
+            reselect();
+            showToast(selectedGame && selectedGame.update_available
+                ? tr('toast.update_found', { v: selectedGame.update_version })
+                : tr('toast.update_none'), 'success');
+        } catch (err) { showToast(tr('toast.update_fail', { err }), 'error'); }
+        finally { checkingUpdates = false; }
+    }
+    async function handleCheckAllUpdates() {
+        if (checkingUpdates) return;
+        checkingUpdates = true;
+        try {
+            const n = await CheckAllUpdates();
+            await loadGames();
+            reselect();
+            showToast(n > 0 ? tr('toast.updates_found_n', { n }) : tr('toast.update_none'), 'success');
+        } catch (err) { showToast(tr('toast.update_fail', { err }), 'error'); }
+        finally { checkingUpdates = false; }
+    }
+    // «Принять» обновление = перепарсить с площадки, где оно найдено (обновит версию, снимет флаг).
+    async function handleAcceptUpdate() {
+        if (!selectedGame || !selectedGame.update_available) return;
+        const src = (selectedGame.sources || []).find(s => s.source === selectedGame.update_source);
+        if (!src || !src.url) return;
+        parseUrl = src.url;
+        await handleUpdateMetadata();
+    }
+
     async function handleSearch() {
         try {
             if (searchQuery.trim() === "") {
@@ -1177,6 +1271,12 @@
                         <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
                     </svg>
                 </button>
+                <button on:click={handleCheckAllUpdates}
+                        disabled={checkingUpdates}
+                        title={$t("app.check_updates")}
+                        class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors text-slate-300 bg-white/5 hover:bg-white/10 disabled:opacity-60">
+                    <span class="text-lg pointer-events-none {checkingUpdates ? 'animate-pulse' : ''}">⬆</span>
+                </button>
                 <button on:click={() => onlyDressed = !onlyDressed}
                         title={$t("app.only_dressed")}
                         class="w-9 h-9 rounded-lg flex items-center justify-center text-base transition-colors {onlyDressed ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-200' : 'bg-white/5 hover:bg-white/10 text-slate-300'}">
@@ -1197,6 +1297,12 @@
                     <span>❤️</span> {$t('nav.favorites')}
                     {#if favoriteGames.length}<span class="ml-auto text-xs text-slate-400">{favoriteGames.length}</span>{/if}
                 </button>
+                {#if updatesGames.length}
+                    <button on:click={() => applyFilter('updates')} class={navCls(activeFilter === 'updates')}>
+                        <span class="text-amber-300">⬆</span> {$t('nav.updates')}
+                        <span class="ml-auto text-xs font-bold text-amber-300">{updatesGames.length}</span>
+                    </button>
+                {/if}
             </div>
 
             <div class="flex items-center justify-between px-3 mt-1 mb-1">
@@ -1376,6 +1482,25 @@
                                     <span class="text-xs font-bold uppercase tracking-wider">{$t("edit.add")}</span>
                                 </div>
                             </div>
+
+                            <h3 class="text-sm font-bold text-slate-400 mt-6 mb-1 uppercase tracking-wider">{$t("edit.sources_label")}</h3>
+                            <p class="text-xs text-slate-500 mb-3">{$t("edit.sources_hint")}</p>
+                            <div class="flex flex-col gap-2 mb-6">
+                                {#each supportedSources as s}
+                                    {@const url = sourceUrl(selectedGame, s.name)}
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" disabled={!url} on:click={() => setPrimarySource(s.name)}
+                                                title={$t("edit.primary_source")}
+                                                class="w-7 text-center text-lg transition-colors {selectedGame.primary_source === s.name ? 'text-amber-400' : 'text-slate-600 hover:text-slate-300'} disabled:opacity-30 disabled:hover:text-slate-600">
+                                            {selectedGame.primary_source === s.name ? '★' : '☆'}
+                                        </button>
+                                        <span class="w-36 shrink-0 text-sm text-slate-300 truncate">{s.name}</span>
+                                        <input type="text" value={url} on:change={(e) => setSourceUrl(s.name, e.target.value)}
+                                               placeholder={s.domain}
+                                               class="flex-1 bg-slate-900/50 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none font-mono text-xs"/>
+                                    </div>
+                                {/each}
+                            </div>
                         </div>
                     </div>
 
@@ -1401,6 +1526,15 @@
                                     <span class="glass px-3 py-1 rounded-full cursor-pointer hover:bg-white/10 transition-colors" on:click={() => copyToClipboard(selectedGame.version, $t('label.version'))}>
                                         {$t("detail.version")}: <span class="text-white">{selectedGame.version || $t("detail.unknown")}</span>
                                     </span>
+                                    {#if selectedGame.update_available}
+                                        <span class="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-200 ring-1 ring-amber-400/40">
+                                            ⬆ {tr('detail.update_to', { v: selectedGame.update_version })}{selectedGame.update_source ? ` · ${selectedGame.update_source}` : ''}
+                                            <button on:click={handleAcceptUpdate} disabled={parsing}
+                                                    class="text-xs font-bold bg-amber-400/90 hover:bg-amber-300 text-black px-2 py-0.5 rounded-full transition-colors disabled:opacity-60">
+                                                {$t("detail.accept_update")}
+                                            </button>
+                                        </span>
+                                    {/if}
                                     {#if selectedGame.engine}
                                         <span class="glass px-3 py-1 rounded-full">{$t("detail.engine")}: <span class="text-white">{selectedGame.engine}</span></span>
                                     {/if}
@@ -1502,6 +1636,26 @@
                                 </div>
                             {/if}
                         </div>
+                        {#if activeSources(selectedGame).length}
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                {#each activeSources(selectedGame) as s}
+                                    <span class="flex items-center rounded-full bg-white/5 ring-1 ring-white/10 overflow-hidden text-sm">
+                                        <button on:click={() => openSource(s.url)} title={s.url}
+                                                class="px-3 py-1 text-slate-200 hover:bg-white/10 transition-colors">
+                                            {#if s.source === selectedGame.primary_source}<span class="text-amber-400" title={$t("edit.primary_source")}>★</span> {/if}{s.source} ↗
+                                        </button>
+                                        <button on:click={() => useSourceForParse(s.url)} title={$t("meta.use_for_parse")}
+                                                class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-indigo-300 border-l border-white/10 transition-colors">↧</button>
+                                        <button on:click={() => handleCheckSource(s.source)} disabled={checkingUpdates} title={$t("meta.check_source")}
+                                                class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-amber-300 border-l border-white/10 transition-colors disabled:opacity-50">↻</button>
+                                    </span>
+                                {/each}
+                            </div>
+                            <button on:click={handleCheckGameUpdates} disabled={checkingUpdates}
+                                    class="mb-3 text-sm font-semibold text-amber-300 hover:text-amber-200 disabled:opacity-50">
+                                {checkingUpdates ? $t('meta.checking') : $t('meta.check_updates')}
+                            </button>
+                        {/if}
                         <div class="flex gap-3">
                             <input type="text" bind:value={parseUrl} placeholder={$t("meta.url_ph")} class="flex-1 bg-slate-900/60 border border-white/10 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all"/>
                             <button on:click={handleUpdateMetadata} disabled={parsing || !parseUrl} class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-6 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">

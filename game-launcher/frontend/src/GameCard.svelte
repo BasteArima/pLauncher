@@ -28,7 +28,7 @@
 </script>
 
 <div
-        class="group relative cursor-pointer rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-indigo-400/50 bg-white/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-900/50"
+        class="group relative cursor-pointer rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-indigo-400/50 bg-white/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-900/50 {game.update_available ? 'ring-2 ring-amber-400/70' : ''}"
         draggable={!!onDrag}
         on:dragstart={handleDragStart}
         on:contextmenu={handleContext}
@@ -66,7 +66,9 @@
         <div class="absolute inset-x-0 bottom-0 pt-10 pb-2.5 px-3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none">
             <h3 class="font-bold text-white text-sm line-clamp-1 drop-shadow">{game.title}</h3>
             <div class="flex items-center justify-between mt-1">
-                <span class="text-[11px] text-slate-300 truncate pr-2">{game.version || '—'}</span>
+                <span class="text-[11px] text-slate-300 truncate pr-2 flex items-center gap-1">
+                    {#if game.update_available}<span class="text-amber-300 font-bold">⬆</span>{/if}{game.version || '—'}
+                </span>
                 {#if game.exec_path}
                     <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30">EXE</span>
                 {:else}

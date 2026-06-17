@@ -23,8 +23,11 @@ The app is fully working. Done so far:
 - **Scanning**: multi-folder scan (`scan_paths`), each top-level subfolder becomes a game; smart `.exe`
   pick (`FindBestExecutable`); native folder drag&drop; "+ single game".
 - **Parsers**: f95zone, pornolab (win1251), erotorrent, island-of-pleasure, Steam (official API).
-  Title/version/languages/tags from the release title; cover + up to 9 screenshots; a "?" popover in the
-  metadata box lists supported sites (`SupportedSources`).
+  Title/version/languages/tags **+ author + engine** from the release title / body fields; cover + up to
+  15 screenshots; a "?" popover in the metadata box lists supported sites (`SupportedSources`).
+- **Author & Engine fields** (`Game.Author`/`Engine`): parsed per-site (Steam developers; F95/pornolab/island
+  body + title; erotorrent dev field). **Engine auto-detection by folder contents** (`scanner.DetectEngine`,
+  13 engines) runs on scan/drop and backfills empty engine for existing games on re-scan.
 - **Library UI (Steam-like)**: aurora/glass dark theme; resizable + collapsible-tree sidebar with game
   icons; home with hero banner + configurable, drag-reorderable shelves ("edit sections" mode); Steam-style
   detail page (hero header, description, screenshots, lightbox); grid + sort.
@@ -40,6 +43,9 @@ The app is fully working. Done so far:
   sidebar width; sort/layout/collapsed/lang/onlyDressed in localStorage.
 - **i18n**: en/ru/es built-in + user languages from `data/languages/*.json` (README + `_example.json`
   auto-dropped there); language picker on first run and in settings; backend errors are in English.
+- **UX details**: lightbox is a full-window `fixed` overlay (Esc/arrows, mouse back/forward); confirm
+  dialog accepts Enter **and** Space; right-click on any text input gives a custom cut/copy/paste/select-all
+  menu (native context menu stays disabled elsewhere).
 
 What's NOT done yet → see "Roadmap" below.
 
@@ -141,10 +147,14 @@ the Go/SQLite parts are CGO-free.
 Ideas the owner wants to pursue. Roughly ordered by value. Discuss/confirm scope before big ones.
 
 High value (turns the app from a gallery into a real collection tracker):
-1. **Update checking** — store each game's source URL; on demand or on a schedule, refetch the page,
-   parse the version, and flag "update available" with a badge. These (F95/tracker) games update often —
-   this is the core "don't forget what changed" feature. Reuse the existing parsers (they already return
-   a version).
+1. ✅ **DONE — Update checking + per-platform sources block.** `Game.Sources` (`{platform,url,last_version}`)
+   + `PrimarySource` + `UpdateAvailable/UpdateVersion/UpdateSource/LastCheckedAt`. Sources are stored on
+   parse (`UpdateGameMetadata`→`upsertSource`) and editable per-platform in the editor (★ = primary).
+   `Parse(ctx,url,"")` is "metadata-only" (no image download). `CheckGameUpdates`/`CheckSourceUpdate`/
+   `CheckAllUpdates` compare **per-source** (string diff after `normVersion`, no semver/cross-site). UI:
+   clickable source badges (open / load-into-parser / re-check), amber card ring + ⬆ on home cards, amber
+   "update: {v}" badge on detail with **Accept** (re-parse), top-bar "Check all", and an "Updates"
+   sidebar filter. NOT done: background/scheduled auto-checks. Steam has no version → can't be tracked.
 2. **Play status / backlog** — per-game status (playing / finished / dropped / want-to-play); filters and
    shelves by status. Fits the existing dynamic-collection machinery.
 3. **Rating & notes** — personal star rating + a notes field (spoilers under a toggle).
@@ -155,8 +165,9 @@ Privacy (matters for this content):
 5. **Blur covers by default until hover** (option) — extends discreet mode.
 
 Polish / convenience:
-6. **Auto-detect engine** (Ren'Py / Unity / RPG Maker) from folder contents → better `.exe` pick + an
-   engine tag without needing to parse a page.
+6. ✅ **DONE — Auto-detect engine** from folder contents (`scanner.DetectEngine`, 13 engines:
+   Ren'Py/Unity/Unreal/Godot/RPG Maker/Game Maker/Construct/Wolf RPG/KiriKiri/TyranoBuilder/Flash/QSP/HTML).
+   Runs on scan/drop, fills `Game.Engine` only when empty, backfills existing games on re-scan.
 7. **Multiple executables per game** (game / config / walkthrough) with a quick-launch menu.
 8. **Relink moved games** — folder moved → offer to attach to an existing record keeping metadata
    (IDs are random now, dedupe is by path; add a folder-name fingerprint).

@@ -11,6 +11,12 @@ export function AddSingleGameManual():Promise<void>;
 
 export function ChangeDataDir(arg1:string):Promise<void>;
 
+export function CheckAllUpdates():Promise<number>;
+
+export function CheckGameUpdates(arg1:string):Promise<models.Game>;
+
+export function CheckSourceUpdate(arg1:string,arg2:string):Promise<models.Game>;
+
 export function ClearData():Promise<void>;
 
 export function ConfigureDataDir(arg1:string):Promise<void>;
@@ -48,6 +54,8 @@ export function OpenDataDir():Promise<void>;
 export function OpenFolder(arg1:string):Promise<void>;
 
 export function OpenLanguagesFolder():Promise<void>;
+
+export function OpenURL(arg1:string):Promise<void>;
 
 export function RemoveGame(arg1:string):Promise<void>;
 

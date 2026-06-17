@@ -309,6 +309,13 @@ func (a *App) OpenFolder(folderPath string) error {
 	return a.launcher.OpenFolder(folderPath)
 }
 
+// OpenURL открывает ссылку во внешнем браузере по умолчанию.
+func (a *App) OpenURL(link string) {
+	if link != "" {
+		runtime.BrowserOpenURL(a.ctx, link)
+	}
+}
+
 // FindExecutables ищет все .exe файлы в папке (чтобы пользователь мог выбрать нужный)
 func (a *App) FindExecutables(folderPath string) ([]string, error) {
 	return a.launcher.FindExecutables(folderPath)
@@ -363,6 +370,12 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 	if len(parsedData.Tags) > 0 {
 		targetGame.Tags = parsedData.Tags
 	}
+	if parsedData.Author != "" {
+		targetGame.Author = parsedData.Author
+	}
+	if parsedData.Engine != "" {
+		targetGame.Engine = parsedData.Engine
+	}
 	if parsedData.CoverPath != "" {
 		targetGame.CoverPath = a.mediaRel(parsedData.CoverPath)
 	}
@@ -374,8 +387,192 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 		targetGame.Images = rel
 	}
 
-	// 5. Сохраняем обновленную игру обратно в БД
+	// 5. Запоминаем источник: площадка + ссылка + принятая версия (база для сравнения).
+	//    Раз пользователь только что распарсил/принял версию — сбрасываем флаг обновления.
+	upsertSource(targetGame, parser.SourceName(url), url, parsedData.Version)
+	targetGame.UpdateAvailable = false
+	targetGame.UpdateVersion = ""
+	targetGame.UpdateSource = ""
+
+	// 6. Сохраняем обновленную игру обратно в БД
 	return a.repo.SaveGame(a.ctx, targetGame)
+}
+
+// upsertSource добавляет/обновляет ссылку игры на площадку и базовую версию.
+// Если площадка определена и основной источник ещё не задан — делает её основной.
+func upsertSource(game *models.Game, platform, url, version string) {
+	if platform == "" {
+		platform = url // неизвестная площадка — ключуем по самой ссылке
+	}
+	for i := range game.Sources {
+		if game.Sources[i].Source == platform {
+			game.Sources[i].URL = url
+			game.Sources[i].LastVersion = version
+			if game.PrimarySource == "" {
+				game.PrimarySource = platform
+			}
+			return
+		}
+	}
+	game.Sources = append(game.Sources, models.GameSource{Source: platform, URL: url, LastVersion: version})
+	if game.PrimarySource == "" {
+		game.PrimarySource = platform
+	}
+}
+
+// --- ПРОВЕРКА ОБНОВЛЕНИЙ ---
+
+// normVersion нормализует строку версии для сравнения (регистр/пробелы).
+func normVersion(v string) string {
+	return strings.ToLower(strings.Join(strings.Fields(v), " "))
+}
+
+// primarySourceIndex возвращает индекс основной площадки со ссылкой,
+// иначе индекс первой площадки со ссылкой, иначе -1.
+func primarySourceIndex(g *models.Game) int {
+	for i := range g.Sources {
+		if g.Sources[i].Source == g.PrimarySource && g.Sources[i].URL != "" {
+			return i
+		}
+	}
+	for i := range g.Sources {
+		if g.Sources[i].URL != "" {
+			return i
+		}
+	}
+	return -1
+}
+
+// checkSourceAt перепарсивает версию источника g.Sources[idx] и обновляет флаги
+// обновления. Версии сравниваются ТОЛЬКО в рамках одной площадки (форматы разные).
+// Возвращает true, если найдена новая версия. Картинки не качаются (saveDir="").
+func (a *App) checkSourceAt(g *models.Game, idx int) (bool, error) {
+	src := &g.Sources[idx]
+	if src.URL == "" {
+		return false, nil
+	}
+	p, err := parser.GetParser(src.URL, "")
+	if err != nil {
+		return false, err
+	}
+	parsed, err := p.Parse(a.ctx, src.URL, "") // saveDir="" → только метаданные
+	if err != nil {
+		return false, err
+	}
+	g.LastCheckedAt = time.Now().Unix()
+
+	newVer := strings.TrimSpace(parsed.Version)
+	if newVer == "" {
+		return false, nil // версию не удалось определить (напр. Steam) — не трогаем
+	}
+	if src.LastVersion == "" {
+		src.LastVersion = newVer // первая проверка — фиксируем базу без флага
+		return false, nil
+	}
+	if normVersion(newVer) != normVersion(src.LastVersion) {
+		g.UpdateAvailable = true
+		g.UpdateVersion = newVer
+		g.UpdateSource = src.Source
+		return true, nil
+	}
+	// версия совпала с базой: снимаем флаг, если он стоял из-за этой же площадки
+	if g.UpdateSource == src.Source {
+		g.UpdateAvailable = false
+		g.UpdateVersion = ""
+		g.UpdateSource = ""
+	}
+	return false, nil
+}
+
+// gameByID достаёт игру из БД по ID.
+func (a *App) gameByID(id string) (*models.Game, error) {
+	games, err := a.repo.GetAllGames(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, g := range games {
+		if g.ID == id {
+			return g, nil
+		}
+	}
+	return nil, fmt.Errorf("game with ID %s not found in database", id)
+}
+
+// CheckGameUpdates проверяет основную площадку игры и возвращает обновлённую запись.
+func (a *App) CheckGameUpdates(gameID string) (*models.Game, error) {
+	if a.repo == nil {
+		return nil, fmt.Errorf("data folder is not selected yet")
+	}
+	g, err := a.gameByID(gameID)
+	if err != nil {
+		return nil, err
+	}
+	idx := primarySourceIndex(g)
+	if idx < 0 {
+		return g, nil // нет ссылок — проверять нечего
+	}
+	if _, err := a.checkSourceAt(g, idx); err != nil {
+		return nil, err
+	}
+	if err := a.repo.SaveGame(a.ctx, g); err != nil {
+		return nil, err
+	}
+	return g, nil
+}
+
+// CheckSourceUpdate проверяет конкретную площадку игры (ручная проверка из бейджа).
+func (a *App) CheckSourceUpdate(gameID, platform string) (*models.Game, error) {
+	if a.repo == nil {
+		return nil, fmt.Errorf("data folder is not selected yet")
+	}
+	g, err := a.gameByID(gameID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range g.Sources {
+		if g.Sources[i].Source == platform {
+			if _, err := a.checkSourceAt(g, i); err != nil {
+				return nil, err
+			}
+			break
+		}
+	}
+	if err := a.repo.SaveGame(a.ctx, g); err != nil {
+		return nil, err
+	}
+	return g, nil
+}
+
+// CheckAllUpdates проверяет основную площадку у всех игр; возвращает число игр,
+// у которых найдено обновление.
+func (a *App) CheckAllUpdates() (int, error) {
+	if a.repo == nil {
+		return 0, fmt.Errorf("data folder is not selected yet")
+	}
+	games, err := a.repo.GetAllGames(a.ctx)
+	if err != nil {
+		return 0, err
+	}
+	found := 0
+	for _, g := range games {
+		idx := primarySourceIndex(g)
+		if idx < 0 {
+			continue
+		}
+		changed, err := a.checkSourceAt(g, idx)
+		if err != nil {
+			fmt.Printf("проверка обновлений %s: %v\n", g.Title, err)
+			continue
+		}
+		if err := a.repo.SaveGame(a.ctx, g); err != nil {
+			fmt.Printf("сохранение после проверки %s: %v\n", g.Title, err)
+			continue
+		}
+		if changed {
+			found++
+		}
+	}
+	return found, nil
 }
 
 // RemoveGame удаляет игру из базы данных лаунчера (файлы на диске остаются)

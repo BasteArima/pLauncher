@@ -1,5 +1,15 @@
 package models
 
+// GameSource — ссылка на игру на конкретной площадке и последняя увиденная там версия.
+// LastVersion — база для сравнения при проверке обновлений (версия, которую мы
+// «приняли»/увидели последней именно с этой площадки; форматы версий у площадок разные,
+// поэтому сравниваем строки в рамках одной площадки, а не между ними).
+type GameSource struct {
+	Source      string `json:"source"`       // имя площадки (как в parser.SupportedSources)
+	URL         string `json:"url"`          // ссылка на страницу игры
+	LastVersion string `json:"last_version"` // последняя принятая/увиденная версия с этой площадки
+}
+
 // Game описывает метаданные игры для нашего лаунчера
 type Game struct {
 	ID             string   `json:"id"`               // Уникальный идентификатор (например, хеш названия)
@@ -20,4 +30,12 @@ type Game struct {
 	TimePlayed     int      `json:"time_played"`      // Время в игре (в минутах)
 	AddedAt        int64    `json:"added_at"`         // UNIX-время добавления
 	LastLaunchedAt int64    `json:"last_launched_at"` // UNIX-время последнего запуска
+
+	// Источники и проверка обновлений
+	Sources         []GameSource `json:"sources"`          // ссылки по площадкам {площадка→url}
+	PrimarySource   string       `json:"primary_source"`   // площадка для авто-проверки обновлений
+	UpdateAvailable bool         `json:"update_available"` // найдено обновление хотя бы на одной площадке
+	UpdateVersion   string       `json:"update_version"`   // найденная новая версия (для бейджа)
+	UpdateSource    string       `json:"update_source"`    // площадка, где найдено обновление
+	LastCheckedAt   int64        `json:"last_checked_at"`  // UNIX-время последней проверки обновлений
 }

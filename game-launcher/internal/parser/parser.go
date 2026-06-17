@@ -70,6 +70,19 @@ func SupportedSources() []Source {
 	}
 }
 
+// SourceName возвращает имя площадки по URL (как в SupportedSources) или "".
+func SourceName(targetURL string) string {
+	for _, s := range SupportedSources() {
+		if strings.Contains(targetURL, s.Domain) {
+			return s.Name
+		}
+	}
+	if strings.Contains(targetURL, "pornlab.net") { // алиас домена pornolab
+		return "Pornolab"
+	}
+	return ""
+}
+
 // SiteParser — единый интерфейс для всех сайтов-источников
 type SiteParser interface {
 	Parse(ctx context.Context, pageURL string, saveDir string) (*models.Game, error)
@@ -172,6 +185,10 @@ const maxScreenshots = 15
 // пути в game. Обложка и скриншоты получают разные префиксы имён, чтобы не затирать
 // друг друга (раньше cover и первый скрин оба сохранялись как 0.jpg).
 func downloadInto(ctx context.Context, client *http.Client, game *models.Game, coverURL string, screenshotURLs []string, saveDir, referer string) {
+	// Пустой saveDir = режим «только метаданные» (проверка обновлений): картинки не качаем.
+	if saveDir == "" {
+		return
+	}
 	if coverURL != "" {
 		if cp := DownloadImagesAsync(ctx, client, []string{coverURL}, saveDir, referer, "cover_"); len(cp) > 0 {
 			game.CoverPath = cp[0]

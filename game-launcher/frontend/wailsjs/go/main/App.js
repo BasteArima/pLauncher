@@ -18,6 +18,18 @@ export function ChangeDataDir(arg1) {
   return window['go']['main']['App']['ChangeDataDir'](arg1);
 }
 
+export function CheckAllUpdates() {
+  return window['go']['main']['App']['CheckAllUpdates']();
+}
+
+export function CheckGameUpdates(arg1) {
+  return window['go']['main']['App']['CheckGameUpdates'](arg1);
+}
+
+export function CheckSourceUpdate(arg1, arg2) {
+  return window['go']['main']['App']['CheckSourceUpdate'](arg1, arg2);
+}
+
 export function ClearData() {
   return window['go']['main']['App']['ClearData']();
 }
@@ -92,6 +104,10 @@ export function OpenFolder(arg1) {
 
 export function OpenLanguagesFolder() {
   return window['go']['main']['App']['OpenLanguagesFolder']();
+}
+
+export function OpenURL(arg1) {
+  return window['go']['main']['App']['OpenURL'](arg1);
 }
 
 export function RemoveGame(arg1) {
