@@ -226,5 +226,14 @@
   "drop.sub": "The launcher will add them to your library",
   "app.resize": "Drag to resize",
   "edit.add": "Add",
-  "edit.remove_screenshot": "Remove screenshot"
+  "edit.remove_screenshot": "Remove screenshot",
+  "search.sidebar": "Filter library…",
+  "settings.maintenance": "Maintenance",
+  "settings.remove_missing": "🧹 Remove games with a missing folder",
+  "settings.remove_missing_hint": "Removes library entries whose game folder no longer exists on disk. Games without a folder are left untouched.",
+  "dlg.remove_missing_title": "Remove games with a missing folder?",
+  "dlg.remove_missing_msg": "Library entries whose folder no longer exists on disk will be removed. Files aren't affected (there are none).",
+  "toast.removed_missing_n": "Removed missing games: {n}",
+  "toast.removed_missing_none": "No missing games — all folders are in place",
+  "toast.remove_missing_fail": "Cleanup error: {err}"
 }

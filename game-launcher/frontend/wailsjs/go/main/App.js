@@ -114,6 +114,10 @@ export function RemoveGame(arg1) {
   return window['go']['main']['App']['RemoveGame'](arg1);
 }
 
+export function RemoveMissingGames() {
+  return window['go']['main']['App']['RemoveMissingGames']();
+}
+
 export function RemoveScanPath(arg1) {
   return window['go']['main']['App']['RemoveScanPath'](arg1);
 }

@@ -131,3 +131,35 @@ func TestDeveloperFromHTML(t *testing.T) {
 		}
 	}
 }
+
+func TestIslandDescription(t *testing.T) {
+	// Реальный текст блока ss-fstory-content (после cleanText): описание RU+EN,
+	// затем технические поля и changelog — всё это должно быть отрезано.
+	raw := "Описание:Жизнь не может стать лучше!Ты живёшь в большом городе. " +
+		"Life can't get any better!You're living in the big city." +
+		"Год выпуска: 2024Жанр: 2dcg, adventureВерсия: v.0.12 Rus / v.0.16 Eng" +
+		"\"Changelog:\"v0.16 - 2026-06-13 Tons of small bugs."
+	want := "Жизнь не может стать лучше!Ты живёшь в большом городе. " +
+		"Life can't get any better!You're living in the big city."
+	if got := islandDescription(raw); got != want {
+		t.Errorf("islandDescription:\n got = %q\nwant = %q", got, want)
+	}
+	// Без метки «Год выпуска» — отдаём всё после «Описание:».
+	if got := islandDescription("Описание: просто текст"); got != "просто текст" {
+		t.Errorf("islandDescription(no year) = %q", got)
+	}
+}
+
+func TestVersionFromHTML(t *testing.T) {
+	cases := map[string]string{
+		// island: метка в <b>, двойная версия сохраняется целиком
+		`<b><span></span>Версия:</b> v.0.12 Rus / v.0.16 Eng<br>`: "v.0.12 Rus / v.0.16 Eng",
+		`<b>Версия:</b> v.0.23 HotFix`:                            "v.0.23 HotFix",
+		`<div>нет поля версии</div>`:                              "",
+	}
+	for in, want := range cases {
+		if got := versionFromHTML(in); got != want {
+			t.Errorf("versionFromHTML(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

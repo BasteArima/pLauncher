@@ -580,6 +580,32 @@ func (a *App) RemoveGame(id string) error {
 	return a.repo.DeleteGame(a.ctx, id)
 }
 
+// RemoveMissingGames удаляет из библиотеки игры, чьей папки больше нет на диске.
+// Игры с пустым FolderPath (нельзя проверить) не трогаем. Возвращает число удалённых.
+func (a *App) RemoveMissingGames() (int, error) {
+	if a.repo == nil {
+		return 0, nil
+	}
+	games, err := a.repo.GetAllGames(a.ctx)
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	for _, g := range games {
+		if g.FolderPath == "" {
+			continue
+		}
+		if _, statErr := os.Stat(g.FolderPath); os.IsNotExist(statErr) {
+			if delErr := a.repo.DeleteGame(a.ctx, g.ID); delErr != nil {
+				fmt.Printf("RemoveMissingGames: не удалось удалить %s: %v\n", g.ID, delErr)
+				continue
+			}
+			removed++
+		}
+	}
+	return removed, nil
+}
+
 // SelectFolder открывает системное окно выбора папки
 func (a *App) SelectFolder() (string, error) {
 	options := runtime.OpenDialogOptions{

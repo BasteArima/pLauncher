@@ -10,6 +10,20 @@ import (
 // Допускает закрывающие теги вокруг двоеточия (pornolab: "...</span>:</span> Libero").
 var devLabelRe = regexp.MustCompile(`(?is)Разработчик[^:<]*(?:</[^>]+>)*\s*:(?:</[^>]+>)*\s*([^<\n]+)`)
 
+// verLabelRe ловит значение поля «Версия: <значение>» в HTML поста (island и т.п.).
+// Допускает закрывающие теги вокруг двоеточия, как и devLabelRe.
+var verLabelRe = regexp.MustCompile(`(?is)Версия[^:<]*(?:</[^>]+>)*\s*:(?:</[^>]+>)*\s*([^<\n]+)`)
+
+// versionFromHTML достаёт версию из явного поля «Версия:» в теле поста.
+// В отличие от заголовка, сохраняет двойные версии целиком ("v.0.12 Rus / v.0.16 Eng").
+func versionFromHTML(htmlStr string) string {
+	m := verLabelRe.FindStringSubmatch(htmlStr)
+	if len(m) < 2 {
+		return ""
+	}
+	return strings.TrimRight(cleanText(html.UnescapeString(m[1])), " -—|")
+}
+
 // developerFromHTML достаёт разработчика/издателя из HTML поста и отрезает хвост
 // со ссылками/разделителями ("Studio - Patreon", "Studio | itch.io").
 func developerFromHTML(htmlStr string) string {

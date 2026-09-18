@@ -37,6 +37,7 @@
         SelectDataFolder,
         OpenDataDir,
         ClearData,
+        RemoveMissingGames,
         GetCollections,
         SaveCollections,
         GetSupportedSources,
@@ -281,6 +282,15 @@
         ...collectionsView.map(c => ({ key: c.id, name: c.name, items: sortGames(c.items, 'title_asc'), col: c })),
         ...(uncategorized.length ? [{ key: '__uncat', name: 'Без категории', items: uncategorized, col: null }] : []),
     ];
+
+    // Поиск по сайдбару: фильтрует игры внутри групп по названию, прячет пустые группы.
+    let sidebarQuery = '';
+    $: sbQuery = sidebarQuery.trim().toLowerCase();
+    $: sidebarGroupsView = sbQuery
+        ? sidebarGroups
+            .map(gr => ({ ...gr, items: gr.items.filter(g => (g.title || '').toLowerCase().includes(sbQuery)) }))
+            .filter(gr => gr.items.length)
+        : sidebarGroups;
 
     // CRUD коллекций
     let showCollectionModal = false;
@@ -663,6 +673,29 @@
             showToast(tr('toast.cleared'), "success");
         } catch (err) {
             showToast(tr('toast.clear_fail', { err }), "error");
+        }
+    }
+
+    // Удаление из библиотеки игр, чьей папки больше нет на диске
+    async function handleRemoveMissing() {
+        const ok = await askConfirm({
+            title: tr('dlg.remove_missing_title'),
+            message: tr('dlg.remove_missing_msg'),
+            confirmText: tr('btn.remove'),
+            danger: true
+        });
+        if (!ok) return;
+        try {
+            const n = await RemoveMissingGames();
+            if (n > 0) {
+                selectedGame = null;
+                await loadGames();
+                showToast(tr('toast.removed_missing_n', { n }), "success");
+            } else {
+                showToast(tr('toast.removed_missing_none'), "info");
+            }
+        } catch (err) {
+            showToast(tr('toast.remove_missing_fail', { err }), "error");
         }
     }
 
@@ -1311,7 +1344,16 @@
                         class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-base leading-none">＋</button>
             </div>
 
-            {#each sidebarGroups as group (group.key)}
+            <div class="px-1 mb-1.5 relative">
+                <input type="text" bind:value={sidebarQuery} placeholder={$t('search.sidebar')}
+                       class="w-full bg-slate-900/60 border border-white/10 rounded-md pl-2.5 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-400/50 transition-colors" />
+                {#if sidebarQuery}
+                    <button on:click={() => sidebarQuery = ''} title={$t('btn.clear')}
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-sm leading-none">×</button>
+                {/if}
+            </div>
+
+            {#each sidebarGroupsView as group (group.key)}
                 <div>
                     <div class="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors group {dragOverColId === group.key ? 'bg-indigo-500/25 ring-1 ring-indigo-400/50' : 'text-slate-300 hover:bg-white/5'}"
                          on:contextmenu={group.col ? (e) => openCtx(e, collectionMenuItems(group.col)) : undefined}
@@ -1329,7 +1371,7 @@
                                     class="text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</button>
                         {/if}
                     </div>
-                    {#if !collapsedGroups[group.key]}
+                    {#if !collapsedGroups[group.key] || sbQuery}
                         <div class="ml-2 border-l border-white/10 pl-1.5 mb-1">
                             {#each group.items as g (g.id)}
                                 <button on:click={() => selectGame(g)}
@@ -1357,6 +1399,8 @@
 
             {#if games.length === 0}
                 <p class="text-xs text-slate-600 px-3 py-4 text-center">{$t("nav.lib_empty")}</p>
+            {:else if sbQuery && sidebarGroupsView.length === 0}
+                <p class="text-xs text-slate-600 px-3 py-4 text-center">{$t("lib.not_found_title")}</p>
             {/if}
         </nav>
 
@@ -2019,6 +2063,12 @@
                     <button on:click={handleChangeDataDir} class="w-full bg-white/5 hover:bg-white/10 text-slate-200 font-semibold py-2.5 rounded-lg border border-white/10 transition-colors mb-6">
                         {$t("settings.change_folder")}
                     </button>
+
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-t border-white/10 pt-5">{$t("settings.maintenance")}</div>
+                    <button on:click={handleRemoveMissing} class="w-full bg-amber-900/30 hover:bg-amber-800/50 text-amber-300 hover:text-amber-200 font-semibold py-2.5 rounded-lg border border-amber-800/40 transition-colors">
+                        {$t("settings.remove_missing")}
+                    </button>
+                    <p class="text-xs text-slate-500 mt-2 mb-4">{$t("settings.remove_missing_hint")}</p>
 
                     <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 border-t border-white/10 pt-5">{$t("settings.danger")}</div>
                     <button on:click={handleClearData} class="w-full bg-red-900/40 hover:bg-red-800/60 text-red-300 hover:text-red-200 font-semibold py-2.5 rounded-lg border border-red-800/50 transition-colors">

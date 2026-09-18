@@ -17,6 +17,22 @@ type IslandParser struct {
 	client *http.Client
 }
 
+// islandDescription вырезает само описание из текста блока ss-fstory-content:
+// берёт текст после метки «Описание:» и отрезает технический хвост, который
+// начинается с «Год выпуска» (Жанр/Платформа/Версия/changelog не нужны в описании).
+func islandDescription(s string) string {
+	if i := caseIndex(s, "Описание"); i >= 0 {
+		rest := s[i:]
+		if c := strings.IndexByte(rest, ':'); c >= 0 {
+			s = strings.TrimSpace(rest[c+1:])
+		}
+	}
+	if i := caseIndex(s, "Год выпуска"); i >= 0 {
+		s = strings.TrimSpace(s[:i])
+	}
+	return s
+}
+
 // Parse скачивает страницу и извлекает метаданные игры
 func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string) (*models.Game, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
@@ -56,11 +72,18 @@ func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string
 	game.Tags = parseReleaseTags(rawTitle)
 	game.Engine = engineFromTokens(game.Tags) // [Ren'Py] и т.п. из заголовка
 
+	// Тело поста («Описание / Год выпуска / … / Версия») — источник автора и версии.
+	contentHTML, _ := doc.Find("div.ss-fstory-content").First().Html()
+
+	// Версия из явного поля «Версия:» надёжнее заголовка: тут заголовок вида
+	// "Name (AltName) [версия] ..." сбивает versionFromTitle (скобка раньше []).
+	if v := versionFromHTML(contentHTML); v != "" {
+		game.Version = v
+	}
+
 	// Автор — поле «Разработчик/Издатель» в теле; фолбэк — последняя скобка заголовка,
 	// если это не движок/платформа/язык/год.
-	if contentHTML, err := doc.Find("div.ss-fstory-content").First().Html(); err == nil {
-		game.Author = developerFromHTML(contentHTML)
-	}
+	game.Author = developerFromHTML(contentHTML)
 	if game.Author == "" {
 		if last := authorFromTitle(rawTitle); last != "" {
 			low := strings.ToLower(last)
@@ -71,13 +94,7 @@ func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string
 	}
 
 	// Описание — это и есть содержимое блока ss-fstory-content (начинается с «Описание:»)
-	descText := cleanText(html.UnescapeString(doc.Find("div.ss-fstory-content").First().Text()))
-	if i := caseIndex(descText, "Описание"); i >= 0 {
-		rest := descText[i:]
-		if c := strings.IndexByte(rest, ':'); c >= 0 {
-			descText = strings.TrimSpace(rest[c+1:])
-		}
-	}
+	descText := islandDescription(cleanText(html.UnescapeString(doc.Find("div.ss-fstory-content").First().Text())))
 	if descText != "" {
 		game.Description = truncateText(descText, 2000)
 	} else {

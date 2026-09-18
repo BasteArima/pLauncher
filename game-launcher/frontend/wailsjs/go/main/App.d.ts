@@ -59,6 +59,8 @@ export function OpenURL(arg1:string):Promise<void>;
 
 export function RemoveGame(arg1:string):Promise<void>;
 
+export function RemoveMissingGames():Promise<number>;
+
 export function RemoveScanPath(arg1:string):Promise<void>;
 
 export function SaveCollections(arg1:Array<models.Collection>):Promise<void>;

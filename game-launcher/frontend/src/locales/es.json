@@ -226,5 +226,14 @@
   "drop.sub": "El lanzador las añadirá a tu biblioteca",
   "app.resize": "Arrastra para cambiar el ancho",
   "edit.add": "Añadir",
-  "edit.remove_screenshot": "Eliminar captura"
+  "edit.remove_screenshot": "Eliminar captura",
+  "search.sidebar": "Filtrar biblioteca…",
+  "settings.maintenance": "Mantenimiento",
+  "settings.remove_missing": "🧹 Eliminar juegos con carpeta ausente",
+  "settings.remove_missing_hint": "Quita de la biblioteca las entradas cuya carpeta ya no existe en el disco. Los juegos sin carpeta no se tocan.",
+  "dlg.remove_missing_title": "¿Eliminar juegos con carpeta ausente?",
+  "dlg.remove_missing_msg": "Se eliminarán las entradas cuya carpeta ya no exista en el disco. Los archivos no se ven afectados (no los hay).",
+  "toast.removed_missing_n": "Juegos sin carpeta eliminados: {n}",
+  "toast.removed_missing_none": "No hay juegos sin carpeta — todas las carpetas están presentes",
+  "toast.remove_missing_fail": "Error de limpieza: {err}"
 }

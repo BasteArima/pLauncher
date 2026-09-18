@@ -226,5 +226,14 @@
   "drop.sub": "Лаунчер автоматически добавит их в библиотеку",
   "app.resize": "Потяните, чтобы изменить ширину",
   "edit.add": "Добавить",
-  "edit.remove_screenshot": "Удалить скриншот"
+  "edit.remove_screenshot": "Удалить скриншот",
+  "search.sidebar": "Фильтр по библиотеке…",
+  "settings.maintenance": "Обслуживание",
+  "settings.remove_missing": "🧹 Удалить игры с отсутствующей папкой",
+  "settings.remove_missing_hint": "Убирает из библиотеки записи, папки которых больше нет на диске. Игры без папки не трогаются.",
+  "dlg.remove_missing_title": "Удалить игры с отсутствующей папкой?",
+  "dlg.remove_missing_msg": "Из библиотеки будут удалены записи, папок которых больше нет на диске. Файлы не затрагиваются (их и нет).",
+  "toast.removed_missing_n": "Удалено игр без папки: {n}",
+  "toast.removed_missing_none": "Нет игр без папки — все папки на месте",
+  "toast.remove_missing_fail": "Ошибка очистки: {err}"
 }
