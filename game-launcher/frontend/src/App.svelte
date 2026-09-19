@@ -278,10 +278,10 @@
     $: collectionsView = collections.map(c => buildCol(c, libGames));
     $: categorizedIds = (() => { const s = new Set(); for (const c of collectionsView) for (const g of c.items) s.add(g.id); return s; })();
     $: uncategorized = sortGames(libGames.filter(g => !categorizedIds.has(g.id)), 'title_asc');
-    $: sidebarGroups = [
+    $: sidebarGroups = ($langStore, [
         ...collectionsView.map(c => ({ key: c.id, name: c.name, items: sortGames(c.items, 'title_asc'), col: c })),
-        ...(uncategorized.length ? [{ key: '__uncat', name: 'Без категории', items: uncategorized, col: null }] : []),
-    ];
+        ...(uncategorized.length ? [{ key: '__uncat', name: tr('nav.uncategorized'), items: uncategorized, col: null }] : []),
+    ]);
 
     // Поиск по сайдбару: фильтрует игры внутри групп по названию, прячет пустые группы.
     let sidebarQuery = '';
