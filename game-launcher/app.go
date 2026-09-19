@@ -962,15 +962,16 @@ func (a *App) CopyScreenshotToData(gameID string, sourcePath string) (string, er
 	return a.copyIntoCovers(sourcePath, fileName)
 }
 
-// SelectExecutable открывает диалог выбора .exe файла, начиная с указанной папки
+// SelectExecutable открывает диалог выбора файла запуска игры, начиная с указанной папки.
+// Первичный фильтр — популярные форматы запускалок разных движков; затем — все файлы.
 func (a *App) SelectExecutable(startDir string) (string, error) {
 	options := runtime.OpenDialogOptions{
-		Title:            "Выберите .exe файл игры",
+		Title:            "Выберите файл запуска игры",
 		DefaultDirectory: startDir, // Открываем сразу папку с игрой!
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Исполняемые файлы (*.exe, *.bat, *.lnk)",
-				Pattern:     "*.exe;*.bat;*.lnk",
+				DisplayName: "Файлы запуска (exe, bat, html, swf, jar, qsp, py, love, app, sh…)",
+				Pattern:     "*.exe;*.bat;*.cmd;*.lnk;*.html;*.htm;*.swf;*.jar;*.qsp;*.rags;*.url;*.py;*.pyw;*.love;*.app;*.sh;*.msi;*.appimage;*.x86_64;*.x86",
 			},
 			{
 				DisplayName: "Все файлы (*.*)",

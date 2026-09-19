@@ -1289,8 +1289,6 @@
     {/if}
 
     <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{sidebarWidth}px">
-        <div on:mousedown={startSidebarResize} title={$t("app.resize")}
-             class="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400/40 transition-colors z-20 {resizingSidebar ? 'bg-indigo-400/50' : ''}"></div>
         <div class="flex items-center justify-between flex-wrap gap-y-2 px-4 pt-4 pb-4">
             <h1 class="text-2xl font-black tracking-wide">
                 <span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">pLauncher</span>
@@ -1410,6 +1408,10 @@
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors">⚙️</button>
         </div>
     </aside>
+
+    <!-- Отдельная колонка-разделитель: не перекрывает ни скроллбар сайдбара, ни контент -->
+    <div on:mousedown={startSidebarResize} title={$t("app.resize")}
+         class="w-1 shrink-0 self-stretch z-20 cursor-col-resize bg-white/5 hover:bg-indigo-400/50 transition-colors {resizingSidebar ? 'bg-indigo-400/60' : ''}"></div>
 
     <main class="flex-1 overflow-y-auto p-8 relative">
 

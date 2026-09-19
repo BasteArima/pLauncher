@@ -47,25 +47,35 @@ func (c *Controller) OpenFolder(folderPath string) error {
 // Если задан onExit, в фоне (через cmd.Wait — без поллинга, нулевая нагрузка)
 // дожидается завершения процесса и сообщает время сессии в минутах.
 func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes int)) error {
-	cmd := exec.Command(exePath)
+	ext := strings.ToLower(filepath.Ext(exePath))
 
-	// Крайне важный момент для игр (особенно сделанных на Unity/RenPy):
-	// Рабочей директорией (Working Directory) должна быть папка игры,
-	// иначе игра не найдет свои ассеты (картинки, звуки) и вылетит с ошибкой.
-	cmd.Dir = folderPath
+	// Прямой запуск нативных исполняемых: так CreateProcess отдаёт хэндл процесса,
+	// и cmd.Wait позволяет считать время игры без поллинга. На не-Windows оставляем
+	// прямой запуск для всего (это Windows-приложение, там ветка ниже).
+	if runtime.GOOS != "windows" || ext == ".exe" || ext == ".com" {
+		cmd := exec.Command(exePath)
+		// Рабочей директорией должна быть папка игры, иначе Unity/RenPy не найдут ассеты.
+		cmd.Dir = folderPath
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("couldn't launch %s: %w", exePath, err)
+		}
+		if onExit != nil {
+			go func() {
+				start := time.Now()
+				cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
+				onExit(int(time.Since(start).Minutes()))
+			}()
+		}
+		return nil
+	}
 
+	// Остальные форматы (html/swf/jar/qsp/rags/lnk/bat…) открываем ассоциированным
+	// приложением через `start`. Процесс отсоединяется, поэтому время игры для них
+	// не учитывается (last_launched_at всё равно проставляется на стороне app.go).
+	cmd := exec.Command("cmd", "/C", "start", "", "/D", folderPath, exePath)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("couldn't launch %s: %w", exePath, err)
 	}
-
-	if onExit != nil {
-		go func() {
-			start := time.Now()
-			cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
-			onExit(int(time.Since(start).Minutes()))
-		}()
-	}
-
 	return nil
 }
 
