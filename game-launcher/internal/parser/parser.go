@@ -157,6 +157,14 @@ func DownloadImagesAsync(ctx context.Context, client *http.Client, imageURLs []s
 
 			// Передаем referer в функцию скачивания
 			err := downloadFile(client, urlToDownload, localPath, referer)
+			// Защищённая картинка fastpic: берём подписанную ссылку со страницы fullview
+			if err != nil && strings.Contains(urlToDownload, ".fastpic.org/big/") {
+				if signed, rerr := resolveFastpicSigned(client, urlToDownload); rerr == nil {
+					err = downloadFile(client, signed, localPath, referer)
+				} else {
+					err = fmt.Errorf("%v; %v", err, rerr)
+				}
+			}
 			if err != nil {
 				fmt.Printf("Ошибка скачивания %s: %v\n", urlToDownload, err)
 				return
