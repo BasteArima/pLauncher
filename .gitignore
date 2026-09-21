@@ -36,4 +36,6 @@ game-launcher/.idea
 game-launcher/data
 game-launcher/build/bin
 game-launcher/node_modules
+game-launcher/frontend/node_modules
 game-launcher/frontend/dist
+.idea/workspace.xml
