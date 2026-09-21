@@ -1,0 +1,70 @@
+# Релиз по тегу v*: собирает pLauncher.exe, считает SHA-256 и публикует GitHub Release.
+# Лаунчер находит релиз через API (updater.go) и обновляется сам.
+#
+#   git tag v1.1.0 && git push origin v1.1.0
+#
+# Самообновление работает только если релизы доступны без авторизации, т.е. репозиторий
+# публичный. Для приватного кода заведите публичный репозиторий только под релизы и
+# укажите его в переменной репозитория UPDATE_REPO (Settings → Variables) + секрет RELEASE_TOKEN.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  # Откуда лаунчер берёт обновления. По умолчанию — этот же репозиторий.
+  UPDATE_REPO: ${{ vars.UPDATE_REPO || github.repository }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: game-launcher
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: game-launcher/go.mod
+          cache-dependency-path: game-launcher/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: game-launcher/frontend/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          wails build -clean -ldflags "-X main.appVersion=$version -X main.updateRepo=$env:UPDATE_REPO"
+
+      - name: Checksum
+        shell: pwsh
+        working-directory: game-launcher/build/bin
+        run: |
+          $hash = (Get-FileHash pLauncher.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  pLauncher.exe" | Out-File -Encoding ascii -NoNewline pLauncher.exe.sha256
+
+      # Если UPDATE_REPO — другой (публичный) репозиторий, нужен секрет RELEASE_TOKEN
+      # с правом contents:write на него; иначе хватает встроенного GITHUB_TOKEN.
+      - uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.UPDATE_REPO }}
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          generate_release_notes: true
+          files: |
+            game-launcher/build/bin/pLauncher.exe
+            game-launcher/build/bin/pLauncher.exe.sha256

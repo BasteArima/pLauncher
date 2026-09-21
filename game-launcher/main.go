@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -21,7 +22,18 @@ var assets embed.FS
 //go:embed frontend/src/locales/en.json
 var exampleLocale []byte
 
+// appVersion вшивается при сборке: -ldflags "-X main.appVersion=1.2.3" (см. build.ps1 и CI).
+var appVersion = "dev"
+
 func main() {
+	// После самообновления: даём старому процессу завершиться, затем убираем его exe
+	for _, arg := range os.Args[1:] {
+		if arg == afterUpdateFlag {
+			time.Sleep(1500 * time.Millisecond)
+		}
+	}
+	cleanupAfterUpdate()
+
 	app := NewApp()
 
 	// Восстанавливаем размер окна из конфига (по умолчанию 1280x768)

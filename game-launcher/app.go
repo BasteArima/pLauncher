@@ -119,6 +119,9 @@ func (a *App) SaveWindowSize() {
 	saveConfig(cfg)
 }
 
+// GetAppVersion возвращает версию сборки ("dev" при `wails dev`).
+func (a *App) GetAppVersion() string { return appVersion }
+
 // IsConfigured сообщает фронтенду, выбрана ли уже папка для данных.
 func (a *App) IsConfigured() bool {
 	return a.repo != nil && a.dataDir != ""
@@ -230,13 +233,15 @@ func (a *App) mediaRel(p string) string {
 	return p
 }
 
-// normalizeGames переводит пути медиа всех игр в относительный вид для фронтенда.
+// normalizeGames переводит пути медиа всех игр в относительный вид для фронтенда
+// и помечает игры, чьей папки нет на диске (для перепривязки).
 func (a *App) normalizeGames(games []*models.Game) []*models.Game {
 	for _, g := range games {
 		g.CoverPath = a.mediaRel(g.CoverPath)
 		for i, img := range g.Images {
 			g.Images[i] = a.mediaRel(img)
 		}
+		g.FolderMissing = folderMissing(g.FolderPath)
 	}
 	return games
 }
@@ -268,6 +273,9 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 
 // Launch запускает игру
 func (a *App) Launch(gameID string, exePath string, folderPath string) error {
+	if folderMissing(folderPath) {
+		return fmt.Errorf("game folder not found: %s", folderPath)
+	}
 	// Сохраняем время запуска
 	if games, err := a.repo.GetAllGames(a.ctx); err == nil {
 		for _, g := range games {
@@ -592,10 +600,7 @@ func (a *App) RemoveMissingGames() (int, error) {
 	}
 	removed := 0
 	for _, g := range games {
-		if g.FolderPath == "" {
-			continue
-		}
-		if _, statErr := os.Stat(g.FolderPath); os.IsNotExist(statErr) {
+		if folderMissing(g.FolderPath) {
 			if delErr := a.repo.DeleteGame(a.ctx, g.ID); delErr != nil {
 				fmt.Printf("RemoveMissingGames: не удалось удалить %s: %v\n", g.ID, delErr)
 				continue

@@ -63,6 +63,13 @@ func (r *SQLiteRepo) Close() error {
 	return r.db.Close()
 }
 
+// BackupTo сохраняет согласованный снимок БД в новый файл dest (VACUUM INTO),
+// не закрывая текущее соединение. Файл dest не должен существовать.
+func (r *SQLiteRepo) BackupTo(ctx context.Context, dest string) error {
+	_, err := r.db.ExecContext(ctx, "VACUUM INTO ?", dest)
+	return err
+}
+
 func (r *SQLiteRepo) initSchema() error {
 	// Существующая таблица игр
 	queryGames := `

@@ -1,5 +1,6 @@
 <script>
-    import { t } from './i18n.js';
+    import { t } from '../i18n.js';
+    import { mediaSrc, coverStyle } from '../lib/util.js';
     export let game;
     export let onOpen = () => {};
     export let onPlay = null;        // если задан и есть exec_path — кнопка запуска
@@ -8,8 +9,8 @@
     export let onDrag = null;        // (game) => ... при начале перетаскивания
     export let onContext = null;     // (game, event) => ... ПКМ
 
-    $: cover = game.cover_path ? `/media/${game.cover_path.replaceAll('\\', '/')}` : '';
-    $: coverCss = `object-fit:${game.cover_fit || 'cover'};object-position:${game.cover_pos || '50% 20%'}`;
+    $: cover = mediaSrc(game.cover_path);
+    $: coverCss = coverStyle(game);
     let coverError = false;
     $: if (cover) coverError = false; // сбрасываем при смене обложки
 
@@ -37,7 +38,7 @@
     <div class="aspect-[3/4] w-full bg-slate-900/60 relative">
         {#if cover && !coverError}
             <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true}
-                 class="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 {discreet ? 'blur-2xl scale-110' : ''}"/>
+                 class="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 {discreet ? 'blur-2xl scale-110' : ''} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
         {:else}
             <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-2 p-4 text-center">
                 <span class="text-3xl opacity-40">🎮</span>
@@ -54,7 +55,7 @@
             </button>
         {/if}
 
-        {#if onPlay && game.exec_path}
+        {#if onPlay && game.exec_path && !game.folder_missing}
             <button
                     on:click|stopPropagation={() => onPlay(game)}
                     title={$t('btn.play')}
@@ -69,7 +70,9 @@
                 <span class="text-[11px] text-slate-300 truncate pr-2 flex items-center gap-1">
                     {#if game.update_available}<span class="text-amber-300 font-bold">⬆</span>{/if}{game.version || '—'}
                 </span>
-                {#if game.exec_path}
+                {#if game.folder_missing}
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30" title={$t('missing.card_hint')}>⚠ {$t('missing.badge')}</span>
+                {:else if game.exec_path}
                     <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30">EXE</span>
                 {:else}
                     <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30">NO EXE</span>

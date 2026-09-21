@@ -38,4 +38,7 @@ type Game struct {
 	UpdateVersion   string       `json:"update_version"`   // найденная новая версия (для бейджа)
 	UpdateSource    string       `json:"update_source"`    // площадка, где найдено обновление
 	LastCheckedAt   int64        `json:"last_checked_at"`  // UNIX-время последней проверки обновлений
+
+	// Вычисляемое поле (в БД не хранится): папки игры нет на диске (перемещена/удалена).
+	FolderMissing bool `json:"folder_missing"`
 }

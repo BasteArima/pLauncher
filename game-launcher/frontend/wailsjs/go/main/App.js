@@ -26,6 +26,10 @@ export function CheckGameUpdates(arg1) {
   return window['go']['main']['App']['CheckGameUpdates'](arg1);
 }
 
+export function CheckLauncherUpdate() {
+  return window['go']['main']['App']['CheckLauncherUpdate']();
+}
+
 export function CheckSourceUpdate(arg1, arg2) {
   return window['go']['main']['App']['CheckSourceUpdate'](arg1, arg2);
 }
@@ -46,8 +50,20 @@ export function CopyScreenshotToData(arg1, arg2) {
   return window['go']['main']['App']['CopyScreenshotToData'](arg1, arg2);
 }
 
+export function ExportLibrary() {
+  return window['go']['main']['App']['ExportLibrary']();
+}
+
 export function FindExecutables(arg1) {
   return window['go']['main']['App']['FindExecutables'](arg1);
+}
+
+export function FindMissingGames() {
+  return window['go']['main']['App']['FindMissingGames']();
+}
+
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
 }
 
 export function GetCollections() {
@@ -86,6 +102,14 @@ export function GetSupportedSources() {
   return window['go']['main']['App']['GetSupportedSources']();
 }
 
+export function ImportLibrary(arg1) {
+  return window['go']['main']['App']['ImportLibrary'](arg1);
+}
+
+export function InstallLauncherUpdate() {
+  return window['go']['main']['App']['InstallLauncherUpdate']();
+}
+
 export function IsConfigured() {
   return window['go']['main']['App']['IsConfigured']();
 }
@@ -106,8 +130,20 @@ export function OpenLanguagesFolder() {
   return window['go']['main']['App']['OpenLanguagesFolder']();
 }
 
+export function OpenLauncherReleasePage() {
+  return window['go']['main']['App']['OpenLauncherReleasePage']();
+}
+
 export function OpenURL(arg1) {
   return window['go']['main']['App']['OpenURL'](arg1);
+}
+
+export function RelinkAllFound() {
+  return window['go']['main']['App']['RelinkAllFound']();
+}
+
+export function RelinkGame(arg1, arg2) {
+  return window['go']['main']['App']['RelinkGame'](arg1, arg2);
 }
 
 export function RemoveGame(arg1) {
@@ -142,6 +178,10 @@ export function SearchGames(arg1) {
   return window['go']['main']['App']['SearchGames'](arg1);
 }
 
+export function SelectBackupFile() {
+  return window['go']['main']['App']['SelectBackupFile']();
+}
+
 export function SelectCoverImage() {
   return window['go']['main']['App']['SelectCoverImage']();
 }
@@ -156,6 +196,10 @@ export function SelectExecutable(arg1) {
 
 export function SelectFolder() {
   return window['go']['main']['App']['SelectFolder']();
+}
+
+export function SelectRelinkFolder(arg1) {
+  return window['go']['main']['App']['SelectRelinkFolder'](arg1);
 }
 
 export function SelectScreenshots() {

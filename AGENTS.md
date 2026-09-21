@@ -45,7 +45,19 @@ The app is fully working. Done so far:
   auto-dropped there); language picker on first run and in settings; backend errors are in English.
 - **UX details**: lightbox is a full-window `fixed` overlay (Esc/arrows, mouse back/forward); confirm
   dialog accepts Enter **and** Space; right-click on any text input gives a custom cut/copy/paste/select-all
-  menu (native context menu stays disabled elsewhere).
+  menu (native context menu stays disabled elsewhere). Esc closes the top layer (menu → modal → editor → game).
+- **Relink moved games** (`relink.go`): `Game.FolderMissing` is computed on read (not stored). Missing games
+  get a ⚠ badge, a banner on the detail page and a sidebar "Folder not found" entry. `FindMissingGames`
+  looks for candidates in scan paths + parents of known game folders: same folder name first, else a unique
+  match of the same relative exe (generic names like `Game.exe` are ignored). `RelinkGame` rebases the exe
+  path and **merges** a duplicate record that a scan created for the new folder (playtime summed,
+  collection membership moved, duplicate deleted).
+- **Backup** (`backup.go`): export = zip of a `VACUUM INTO` DB snapshot + `covers/` + `languages/` + manifest;
+  import extracts to `<dataDir>/.import-tmp`, validates/migrates the DB, rewrites media paths to `covers/…`,
+  swaps files with rollback. Game folders are absolute → after moving to a new PC use relink.
+- **Launcher self-update** (`updater.go`): GitHub Releases of `updateRepo` (ldflag); downloads `pLauncher.exe`,
+  verifies `pLauncher.exe.sha256`, renames running exe to `.old`, restarts with `--after-update`.
+  Requires the releases repo to be **public** (the code repo currently is private). Silent check ≤1/day.
 
 What's NOT done yet → see "Roadmap" below.
 
@@ -57,9 +69,11 @@ What's NOT done yet → see "Roadmap" below.
 
 ```
 game-launcher/
-  main.go                  Wails setup: frameless window, window-size restore, /media asset handler
-  app.go                   App struct + ALL methods bound to JS (the Go<->JS API surface)
+  main.go                  Wails setup: frameless window, window-size restore, /media asset handler, appVersion
+  app.go                   App struct + most methods bound to JS (the Go<->JS API surface)
+  relink.go / backup.go / updater.go   relink moved games / export-import / launcher self-update (also bound)
   appconfig.go             config.json pointer (data dir + window size) in os.UserConfigDir()/pLauncher
+  build.ps1                one-command local build (tests → vite → wails build -s), see Build & run
   internal/
     db/db.go               SQLite repo (games + key/value settings table). gameColumns + scanGames helper.
     models/                Game, Collection structs (json tags = JS field names)
@@ -67,9 +81,16 @@ game-launcher/
     parser/                one file per site + parser.go (factory, helpers) + extract.go (release-title parsing)
     launcher/launcher.go   launch exe (+ playtime via cmd.Wait goroutine), open folder, find exes
   frontend/src/
-    App.svelte             ~1900 lines — the entire UI (sidebar, home, detail, modals, context menu)
-    GameCard.svelte, Shelf.svelte
+    App.svelte             root: library state, derived lists, navigation, wiring (~700 lines)
+    components/            Sidebar, GameDetail, GameEditor, MetadataPanel, Hero, Shelf, GameGrid, GameCard,
+                           ShelfEditor, SortSelect, Lightbox, TitleBar, ContextMenu, Toast, ConfirmDialog,
+                           SetupWizard, SettingsModal, CollectionModal, RelinkModal
+    lib/ui.js              showToast() + askConfirm() stores (usable from any component)
+    lib/util.js            mediaSrc, coverStyle, sortGames, fmtPlaytime, localStorage helpers, clickOutside
+    lib/shelves.js         shelves (load/build) + buildCol (collection membership)
+    lib/inputMenu.js       cut/copy/paste menu for text inputs
     i18n.js + locales/{en,ru,es}.json
+  ../.github/workflows/    ci.yml (vet/test/vite on push+PR), release.yml (tag v* → exe + sha256 release)
   wails.json               app name "pLauncher", build metadata, icon source = build/appicon.png
 ```
 
@@ -123,7 +144,9 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
 - UI prefs in `localStorage`: `plauncher_sidebar_w`, `plauncher_shelves`, `plauncher_sort`,
   `plauncher_collapsed`, `plauncher_only_dressed`, `plauncher_lang`.
 - Window is **frameless**; custom titlebar uses CSS `--wails-draggable`. Native context menu is disabled;
-  there's a custom one (`gameMenuItems` / `collectionMenuItems` / `shelfMenuItems` + `openCtx`).
+  there's a custom one (`openCtx(e, items)` in App; `gameMenuItems`/`shelfMenuItems` in App, collection menu in Sidebar).
+- Global keys: components that own keys (ConfirmDialog, Lightbox) call `preventDefault()`; App's window
+  handlers skip events with `e.defaultPrevented` — keep this contract when adding key handlers.
 - Drag&drop: external folder drop uses Wails `OnFileDrop` (DOM `file.path` is empty in WebView2). Internal
   game→collection drag is HTML5 DnD; the file-drop overlay is gated on `dataTransfer` containing `Files`.
 - Comments in the code are largely in **Russian** — that's fine, keep them; only user-facing strings are localized.
@@ -132,6 +155,9 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
 
 ```
 cd game-launcher
+.\build.ps1                       # Windows, recommended: go test → vite build → wails build -s
+                                  # (on the owner's machine `wails build`/`wails dev` can't find npm in
+                                  #  child processes, so the frontend is built via node directly)
 wails dev                         # run with hot reload (note: OnShutdown is unreliable in dev)
 wails build                       # build for current OS -> build/bin/pLauncher.exe
 wails build -platform windows/amd64 [-nsis]
@@ -169,14 +195,13 @@ Polish / convenience:
    Ren'Py/Unity/Unreal/Godot/RPG Maker/Game Maker/Construct/Wolf RPG/KiriKiri/TyranoBuilder/Flash/QSP/HTML).
    Runs on scan/drop, fills `Game.Engine` only when empty, backfills existing games on re-scan.
 7. **Multiple executables per game** (game / config / walkthrough) with a quick-launch menu.
-8. **Relink moved games** — folder moved → offer to attach to an existing record keeping metadata
-   (IDs are random now, dedupe is by path; add a folder-name fingerprint).
-9. **Backup/export library** (JSON) + DB backup; a "library health" dashboard (no cover / no description /
-   no exe as actionable lists).
+8. ✅ **DONE — Relink moved games** (see "Current state").
+9. ✅ **DONE — Backup/export library** (zip). NOT done: a "library health" dashboard (no cover / no
+   description / no exe as actionable lists).
 10. **Multi-tag filter** (AND/OR, exclude) and a tag blacklist (hide unwanted genres).
 11. **Localize parser errors via codes** — currently backend errors are plain English strings; switch to
     codes so the frontend dictionary can translate them.
-12. **Self-update for the launcher** + per-OS CI builds (GitHub Actions) for distribution.
+12. ✅ **DONE (Windows) — Self-update + CI releases.** NOT done: macOS/Linux builds; releases need a public repo.
 
 Owner's note: #1 (update checking) and #2 (statuses) are expected to give the biggest payoff.
 

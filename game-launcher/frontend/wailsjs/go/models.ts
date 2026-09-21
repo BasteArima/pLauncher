@@ -1,3 +1,58 @@
+export namespace main {
+	
+	export class LauncherUpdate {
+	    available: boolean;
+	    current: string;
+	    latest: string;
+	    notes: string;
+	    page_url: string;
+	    asset_url: string;
+	    asset_name: string;
+	    size: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new LauncherUpdate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.available = source["available"];
+	        this.current = source["current"];
+	        this.latest = source["latest"];
+	        this.notes = source["notes"];
+	        this.page_url = source["page_url"];
+	        this.asset_url = source["asset_url"];
+	        this.asset_name = source["asset_name"];
+	        this.size = source["size"];
+	    }
+	}
+	export class MissingGame {
+	    id: string;
+	    title: string;
+	    cover_path: string;
+	    old_path: string;
+	    candidate: string;
+	    duplicate_id: string;
+	    duplicate_of: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MissingGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.cover_path = source["cover_path"];
+	        this.old_path = source["old_path"];
+	        this.candidate = source["candidate"];
+	        this.duplicate_id = source["duplicate_id"];
+	        this.duplicate_of = source["duplicate_of"];
+	    }
+	}
+
+}
+
 export namespace models {
 	
 	export class Collection {
@@ -61,6 +116,7 @@ export namespace models {
 	    update_version: string;
 	    update_source: string;
 	    last_checked_at: number;
+	    folder_missing: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Game(source);
@@ -92,6 +148,7 @@ export namespace models {
 	        this.update_version = source["update_version"];
 	        this.update_source = source["update_source"];
 	        this.last_checked_at = source["last_checked_at"];
+	        this.folder_missing = source["folder_missing"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
