@@ -51,5 +51,16 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
+      # Логи Actions видны только после входа в GitHub, а аннотации отдаются публичным API,
+      # поэтому при падении выносим упавшие тесты в аннотацию ::error.
       - name: Go test
-        run: go test ./...
+        run: |
+          if go test ./... > go-test.log 2>&1; then
+            cat go-test.log
+            exit 0
+          fi
+          cat go-test.log
+          msg=$(grep -E -B2 -A15 -- '--- FAIL|^panic:|build failed|^FAIL' go-test.log | head -80 \
+            | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=go test failed::${msg:-see job log}"
+          exit 1

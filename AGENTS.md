@@ -88,7 +88,7 @@ The app is fully working. Done so far:
   drop state). Card size: slider in `ViewControls`, Ctrl+wheel, Ctrl +/−/0.
 - **Launcher self-update** (`updater.go`): GitHub Releases of `updateRepo` (ldflag); downloads `pLauncher.exe`,
   verifies `pLauncher.exe.sha256`, renames running exe to `.old`, restarts with `--after-update`.
-  Requires the releases repo to be **public** (the code repo currently is private). Silent check ≤1/day.
+  Releases come from the public `BasteArima/pLauncher` repo (public since 2026-09-24). Silent check ≤1/day.
 
 What's NOT done yet → see "Roadmap" below.
 
@@ -236,7 +236,7 @@ Polish / convenience:
     codes so the frontend dictionary can translate them.
 12. ✅ **DONE — Self-update + CI releases for Windows/Linux/macOS.** Self-update installs on Windows & Linux;
     macOS (unsigned .app) only links to the release page. Linux builds need `-tags webkit2_41` (WebKitGTK 4.1).
-    Releases need a public repo. CI for Linux/macOS is written but not yet run.
+    CI runs on push; logs need a GitHub login (annotations are readable via the public API).
 
 Owner's note: #1 (update checking) and #2 (statuses) are expected to give the biggest payoff.
 

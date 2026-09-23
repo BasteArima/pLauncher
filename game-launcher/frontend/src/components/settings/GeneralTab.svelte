@@ -86,5 +86,5 @@
 
 <div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
     <span>pLauncher <span class="text-slate-400">v{appVersion}</span></span>
-    <span>© 2026 Midaser</span>
+    <span>© 2026 BasteArima</span>
 </div>
