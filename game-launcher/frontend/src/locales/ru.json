@@ -145,7 +145,7 @@
   "settings.games_folders": "Папки с играми",
   "settings.add_folder": "+ Добавить папку",
   "settings.single_game": "+ Отдельная игра",
-  "settings.no_folders": "Папки не добавлены. Добавьте — и нажмите «Сканировать» (иконка ⟳ сверху).",
+  "settings.no_folders": "Папки не добавлены. Добавьте папку и нажмите F5 или «Библиотека → Сканировать папки».",
   "settings.data_folder": "Папка с файлами лаунчера",
   "settings.open_folder": "Открыть папку",
   "settings.change_folder": "Изменить папку (с переносом файлов)",

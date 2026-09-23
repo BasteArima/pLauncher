@@ -2,9 +2,15 @@ import { writable, derived } from 'svelte/store';
 import en from './locales/en.json';
 import ru from './locales/ru.json';
 import es from './locales/es.json';
+import pt from './locales/pt.json';
+import de from './locales/de.json';
+import fr from './locales/fr.json';
+import zh from './locales/zh.json';
+import uk from './locales/uk.json';
 
-// Встроенные языки. Пользовательские добавляются из data/languages/*.json через addLocales().
-let dicts = { en, ru, es };
+// Встроенные языки (код = 2 буквы navigator.language: pt — бразильский, zh — упрощённый китайский).
+// Пользовательские добавляются из data/languages/*.json через addLocales().
+let dicts = { en, ru, es, pt, de, fr, zh, uk };
 let current = 'en';
 
 const tick = writable(0);          // бампается при смене языка/добавлении словарей
@@ -45,8 +51,13 @@ export function addLocales(extra) {
     bump();
 }
 
+// Порядок в списке: английский (исходный и запасной) первым, остальные — по алфавиту
+// самоназваний; Intl.Collator сам ставит латиницу, затем кириллицу, затем иероглифы.
 export function availableLangs() {
-    return Object.keys(dicts).map((code) => ({ code, name: (dicts[code] && dicts[code].__name) || code }));
+    const collator = new Intl.Collator('en');
+    return Object.keys(dicts)
+        .map((code) => ({ code, name: (dicts[code] && dicts[code].__name) || code }))
+        .sort((a, b) => (b.code === 'en') - (a.code === 'en') || collator.compare(a.name, b.name));
 }
 
 // Подбор языка при первом запуске: сохранённый -> системный -> английский

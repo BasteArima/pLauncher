@@ -145,7 +145,7 @@
   "settings.games_folders": "Carpetas de juegos",
   "settings.add_folder": "+ Añadir carpeta",
   "settings.single_game": "+ Juego suelto",
-  "settings.no_folders": "Sin carpetas. Añade una y pulsa Escanear (icono ⟳ arriba).",
+  "settings.no_folders": "Sin carpetas. Añade una y pulsa F5 o Biblioteca → Escanear carpetas.",
   "settings.data_folder": "Carpeta de archivos del lanzador",
   "settings.open_folder": "Abrir carpeta",
   "settings.change_folder": "Cambiar carpeta (mover archivos)",

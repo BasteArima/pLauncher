@@ -44,7 +44,7 @@ The app is fully working. Done so far:
   custom context menus, custom confirm dialog (no native popups), toasts.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
-- **i18n**: en/ru/es built-in + user languages from `data/languages/*.json` (README + `_example.json`
+- **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk built-in + user languages from `data/languages/*.json` (README + `_example.json`
   auto-dropped there); language picker on first run and in settings; backend errors are in English.
 - **UX details**: lightbox is a full-window `fixed` overlay (Esc/arrows, mouse back/forward); confirm
   dialog accepts Enter **and** Space; right-click on any text input gives a custom cut/copy/paste/select-all
@@ -166,7 +166,7 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
 ## Frontend conventions & gotchas
 
 - **Localization**: use `{$t('key')}` in markup, `tr('key', {param})` in script. Add every new
-  user-facing string to all three `locales/*.json`. Built-in en/ru/es are bundled into the exe; users can
+  user-facing string to all `locales/*.json` (`locales_test.go` checks keys + placeholders). Built-in languages are bundled into the exe; users can
   drop extra `<code>.json` into `<dataDir>/languages/` (loaded via `GetCustomLocales`).
 - **Svelte 3 reactivity trap (important):** a `$:` derived value or a function called in markup only
   recomputes when the **identifiers it textually references** change. Functions like `tr()`, `buildShelf()`,

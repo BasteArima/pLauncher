@@ -145,7 +145,7 @@
   "settings.games_folders": "Games folders",
   "settings.add_folder": "+ Add folder",
   "settings.single_game": "+ Single game",
-  "settings.no_folders": "No folders added. Add one and press Scan (⟳ icon at the top).",
+  "settings.no_folders": "No folders added. Add one, then press F5 or Library → Scan folders.",
   "settings.data_folder": "Launcher files folder",
   "settings.open_folder": "Open folder",
   "settings.change_folder": "Change folder (move files)",
