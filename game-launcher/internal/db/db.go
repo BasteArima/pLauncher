@@ -23,6 +23,7 @@ type GameRepository interface {
 	GetSetting(ctx context.Context, key string) (string, error)
 	SetSetting(ctx context.Context, key, value string) error
 	SearchGames(ctx context.Context, searchQuery string) ([]*models.Game, error)
+	SetGameSize(ctx context.Context, id string, size, checkedAt int64) error
 }
 
 // SQLiteRepo - реализация GameRepository для SQLite
@@ -38,7 +39,9 @@ func NewSQLiteRepo(dbPath string) (*SQLiteRepo, error) {
 	}
 
 	// Открываем подключение
-	db, err := sql.Open("sqlite", dbPath)
+	// busy_timeout: фоновые задачи (подсчёт размеров папок) пишут в БД параллельно с UI;
+	// без таймаута конкурирующая запись сразу падает с SQLITE_BUSY, а так — ждёт до 5 с.
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("database open error: %w", err)
 	}
@@ -116,6 +119,8 @@ func (r *SQLiteRepo) initSchema() error {
 	r.db.Exec(`ALTER TABLE games ADD COLUMN update_version TEXT DEFAULT '';`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN update_source TEXT DEFAULT '';`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN last_checked_at INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN size_bytes INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN size_checked_at INTEGER DEFAULT 0;`)
 
 	return nil
 }
@@ -134,6 +139,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 			&favorite, &g.TimePlayed, &g.AddedAt, &g.LastLaunchedAt, &g.CoverFit, &g.CoverPos,
 			&g.Author, &g.Engine,
 			&sourcesJSON, &g.PrimarySource, &updateAvailable, &g.UpdateVersion, &g.UpdateSource, &g.LastCheckedAt,
+			&g.SizeBytes, &g.SizeCheckedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("row read error: %w", err)
@@ -152,7 +158,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 }
 
 // gameColumns — единый список колонок для SELECT (порядок важен для scanGames).
-const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at`
+const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at`
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
@@ -172,8 +178,8 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	}
 
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -199,18 +205,27 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		last_checked_at=excluded.last_checked_at;
 	`
 	// Обрати внимание: added_at не обновляется при конфликте, чтобы сохранить дату первого добавления!
+	// size_bytes/size_checked_at тоже: их пишет только SetGameSize (фоновый подсчёт), чтобы
+	// сохранение игры из UI со старым размером не затирало свежий.
 
 	_, err := r.db.ExecContext(ctx, query,
 		g.ID, g.Title, g.Description, g.Version, string(langsJSON),
 		g.CoverPath, string(imagesJSON), string(tagsJSON), g.ExecPath, g.FolderPath, favorite, g.TimePlayed, g.AddedAt, g.LastLaunchedAt, g.CoverFit, g.CoverPos,
 		g.Author, g.Engine,
 		string(sourcesJSON), g.PrimarySource, updateAvailable, g.UpdateVersion, g.UpdateSource, g.LastCheckedAt,
+		g.SizeBytes, g.SizeCheckedAt,
 	)
 
 	if err != nil {
 		return fmt.Errorf("error saving game %s: %w", g.Title, err)
 	}
 	return nil
+}
+
+// SetGameSize обновляет только размер папки игры и время его подсчёта.
+func (r *SQLiteRepo) SetGameSize(ctx context.Context, id string, size, checkedAt int64) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE games SET size_bytes = ?, size_checked_at = ? WHERE id = ?`, size, checkedAt, id)
+	return err
 }
 
 // GetAllGames извлекает все игры из базы

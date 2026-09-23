@@ -39,6 +39,10 @@ type Game struct {
 	UpdateSource    string       `json:"update_source"`    // площадка, где найдено обновление
 	LastCheckedAt   int64        `json:"last_checked_at"`  // UNIX-время последней проверки обновлений
 
+	// Размер папки игры на диске (считается в фоне, пишется только через SetGameSize)
+	SizeBytes     int64 `json:"size_bytes"`
+	SizeCheckedAt int64 `json:"size_checked_at"` // UNIX-время подсчёта (0 — ещё не считали)
+
 	// Вычисляемое поле (в БД не хранится): папки игры нет на диске (перемещена/удалена).
 	FolderMissing bool `json:"folder_missing"`
 }

@@ -28,6 +28,8 @@ type App struct {
 	scanner  *scanner.Scanner
 	launcher *launcher.Controller
 	dataDir  string // абсолютный путь к папке с данными (БД + обложки)
+	priv     privacyState
+	live     bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
 }
 
 // NewApp создает новое приложение
@@ -40,12 +42,18 @@ func NewApp() *App {
 // Иначе фронтенд покажет окно первого запуска и вызовет ConfigureDataDir.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.live = true
 	a.launcher = launcher.NewController()
 
 	cfg := loadConfig()
 	if cfg.DataDir != "" {
 		if err := a.initServices(cfg.DataDir); err != nil {
 			fmt.Printf("Ошибка инициализации данных (%s): %v\n", cfg.DataDir, err)
+		} else {
+			if a.loadPrivacy().HasPin {
+				a.priv.locked = true // с PIN-кодом лаунчер стартует заблокированным
+			}
+			a.refreshSizesAsync(false) // досчитать размеры новых/устаревших игр
 		}
 	}
 }
@@ -82,6 +90,15 @@ func (a *App) initServices(dataDir string) error {
 	a.repo = repo
 	a.scanner = scanner.NewScanner(repo)
 	a.dataDir = abs
+	// Кнопка паники — из настроек этой библиотеки (в фоне: a.mu сейчас занят)
+	go func() {
+		if a.ctx == nil {
+			return
+		}
+		if err := a.applyHotkey(a.loadPrivacy()); err != nil {
+			fmt.Printf("Кнопка паники не зарегистрирована: %v\n", err)
+		}
+	}()
 	return nil
 }
 
@@ -90,6 +107,7 @@ func (a *App) initServices(dataDir string) error {
 // runtime.WindowGetSize в Wails 2.12 паникует (деление на ноль при DPI=0).
 // Размер сохраняется в реальном времени по ресайзу (см. SaveWindowSize).
 func (a *App) shutdown(ctx context.Context) {
+	a.priv.hotkeys.Unregister()
 	if a.repo != nil {
 		// Приводим интерфейс к конкретному типу для вызова специфичного метода Close
 		if sqliteRepo, ok := a.repo.(*db.SQLiteRepo); ok {
@@ -252,7 +270,7 @@ func (a *App) normalizeGames(games []*models.Game) []*models.Game {
 
 // GetGames возвращает список всех игр для отрисовки в UI
 func (a *App) GetGames() ([]*models.Game, error) {
-	if a.repo == nil {
+	if a.repo == nil || a.isLocked() {
 		return []*models.Game{}, nil
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
@@ -268,7 +286,9 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 	if a.scanner == nil {
 		return 0, fmt.Errorf("data folder is not selected yet")
 	}
-	return a.scanner.ScanFolder(a.ctx, rootPath)
+	n, err := a.scanner.ScanFolder(a.ctx, rootPath)
+	a.refreshSizesAsync(false)
+	return n, err
 }
 
 // Launch запускает игру
@@ -697,6 +717,7 @@ func (a *App) ScanAllFolders() (int, error) {
 		}
 		total += n
 	}
+	a.refreshSizesAsync(false)
 	return total, nil
 }
 
@@ -748,7 +769,7 @@ func (a *App) GetSupportedSources() []parser.Source {
 
 // GetCollections возвращает сохранённые коллекции (хранятся JSON-ом в settings).
 func (a *App) GetCollections() ([]models.Collection, error) {
-	if a.repo == nil {
+	if a.repo == nil || a.isLocked() {
 		return []models.Collection{}, nil
 	}
 	raw, err := a.repo.GetSetting(a.ctx, "collections")
@@ -773,7 +794,7 @@ func (a *App) SaveCollections(cols []models.Collection) error {
 
 // SearchGames вызывает поиск по базе данных. Если запрос пустой, отдает все игры.
 func (a *App) SearchGames(query string) ([]*models.Game, error) {
-	if a.repo == nil {
+	if a.repo == nil || a.isLocked() {
 		return []*models.Game{}, nil
 	}
 	var (
@@ -892,6 +913,8 @@ func (a *App) AddGamesFromDrop(paths []string) (int, error) {
 			fmt.Printf("⚠️ Пропуск: Игра уже существует в БД: %s\n", p)
 			continue
 		}
+		// Папку добавляют явно — значит, она больше не должна игнорироваться сканом
+		a.unignore(p)
 
 		newGame := &models.Game{
 			ID:         scanner.NewID(),
@@ -913,6 +936,9 @@ func (a *App) AddGamesFromDrop(paths []string) (int, error) {
 		}
 	}
 
+	if addedCount > 0 {
+		a.refreshSizesAsync(false)
+	}
 	return addedCount, nil
 }
 

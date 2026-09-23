@@ -6,6 +6,10 @@ export function AddGamesFromDrop(arg1) {
   return window['go']['main']['App']['AddGamesFromDrop'](arg1);
 }
 
+export function AddIgnoredPath(arg1) {
+  return window['go']['main']['App']['AddIgnoredPath'](arg1);
+}
+
 export function AddScanPath(arg1) {
   return window['go']['main']['App']['AddScanPath'](arg1);
 }
@@ -50,6 +54,10 @@ export function CopyScreenshotToData(arg1, arg2) {
   return window['go']['main']['App']['CopyScreenshotToData'](arg1, arg2);
 }
 
+export function DetectLaunchFiles(arg1) {
+  return window['go']['main']['App']['DetectLaunchFiles'](arg1);
+}
+
 export function ExportLibrary() {
   return window['go']['main']['App']['ExportLibrary']();
 }
@@ -90,8 +98,16 @@ export function GetGames() {
   return window['go']['main']['App']['GetGames']();
 }
 
+export function GetIgnoredPaths() {
+  return window['go']['main']['App']['GetIgnoredPaths']();
+}
+
 export function GetPortableDataDir() {
   return window['go']['main']['App']['GetPortableDataDir']();
+}
+
+export function GetPrivacy() {
+  return window['go']['main']['App']['GetPrivacy']();
 }
 
 export function GetScanPaths() {
@@ -100,6 +116,10 @@ export function GetScanPaths() {
 
 export function GetSupportedSources() {
   return window['go']['main']['App']['GetSupportedSources']();
+}
+
+export function IgnoreGames(arg1) {
+  return window['go']['main']['App']['IgnoreGames'](arg1);
 }
 
 export function ImportLibrary(arg1) {
@@ -116,6 +136,14 @@ export function IsConfigured() {
 
 export function Launch(arg1, arg2, arg3) {
   return window['go']['main']['App']['Launch'](arg1, arg2, arg3);
+}
+
+export function Lock() {
+  return window['go']['main']['App']['Lock']();
+}
+
+export function NotifyWindowShown() {
+  return window['go']['main']['App']['NotifyWindowShown']();
 }
 
 export function OpenDataDir() {
@@ -138,6 +166,14 @@ export function OpenURL(arg1) {
   return window['go']['main']['App']['OpenURL'](arg1);
 }
 
+export function RecalcGameSize(arg1) {
+  return window['go']['main']['App']['RecalcGameSize'](arg1);
+}
+
+export function RefreshSizes() {
+  return window['go']['main']['App']['RefreshSizes']();
+}
+
 export function RelinkAllFound() {
   return window['go']['main']['App']['RelinkAllFound']();
 }
@@ -150,6 +186,14 @@ export function RemoveGame(arg1) {
   return window['go']['main']['App']['RemoveGame'](arg1);
 }
 
+export function RemoveGames(arg1) {
+  return window['go']['main']['App']['RemoveGames'](arg1);
+}
+
+export function RemoveIgnoredPath(arg1) {
+  return window['go']['main']['App']['RemoveIgnoredPath'](arg1);
+}
+
 export function RemoveMissingGames() {
   return window['go']['main']['App']['RemoveMissingGames']();
 }
@@ -160,6 +204,10 @@ export function RemoveScanPath(arg1) {
 
 export function SaveCollections(arg1) {
   return window['go']['main']['App']['SaveCollections'](arg1);
+}
+
+export function SavePrivacy(arg1) {
+  return window['go']['main']['App']['SavePrivacy'](arg1);
 }
 
 export function SaveWindowSize() {
@@ -206,10 +254,26 @@ export function SelectScreenshots() {
   return window['go']['main']['App']['SelectScreenshots']();
 }
 
+export function SetFavorites(arg1, arg2) {
+  return window['go']['main']['App']['SetFavorites'](arg1, arg2);
+}
+
+export function SetPin(arg1, arg2) {
+  return window['go']['main']['App']['SetPin'](arg1, arg2);
+}
+
+export function Unlock(arg1) {
+  return window['go']['main']['App']['Unlock'](arg1);
+}
+
 export function UpdateGame(arg1) {
   return window['go']['main']['App']['UpdateGame'](arg1);
 }
 
 export function UpdateGameMetadata(arg1, arg2) {
   return window['go']['main']['App']['UpdateGameMetadata'](arg1, arg2);
+}
+
+export function VerifyPin(arg1) {
+  return window['go']['main']['App']['VerifyPin'](arg1);
 }

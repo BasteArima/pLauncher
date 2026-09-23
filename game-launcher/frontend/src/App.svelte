@@ -23,20 +23,29 @@
         GetCustomLocales,
         GetAppVersion,
         CheckLauncherUpdate,
+        GetPrivacy,
+        Lock,
+        NotifyWindowShown,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
     import { showToast, askConfirm, isConfirmOpen } from './lib/ui.js';
     import { mediaSrc, sortGames, lsGet, lsSet } from './lib/util.js';
-    import { loadShelves, buildShelf, buildCol } from './lib/shelves.js';
+    import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
+    import { discreet, blurMode } from './lib/privacy.js';
+    import { showHero, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
+    import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse } from './lib/bulk.js';
 
     import TitleBar from './components/TitleBar.svelte';
     import Sidebar from './components/Sidebar.svelte';
     import Hero from './components/Hero.svelte';
     import Shelf from './components/Shelf.svelte';
     import GameGrid from './components/GameGrid.svelte';
-    import SortSelect from './components/SortSelect.svelte';
+    import ViewControls from './components/ViewControls.svelte';
+    import LibraryTools from './components/LibraryTools.svelte';
+    import SelectionBar from './components/SelectionBar.svelte';
+    import HotkeysHelp from './components/HotkeysHelp.svelte';
     import ShelfEditor from './components/ShelfEditor.svelte';
     import GameDetail from './components/GameDetail.svelte';
     import GameEditor from './components/GameEditor.svelte';
@@ -48,6 +57,7 @@
     import ConfirmDialog from './components/ConfirmDialog.svelte';
     import ContextMenu from './components/ContextMenu.svelte';
     import Toast from './components/Toast.svelte';
+    import PinDialog from './components/PinDialog.svelte';
 
     // --- Состояние библиотеки и навигации ---
     let games = [];
@@ -59,7 +69,6 @@
     let searchQuery = '';
     let activeFilter = 'all';
     let activeTag = '';                  // выбранный тег (пусто — не фильтруем)
-    let discreet = false;                // дискретный режим: блюр обложек (Ctrl+H)
     let isDragging = false;              // оверлей при перетаскивании папок из проводника
     let scanPaths = [];
     let supportedSources = [];
@@ -92,6 +101,71 @@
     let lightboxIndex = null;            // null — закрыто
     let ctx = null;                      // {x, y, items} — контекстное меню
 
+    // --- Приватность: PIN-блокировка, паника, скрытые коллекции ---
+    let privacy = null;                  // GetPrivacy()
+    let locked = false;                  // лаунчер заблокирован PIN-кодом
+    let showHidden = false;              // скрытые коллекции показаны (до блокировки/паники)
+    let pinPrompt = null;                // {onSuccess} — проверка PIN для показа скрытого
+    let showHotkeys = false;             // справка по горячим клавишам (F1)
+    let searchInput;                     // поле поиска (Ctrl+F)
+
+    async function refreshPrivacy() {
+        try {
+            privacy = await GetPrivacy();
+            blurMode.set(privacy.blur_mode || 'none');
+        } catch (e) { console.error(e); }
+    }
+    // Закрыть всё, что может показывать содержимое библиотеки
+    function closeOverlays() {
+        clearSelection();
+        showHotkeys = false;
+        closeGame();
+        showSettings = false;
+        showRelink = false;
+        collectionModal = null;
+        lightboxIndex = null;
+        ctx = null;
+        pinPrompt = null;
+    }
+    function onLocked() {
+        locked = true;
+        showHidden = false;
+        closeOverlays();
+        games = [];
+        collections = [];
+    }
+    async function onUnlocked() {
+        locked = false;
+        await refreshPrivacy();
+        await reloadLibrary(false);
+        await loadCustomLocales();
+    }
+    function onPanic() {
+        showHidden = false;
+        discreet.set(true);              // вернувшись, обложки будут размыты
+        closeOverlays();
+    }
+    async function lockNow() {
+        try { await Lock(); } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
+    }
+    // Показать/спрятать скрытые коллекции (Ctrl+Shift+H). При заданном PIN — спросить его.
+    function toggleHidden() {
+        if (showHidden) { showHidden = false; return; }
+        if (privacy && privacy.has_pin) pinPrompt = { onSuccess: () => { pinPrompt = null; showHidden = true; } };
+        else showHidden = true;
+    }
+
+    // Автоблокировка после бездействия
+    let lastActivity = Date.now();
+    function markActivity() { lastActivity = Date.now(); }
+    const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel'];
+    let idleTimer = null;
+    function onWindowFocus() { NotifyWindowShown().catch(() => {}); markActivity(); }
+    function checkIdle() {
+        if (locked || !privacy || !privacy.has_pin || !privacy.idle_lock_min) return;
+        if (Date.now() - lastActivity > privacy.idle_lock_min * 60 * 1000) lockNow();
+    }
+
     // --- Язык интерфейса ---
     let langs = availableLangs();
     setLang(initialLang());
@@ -104,8 +178,13 @@
     function changeLang(code) { setLang(code); langs = availableLangs(); }
 
     // --- Производные списки ---
+    // Скрытые коллекции: их игры не видны нигде, пока не показаны (showHidden)
+    $: hiddenCols = collections.filter(c => c.hidden);
+    $: hiddenIds = new Set(hiddenCols.flatMap(c => buildCol(c, games).items.map(g => g.id)));
+    $: visibleGames = showHidden || !hiddenIds.size ? games : games.filter(g => !hiddenIds.has(g.id));
+    $: visibleCollections = showHidden ? collections : collections.filter(c => !c.hidden);
     // Базовый список, на котором строится вся библиотека/полки/коллекции
-    $: libGames = onlyDressed ? games.filter(g => g.cover_path) : games;
+    $: libGames = onlyDressed ? visibleGames.filter(g => g.cover_path) : visibleGames;
     $: filteredGames = sortGames(libGames.filter(g => {
         if (activeTag && !(g.tags || []).includes(activeTag)) return false;
         if (activeFilter === 'favorites') return g.favorite;
@@ -114,7 +193,7 @@
     }), sortBy);
     $: allGamesSorted = sortGames(libGames, sortBy);
     $: updatesGames = libGames.filter(g => g.update_available);
-    $: missingGames = games.filter(g => g.folder_missing);
+    $: missingGames = visibleGames.filter(g => g.folder_missing);
     $: recentlyPlayed = libGames
         .filter(g => (g.last_launched_at || 0) > 0)
         .sort((a, b) => (b.last_launched_at || 0) - (a.last_launched_at || 0));
@@ -135,20 +214,20 @@
     // Уникальные теги по всей библиотеке, по частоте
     $: allTags = (() => {
         const counts = {};
-        for (const g of games) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
+        for (const g of visibleGames) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
         return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
     })();
 
     // --- Коллекции (как в Steam: ручные + динамические по тегам) ---
     let collections = [];
-    $: collectionsView = collections.map(c => buildCol(c, libGames));
+    $: collectionsView = visibleCollections.map(c => buildCol(c, libGames));
     $: categorizedIds = new Set(collectionsView.flatMap(c => c.items.map(g => g.id)));
     $: uncategorized = sortGames(libGames.filter(g => !categorizedIds.has(g.id)), 'title_asc');
     $: sidebarGroups = ($langStore, [
         ...collectionsView.map(c => ({ key: c.id, name: c.name, items: sortGames(c.items, 'title_asc'), col: c })),
         ...(uncategorized.length ? [{ key: '__uncat', name: tr('nav.uncategorized'), items: uncategorized, col: null }] : []),
     ]);
-    $: manualCollections = collections.filter(c => c.type === 'manual');
+    $: manualCollections = visibleCollections.filter(c => c.type === 'manual');
 
     async function loadCollections() {
         try { collections = await GetCollections() || []; } catch (e) { console.error(e); }
@@ -158,20 +237,28 @@
     }
     function openCreateCollection() { collectionModal = { collection: null }; }
     function openEditCollection(c) { collectionModal = { collection: c }; }
-    async function saveCollection({ name, type, tags }) {
+    async function saveCollection({ name, type, tags, hidden }) {
         const editing = collectionModal && collectionModal.collection;
         if (editing) {
             collections = collections.map(c => c.id === editing.id
-                ? { ...c, name, type, tags: type === 'dynamic' ? tags : (c.tags || []) }
+                ? { ...c, name, type, hidden, tags: type === 'dynamic' ? tags : (c.tags || []) }
                 : c);
         } else {
             collections = [...collections, {
                 id: 'c_' + Math.random().toString(36).slice(2, 9),
-                name, type, game_ids: [], tags: type === 'dynamic' ? tags : [],
+                name, type, hidden, game_ids: [], tags: type === 'dynamic' ? tags : [],
             }];
         }
         collectionModal = null;
         await persistCollections();
+        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name }), 'success');
+    }
+    // Скрыть коллекцию / вернуть в библиотеку (из контекстного меню)
+    async function toggleHiddenCol(col) {
+        const hidden = !col.hidden;
+        collections = collections.map(c => c.id === col.id ? { ...c, hidden } : c);
+        await persistCollections();
+        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name: col.name }), 'success');
     }
     async function deleteCollection(c) {
         const ok = await askConfirm({ title: tr('dlg.delete_collection_title'), message: tr('dlg.delete_collection_msg', { name: c.name }), confirmText: tr('btn.delete'), danger: true });
@@ -205,7 +292,8 @@
     let layoutEditing = false;
     // Зависимости перечислены явно, чтобы Svelte пересчитывал при изменении данных
     $: shelfData = { recentlyPlayed, recentlyAdded, favoriteGames, allGamesSorted, games: libGames, collectionsView, _lang: $langStore };
-    $: renderedShelves = shelves.map(s => buildShelf(s, shelfData));
+    // Баннер выключен — дубля нет, полку не трогаем
+    $: renderedShelves = renderShelves(shelves, shelfData, $showHero ? heroGame : null);
     function shelfMenuItems(shelf) {
         return [
             { label: tr('ctx.configure_sections'), icon: '✎', action: () => layoutEditing = true },
@@ -237,6 +325,7 @@
     async function loadGames() {
         try {
             games = await GetGames() || [];
+            pruneSelection();
             // Открыта карточка (и не редактируем) — подхватываем свежие данные
             if (selectedGame && !isEditing) {
                 const fresh = games.find(g => g.id === selectedGame.id);
@@ -250,6 +339,7 @@
     async function reloadLibrary(resetSelection) {
         if (resetSelection) { selectedGame = null; isEditing = false; }
         try { scanPaths = await GetScanPaths(); } catch (e) {}
+        await refreshPrivacy();          // у другой библиотеки (импорт/смена папки) свои настройки
         await loadCollections();
         await loadGames();
     }
@@ -287,6 +377,33 @@
         }
     }
 
+    // Убрать из выделения игры, которых больше нет (удалены/скрыты)
+    function pruneSelection() {
+        if (!$selection.size) return;
+        const ids = new Set(games.map(g => g.id));
+        const kept = [...$selection].filter(id => ids.has(id));
+        if (kept.length !== $selection.size) selection.set(new Set(kept));
+    }
+
+    // --- Массовые действия с коллекциями ---
+    async function bulkAddToCollection(colId, ids) {
+        const col = collections.find(c => c.id === colId);
+        if (!col) return;
+        const set = new Set(col.game_ids || []);
+        ids.forEach(id => set.add(id));
+        collections = collections.map(c => c.id === colId ? { ...c, game_ids: [...set] } : c);
+        await persistCollections();
+        showToast(tr('bulk.added_to', { n: ids.length, name: col.name }), 'success');
+    }
+    async function bulkRemoveFromCollection(colId, ids) {
+        const col = collections.find(c => c.id === colId);
+        if (!col) return;
+        const drop = new Set(ids);
+        collections = collections.map(c => c.id === colId ? { ...c, game_ids: (c.game_ids || []).filter(id => !drop.has(id)) } : c);
+        await persistCollections();
+        showToast(tr('bulk.removed_from', { name: col.name }), 'success');
+    }
+
     // --- Действия с играми ---
     function selectGame(game) {
         selectedGame = game;
@@ -298,6 +415,7 @@
         isEditing = false;
     }
     function applyFilter(filter) {
+        clearSelection();
         activeFilter = filter;
         activeTag = '';
         closeGame();
@@ -337,6 +455,11 @@
             if (selectedGame && selectedGame.id === game.id) closeGame();
             await loadGames();
         } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
+    }
+
+    // Игнорировать при сканировании: убрать из лаунчера, папку больше не добавлять
+    async function ignoreGame(game) {
+        if (await bulkIgnore([game.id], loadGames, game.title) && selectedGame && selectedGame.id === game.id) closeGame();
     }
 
     // Указать новое расположение одной игры (диалог откроется у ближайшей уцелевшей папки)
@@ -384,7 +507,25 @@
             items,
         };
     }
+    // ПКМ по одной из нескольких выделенных карточек — меню массовых действий
+    function bulkMenuItems() {
+        const ids = [...$selection];
+        const picked = visibleGames.filter(g => $selection.has(g.id));
+        const allFav = picked.length > 0 && picked.every(g => g.favorite);
+        return [
+            { label: tr('bulk.add_to'), icon: '＋', submenu: visibleCollections.map(c => ({ label: c.name, action: () => bulkAddToCollection(c.id, ids) })) },
+            { label: allFav ? tr('ctx.fav_remove') : tr('bulk.fav'), icon: allFav ? '🤍' : '❤️', action: () => bulkFavorite(ids, !allFav, loadGames) },
+            { label: tr('bulk.detect'), icon: '🔎', action: () => bulkDetectLaunch(ids, loadGames) },
+            { label: tr('bulk.check'), icon: '⬆', action: () => bulkCheckUpdates(picked, loadGames) },
+            { label: tr('bulk.reparse'), icon: '↻', action: () => bulkReparse(picked, loadGames) },
+            { sep: true },
+            { label: tr('sel.clear'), icon: '✕', action: clearSelection },
+            { label: tr('ignore.action'), icon: '🚫', action: () => bulkIgnore(ids, loadGames) },
+            { label: tr('bulk.remove_n', { n: ids.length }), icon: '🗑', danger: true, action: () => bulkRemove(ids, loadGames) },
+        ];
+    }
     function gameMenuItems(game) {
+        if ($selection.size > 1 && $selection.has(game.id)) return bulkMenuItems();
         const items = [];
         if (game.folder_missing) items.push({ label: tr('missing.pick_long'), icon: '⚠', action: () => relinkManually(game) });
         else if (game.exec_path) items.push({ label: tr('ctx.play'), icon: '▶', action: () => playGame(game) });
@@ -392,12 +533,13 @@
         items.push({ label: game.favorite ? tr('ctx.fav_remove') : tr('ctx.fav_add'), icon: game.favorite ? '🤍' : '❤️', action: () => toggleFavorite(game) });
         items.push({
             label: tr('ctx.add_to'), icon: '＋',
-            submenu: collections.map(c => ({ label: c.name, checked: (c.game_ids || []).includes(game.id), action: () => toggleGameInCollection(c.id, game) }))
+            submenu: visibleCollections.map(c => ({ label: c.name, checked: (c.game_ids || []).includes(game.id), action: () => toggleGameInCollection(c.id, game) }))
                 .concat([{ label: tr('ctx.new_collection'), action: openCreateCollection }]),
         });
         items.push({ sep: true });
         items.push({ label: tr('ctx.open_folder'), icon: '📁', action: () => OpenFolder(game.folder_path) });
         items.push({ label: tr('ctx.edit'), icon: '✎', action: () => { selectGame(game); startEdit(); } });
+        items.push({ label: tr('ignore.action'), icon: '🚫', action: () => ignoreGame(game) });
         items.push({ label: tr('ctx.remove_game'), icon: '🗑', danger: true, action: () => removeGame(game) });
         return items;
     }
@@ -441,21 +583,82 @@
     // Диалог подтверждения и лайтбокс обрабатывают свои клавиши сами и вызывают
     // preventDefault — такие события здесь пропускаются.
     function handleKeydown(e) {
-        // Дискретный режим (Boss key): Ctrl+H — мгновенно заблюрить/показать обложки
-        if (e.ctrlKey && ['h', 'H', 'р', 'Р'].includes(e.key)) {
+        if (e.defaultPrevented || locked || pinPrompt) return;
+        const isH = ['h', 'H', 'р', 'Р'].includes(e.key) || e.code === 'KeyH';
+        // Ctrl+Shift+H — показать/спрятать скрытые коллекции
+        if (e.ctrlKey && e.shiftKey && isH) {
             e.preventDefault();
-            discreet = !discreet;
+            toggleHidden();
             return;
         }
-        if (e.defaultPrevented || isConfirmOpen() || lightboxIndex !== null) return;
-        if (e.key !== 'Escape') return;
-        // Escape закрывает верхний слой: меню → модалка → редактор → карточка игры
-        if (ctx) ctx = null;
-        else if (collectionModal) collectionModal = null;
-        else if (showRelink) showRelink = false;
-        else if (showSettings) showSettings = false;
-        else if (isEditing) isEditing = false;
-        else if (selectedGame) closeGame();
+        // Дискретный режим (Boss key): Ctrl+H — мгновенно заблюрить/показать обложки
+        if (e.ctrlKey && isH) {
+            e.preventDefault();
+            discreet.update(v => !v);
+            return;
+        }
+        if (isConfirmOpen() || lightboxIndex !== null) return;
+        const ctrl = e.ctrlKey || e.metaKey;
+        const inInput = isEditableTarget(e.target) || (e.target && e.target.tagName === 'SELECT');
+        const modalOpen = needsSetup || showSettings || showRelink || collectionModal || showHotkeys || ctx;
+
+        // F5/Ctrl+R перезагрузили бы страницу WebView (и сбросили состояние): F5 — скан
+        if (e.key === 'F5' || (ctrl && e.code === 'KeyR')) {
+            e.preventDefault();
+            if (!modalOpen && e.key === 'F5') handleScan();
+            return;
+        }
+        if (e.key === 'Escape') {
+            // Escape закрывает верхний слой: меню → модалка → редактор → выделение → карточка игры
+            if (ctx) ctx = null;
+            else if (showHotkeys) showHotkeys = false;
+            else if (collectionModal) collectionModal = null;
+            else if (showRelink) showRelink = false;
+            else if (showSettings) showSettings = false;
+            else if (isEditing) isEditing = false;
+            else if ($selecting) clearSelection();
+            else if (inInput) e.target.blur();
+            else if (selectedGame) closeGame();
+            return;
+        }
+        if (needsSetup) return;
+        if (e.key === 'F1') { e.preventDefault(); showHotkeys = !showHotkeys; return; }
+        if (ctrl && e.key === ',') { e.preventDefault(); showSettings = true; return; }
+        if (ctrl && e.code === 'KeyL') { e.preventDefault(); if (privacy && privacy.has_pin) lockNow(); return; }
+        if (modalOpen) return;
+
+        // Поиск: Ctrl+F или «/»
+        if ((ctrl && e.code === 'KeyF') || (!inInput && e.key === '/')) {
+            e.preventDefault();
+            if (isEditing) return;
+            closeGame();
+            setTimeout(() => { if (searchInput) { searchInput.focus(); searchInput.select(); } }, 0);
+            return;
+        }
+        // Размер карточек
+        if (ctrl && (e.key === '=' || e.key === '+')) { e.preventDefault(); stepCardSize(1); return; }
+        if (ctrl && e.key === '-') { e.preventDefault(); stepCardSize(-1); return; }
+        if (ctrl && e.key === '0') { e.preventDefault(); setCardSize(CARD_DEFAULT); return; }
+        if (inInput) return;
+
+        // Страница игры: Ctrl+Enter — играть, Backspace — назад
+        if (selectedGame) {
+            if (isEditing) return;
+            if (ctrl && e.key === 'Enter') { e.preventDefault(); playGame(selectedGame); }
+            else if (e.key === 'Backspace') { e.preventDefault(); closeGame(); }
+            return;
+        }
+        // Библиотека: стрелки, выделение
+        const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+        if (dirs[e.key] && !e.altKey) { e.preventDefault(); focusNeighbor(dirs[e.key]); return; }
+        if (ctrl && e.code === 'KeyA') { e.preventDefault(); selectAllVisible(); return; }
+        if (e.key === 'Delete' && $selection.size) { e.preventDefault(); bulkRemove([...$selection], loadGames); return; }
+    }
+    // Ctrl+колесо над библиотекой — размер карточек
+    function onMainWheel(e) {
+        if (!(e.ctrlKey || e.metaKey) || selectedGame) return;
+        e.preventDefault();
+        stepCardSize(e.deltaY < 0 ? 1 : -1);
     }
     // Боковая кнопка мыши «Назад» — выйти из карточки игры в сетку
     function handleGlobalMouseDown(e) {
@@ -476,8 +679,14 @@
     onMount(async () => {
         OnFileDrop((x, y, paths) => handleNativeDrop(paths), false);
         // Бэкенд шлёт событие, когда обновилось время в игре (после выхода из игры)
-        EventsOn('games-updated', () => loadGames());
+        EventsOn('games-updated', () => { if (!locked) loadGames(); });
+        EventsOn('privacy-locked', onLocked);
+        EventsOn('privacy-panic', onPanic);
         window.addEventListener('resize', onWindowResize);
+        // Окно снова в фокусе (например, развернули после «свернуть по панике»)
+        window.addEventListener('focus', onWindowFocus);
+        for (const ev of ACTIVITY_EVENTS) window.addEventListener(ev, markActivity, { passive: true });
+        idleTimer = setInterval(checkIdle, 20000);
 
         try { supportedSources = await GetSupportedSources() || []; } catch (e) {}
         try { appVersion = await GetAppVersion(); } catch (e) {}
@@ -488,6 +697,10 @@
         } catch (err) {
             console.error('Ошибка проверки конфигурации:', err);
         }
+        await refreshPrivacy();
+        if (privacy && privacy.start_discreet) discreet.set(true);
+        // С PIN-кодом лаунчер стартует заблокированным: библиотеку грузим после ввода
+        if (privacy && privacy.locked) { locked = true; return; }
         await reloadLibrary(false);
         await loadCustomLocales();
         autoCheckLauncherUpdate();
@@ -496,6 +709,9 @@
     onDestroy(() => {
         OnFileDropOff();
         window.removeEventListener('resize', onWindowResize);
+        window.removeEventListener('focus', onWindowFocus);
+        for (const ev of ACTIVITY_EVENTS) window.removeEventListener(ev, markActivity);
+        clearInterval(idleTimer);
     });
 
     async function onSetupConfigured() {
@@ -538,7 +754,7 @@
                  selectedId={selectedGame ? selectedGame.id : ''}
                  {scanning} {checkingUpdates} {draggingGame}
                  settingsBadge={!!(launcherUpdate && launcherUpdate.available)}
-                 bind:onlyDressed bind:discreet
+                 bind:onlyDressed
                  onScan={handleScan}
                  onCheckAll={handleCheckAllUpdates}
                  onFilter={applyFilter}
@@ -548,6 +764,7 @@
                  onCreateCollection={openCreateCollection}
                  onEditCollection={openEditCollection}
                  onDeleteCollection={deleteCollection}
+                 onToggleHiddenCol={toggleHiddenCol}
                  onGameContext={gameCtx}
                  {onGameDragStart} {onDropGame} {openCtx}/>
 
@@ -555,7 +772,7 @@
         <div on:mousedown={startSidebarResize} title={$t("app.resize")}
              class="w-1 shrink-0 self-stretch z-20 cursor-col-resize bg-white/5 hover:bg-indigo-400/50 transition-colors {resizingSidebar ? 'bg-indigo-400/60' : ''}"></div>
 
-        <main class="flex-1 overflow-y-auto p-8 relative">
+        <main class="flex-1 overflow-y-auto p-8 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
                 {#if selectedGame.cover_path && !isEditing}
                     <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -575,6 +792,7 @@
                         <GameDetail game={selectedGame} {supportedSources} {manualCollections}
                                     onEdit={startEdit}
                                     onRemove={() => removeGame(selectedGame)}
+                                    onIgnore={() => ignoreGame(selectedGame)}
                                     onToggleFav={toggleFavorite}
                                     onRelink={relinkManually}
                                     onRelinkAll={() => showRelink = true}
@@ -599,7 +817,7 @@
                     </div>
 
                     <div class="relative w-80 shrink-0">
-                        <input type="text" bind:value={searchQuery} on:input={handleSearch} placeholder={$t("search.placeholder")}
+                        <input type="text" bind:this={searchInput} bind:value={searchQuery} on:input={handleSearch} placeholder={$t("search.placeholder")}
                                class="w-full glass text-white rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all placeholder:text-slate-500"/>
                         <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">🔍</div>
                     </div>
@@ -607,16 +825,18 @@
 
                 {#if isHome}
                     {#if layoutEditing}
-                        <ShelfEditor bind:shelves {allTags} {collections}
+                        <ShelfEditor bind:shelves {allTags} collections={visibleCollections}
                                      countFor={(s) => buildShelf(s, shelfData).items.length}
                                      onDone={() => layoutEditing = false}/>
                     {:else}
-                        {#if heroGame}
-                            <Hero game={heroGame} {discreet} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite}/>
+                        {#if heroGame && $showHero}
+                            <Hero game={heroGame} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite}/>
                         {/if}
 
                         {#if games.length}
-                            <div class="flex justify-end mb-5 -mt-2">
+                            <!-- Инструменты вида: над всеми разделами, при любом их порядке -->
+                            <div class="flex justify-end items-center gap-3 mb-5 {heroGame && $showHero ? '-mt-2' : ''}">
+                                <LibraryTools/>
                                 <button on:click={() => layoutEditing = true}
                                         class="text-sm text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors">
                                     ✎ {$t("lib.edit_sections")}
@@ -631,14 +851,14 @@
                                         <h3 class="text-lg font-bold text-white tracking-tight">{shelf.title}
                                             <span class="text-slate-500 text-sm font-medium ml-2">{shelf.items.length}</span>
                                         </h3>
-                                        <SortSelect bind:value={sortBy}/>
+                                        <ViewControls bind:sortBy/>
                                     </div>
-                                    <GameGrid class="mb-9" items={shelf.items} {discreet} onOpen={selectGame} onPlay={playGame}
+                                    <GameGrid class="mb-9" items={shelf.items} onOpen={selectGame} onPlay={playGame}
                                               onToggleFav={toggleFavorite} onDrag={onGameDragStart} onContext={gameCtx}/>
                                 {/if}
                             {:else}
                                 <div on:contextmenu={(e) => openCtx(e, shelfMenuItems(shelf))}>
-                                    <Shelf title={shelf.title} items={shelf.items} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite} {discreet}
+                                    <Shelf title={shelf.title} items={shelf.items} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite}
                                            onDrag={onGameDragStart} onContext={gameCtx}/>
                                 </div>
                             {/if}
@@ -653,10 +873,11 @@
                         {/if}
                     {/if}
                 {:else}
-                    <div class="flex items-center justify-end mb-4">
-                        <SortSelect bind:value={sortBy}/>
+                    <div class="flex items-center justify-end gap-4 mb-4">
+                        <LibraryTools/>
+                        <ViewControls bind:sortBy/>
                     </div>
-                    <GameGrid items={filteredGames} {discreet} onOpen={selectGame} onPlay={playGame}
+                    <GameGrid items={filteredGames} onOpen={selectGame} onPlay={playGame}
                               onToggleFav={toggleFavorite} onDrag={onGameDragStart} onContext={gameCtx}/>
                     {#if filteredGames.length === 0}
                         <div class="flex flex-col items-center justify-center py-24 text-slate-500 animate-fade-in">
@@ -677,7 +898,10 @@
             {/if}
 
             {#if showSettings}
-                <SettingsModal bind:scanPaths bind:launcherUpdate {langs} {appVersion}
+                <SettingsModal bind:scanPaths bind:launcherUpdate bind:privacy {langs} {appVersion}
+                               hiddenCount={hiddenCols.length} {showHidden}
+                               onToggleHidden={toggleHidden}
+                               onLockNow={lockNow}
                                onChangeLang={changeLang}
                                onClose={() => showSettings = false}
                                onScan={handleScan}
@@ -691,7 +915,25 @@
             {/if}
 
             {#if showRelink}
-                <RelinkModal onClose={() => showRelink = false} onChanged={loadGames} {discreet}/>
+                <RelinkModal onClose={() => showRelink = false} onChanged={loadGames}/>
+            {/if}
+
+            {#if pinPrompt}
+                <PinDialog mode="verify" onSuccess={pinPrompt.onSuccess} onCancel={() => pinPrompt = null}/>
+            {/if}
+            {#if locked}
+                <PinDialog mode="lock" onSuccess={onUnlocked}/>
+            {/if}
+
+            {#if $selecting && !selectedGame && !locked}
+                <SelectionBar games={visibleGames} collections={visibleCollections}
+                              onAddToCollection={bulkAddToCollection}
+                              onRemoveFromCollection={bulkRemoveFromCollection}
+                              reload={loadGames}
+                              left={sidebarWidth + 4}/>
+            {/if}
+            {#if showHotkeys}
+                <HotkeysHelp panicLabel={privacy && privacy.panic_enabled ? privacy.panic_label : ''} onClose={() => showHotkeys = false}/>
             {/if}
 
             <ConfirmDialog/>

@@ -27,8 +27,10 @@ var appVersion = "dev"
 
 func main() {
 	// После самообновления: даём старому процессу завершиться, затем убираем его exe
+	afterUpdate := false
 	for _, arg := range os.Args[1:] {
 		if arg == afterUpdateFlag {
+			afterUpdate = true
 			time.Sleep(1500 * time.Millisecond)
 		}
 	}
@@ -69,6 +71,14 @@ func main() {
 	if cfg.WindowMaximised {
 		opts.WindowStartState = options.Maximised
 	}
+	// Один экземпляр: повторный запуск exe возвращает окно (в т.ч. спрятанное кнопкой
+	// паники). После самообновления замок не берём — старый процесс может ещё завершаться.
+	if !afterUpdate {
+		opts.SingleInstanceLock = &options.SingleInstanceLock{
+			UniqueId:               "plauncher-8e5c1f0a-2d4b-4b7e-9c3a-single",
+			OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showFromSecondInstance() },
+		}
+	}
 
 	if err := wails.Run(opts); err != nil {
 		log.Fatal(err)
@@ -86,7 +96,7 @@ func serveMedia(app *App, w http.ResponseWriter, r *http.Request) {
 	}
 
 	dataDir := app.GetDataDir()
-	if dataDir == "" {
+	if dataDir == "" || app.isLocked() { // заблокировано PIN-кодом — медиа не отдаём
 		http.NotFound(w, r)
 		return
 	}

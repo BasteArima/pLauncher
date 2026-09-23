@@ -12,8 +12,11 @@
     function add() { shelves = [...shelves, { id: newShelfId(), type: 'continue' }]; }
     function remove(id) { shelves = shelves.filter(s => s.id !== id); }
     function patch(id, changes) { shelves = shelves.map(s => s.id === id ? { ...s, ...changes } : s); }
+    // «Вся библиотека» — только один раздел
+    $: hasAll = shelves.some(s => s.type === 'all');
     function setType(id, type) {
         const s = shelves.find(x => x.id === id);
+        if (type === 'all' && hasAll && s.type !== 'all') return;
         patch(id, {
             type,
             tag: type === 'tag' ? (s.tag || allTags[0] || '') : undefined,
@@ -55,7 +58,7 @@
                     <option value="continue">{$t("shelf.continue")}</option>
                     <option value="added">{$t("shelf.added")}</option>
                     <option value="favorites">{$t("shelf.favorites")}</option>
-                    <option value="all">{$t("shelf.all")}</option>
+                    <option value="all" disabled={hasAll && s.type !== 'all'}>{$t("shelf.all")}{hasAll && s.type !== 'all' ? ' — ' + $t('layout.all_once') : ''}</option>
                     <option value="collection">{$t("layout.opt.collection")}</option>
                     <option value="tag">{$t("layout.opt.tag")}</option>
                 </select>

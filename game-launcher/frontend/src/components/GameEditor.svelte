@@ -150,7 +150,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <span class={labelCls}>{$t("edit.exe_label")}</span>
-                <input type="text" bind:value={game.exec_path} class="{inputCls} flex-1 font-mono text-xs" placeholder="C:\Games\Game\run.exe" />
+                <input type="text" bind:value={game.exec_path} class="{inputCls} flex-1 font-mono text-xs" placeholder="C:\Games\Game\Game.exe · index.html · start.bat" />
                 <button on:click={selectExecutable} class="bg-white/10 hover:bg-white/20 text-slate-200 px-3 py-1.5 rounded-md border border-white/10 transition-colors" title={$t("edit.choose_file")}>📁</button>
             </div>
             <div class="flex items-start gap-3">

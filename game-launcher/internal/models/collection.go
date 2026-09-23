@@ -10,4 +10,5 @@ type Collection struct {
 	Type    string   `json:"type"`
 	GameIDs []string `json:"game_ids"` // для ручных коллекций
 	Tags    []string `json:"tags"`     // для динамических: игра входит, если есть любой из тегов
+	Hidden  bool     `json:"hidden"`   // скрытая: её игры не видны, пока не показаны скрытые (Ctrl+Shift+H / PIN)
 }

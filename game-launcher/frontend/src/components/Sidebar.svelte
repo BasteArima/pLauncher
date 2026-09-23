@@ -2,6 +2,8 @@
     // Левая панель: кнопки действий, навигация, дерево коллекций с поиском.
     import { t, tr } from '../i18n.js';
     import { mediaSrc, lsJSON, lsSet } from '../lib/util.js';
+    import { discreet, coverBlur, blurCls } from '../lib/privacy.js';
+    import { selection, selecting, toggleSelected } from '../lib/view.js';
 
     export let width = 256;
     export let groups = [];                 // [{key, name, items, col}] — коллекции + «Без категории»
@@ -16,7 +18,6 @@
     export let scanning = false;
     export let checkingUpdates = false;
     export let onlyDressed = false;
-    export let discreet = false;
     export let draggingGame = null;         // игра, которую тащат (из сетки или из сайдбара)
     export let settingsBadge = false;       // точка на ⚙ — доступно обновление лаунчера
 
@@ -29,6 +30,7 @@
     export let onCreateCollection = () => {};
     export let onEditCollection = (col) => {};
     export let onDeleteCollection = (col) => {};
+    export let onToggleHiddenCol = (col) => {};  // пометить коллекцию скрытой / вернуть
     export let onGameContext = (g, e) => {};
     export let onGameDragStart = (g) => {};
     export let onDropGame = (col) => {};
@@ -49,6 +51,8 @@
             { sep: true },
             { label: tr('ctx.expand_all'), action: expandAll },
             { label: tr('ctx.collapse_all'), action: collapseAll },
+            { sep: true },
+            { label: col.hidden ? tr('ctx.unhide_collection') : tr('ctx.hide_collection'), icon: '🔒', action: () => onToggleHiddenCol(col) },
             { sep: true },
             { label: tr('ctx.delete_collection'), icon: '🗑', danger: true, action: () => onDeleteCollection(col) },
         ];
@@ -93,9 +97,9 @@
             </button>
             <button on:click={() => onlyDressed = !onlyDressed} title={$t("app.only_dressed")}
                     class="{iconBtn} text-base {onlyDressed ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-200' : 'bg-white/5 hover:bg-white/10 text-slate-300'}">✨</button>
-            <button on:click={() => discreet = !discreet} title={discreet ? $t('app.discreet_show') : $t('app.discreet_hide')}
-                    class="{iconBtn} text-lg {discreet ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40' : 'bg-white/5 hover:bg-white/10'}">
-                {discreet ? '🙈' : '👁️'}
+            <button on:click={() => discreet.update(v => !v)} title={$discreet ? $t('app.discreet_show') : $t('app.discreet_hide')}
+                    class="{iconBtn} text-lg {$discreet ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40' : 'bg-white/5 hover:bg-white/10'}">
+                {$discreet ? '🙈' : '👁️'}
             </button>
         </div>
     </div>
@@ -146,6 +150,7 @@
                     <button on:click={() => toggleGroup(group.key)} class="flex items-center gap-1.5 min-w-0 flex-1 text-left hover:text-white">
                         <span class="text-[10px] text-slate-500 transition-transform duration-200 {collapsed[group.key] ? '-rotate-90' : ''}">▼</span>
                         <span class="text-[11px] font-bold uppercase tracking-wider truncate">{group.name}</span>
+                        {#if group.col && group.col.hidden}<span class="text-amber-300 text-[10px]" title={$t('privacy.hidden_col')}>🔒</span>{/if}
                         {#if group.col && group.col.type === 'dynamic'}<span class="text-indigo-400 text-[10px]" title={$t("nav.dynamic")}>⚡</span>{/if}
                     </button>
                     <span class="text-[11px] text-slate-500">{group.items.length}</span>
@@ -157,14 +162,14 @@
                 {#if !collapsed[group.key] || q}
                     <div class="ml-2 border-l border-white/10 pl-1.5 mb-1">
                         {#each group.items as g (g.id)}
-                            <button on:click={() => onSelect(g)}
+                            <button on:click={(e) => (e.ctrlKey || e.metaKey || $selecting) ? toggleSelected(g.id) : onSelect(g)}
                                     draggable="true"
                                     on:dragstart={(e) => { onGameDragStart(g); try { e.dataTransfer.setData('text/plain', g.id); } catch (_) {} }}
                                     on:contextmenu={(e) => onGameContext(g, e)}
-                                    class="w-full flex items-center gap-2.5 px-2 py-1 rounded-md text-sm text-left transition-colors {selectedId === g.id ? 'bg-indigo-500/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}">
+                                    class="group w-full flex items-center gap-2.5 px-2 py-1 rounded-md text-sm text-left transition-colors {$selection.has(g.id) ? 'bg-indigo-500/25 text-white ring-1 ring-inset ring-indigo-400/50' : selectedId === g.id ? 'bg-indigo-500/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}">
                                 <span class="w-7 h-7 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
                                     {#if g.cover_path}
-                                        <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover {discreet ? 'blur-md' : ''}"/>
+                                        <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
                                     {:else}
                                         <span class="text-[11px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
                                     {/if}

@@ -12,6 +12,7 @@
     let name = collection ? collection.name : '';
     let type = collection ? collection.type : 'dynamic';
     let tags = collection ? [...(collection.tags || [])] : [];
+    let hidden = collection ? !!collection.hidden : false;
 
     function toggleTag(tag) {
         tags = tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag];
@@ -19,7 +20,7 @@
     function save() {
         const n = name.trim();
         if (!n) { showToast(tr('toast.col_name_required'), 'error'); return; }
-        onSave({ name: n, type, tags });
+        onSave({ name: n, type, tags, hidden });
     }
 </script>
 
@@ -64,6 +65,14 @@
         {:else}
             <p class="text-xs text-slate-500 mb-5">{$t("col.manual_note")}</p>
         {/if}
+
+        <label class="flex items-start gap-3 mb-5 p-3 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer">
+            <input type="checkbox" bind:checked={hidden} class="mt-0.5 accent-indigo-500 w-4 h-4"/>
+            <span>
+                <span class="block text-sm font-bold text-white">🔒 {$t("col.hidden")}</span>
+                <span class="block text-xs text-slate-400">{$t("col.hidden_hint")}</span>
+            </span>
+        </label>
 
         <div class="flex items-center gap-3">
             {#if collection}

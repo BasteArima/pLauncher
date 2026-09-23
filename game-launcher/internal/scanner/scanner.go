@@ -36,7 +36,8 @@ func NewScanner(repo db.GameRepository) *Scanner {
 
 // ScanFolder сканирует верхний слой подпапок rootPath и добавляет каждую как игру.
 // Если в подпапке есть старый parsed_data/data.json — подхватывает метаданные из него.
-// Игры, уже существующие в БД (по ID), пропускаются — ручные правки не затираются.
+// Игры, уже существующие в БД (по пути), пропускаются — ручные правки не затираются.
+// Папки из списка игнора (IgnoredPathsKey) не добавляются.
 // Возвращает количество добавленных игр.
 func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) {
 	info, err := os.Stat(rootPath)
@@ -54,6 +55,8 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 	for _, g := range existingGames {
 		existingByPath[NormalizePath(g.FolderPath)] = g
 	}
+
+	ignored := ignoredSet(ctx, s.repo)
 
 	entries, err := os.ReadDir(rootPath)
 	if err != nil {
@@ -74,16 +77,29 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 
 		gameFolderPath := filepath.Join(rootPath, entry.Name())
 		norm := NormalizePath(gameFolderPath)
+		if ignored[norm] {
+			continue
+		}
 
 		if existing := existingByPath[norm]; existing != nil {
 			// Игра уже в библиотеке — ручные правки не трогаем, но дозаполняем
-			// пустой движок авто-определением по содержимому папки.
+			// пустые движок и файл запуска авто-определением по содержимому папки.
+			changed := false
 			if existing.Engine == "" {
 				if eng := DetectEngine(gameFolderPath); eng != "" {
 					existing.Engine = eng
-					if err := s.repo.SaveGame(ctx, existing); err != nil {
-						log.Printf("Внимание: не удалось дозаполнить движок для %s: %v", existing.Title, err)
-					}
+					changed = true
+				}
+			}
+			if existing.ExecPath == "" {
+				if exe := FindBestExecutable(gameFolderPath); exe != "" {
+					existing.ExecPath = exe
+					changed = true
+				}
+			}
+			if changed {
+				if err := s.repo.SaveGame(ctx, existing); err != nil {
+					log.Printf("Внимание: не удалось дозаполнить данные для %s: %v", existing.Title, err)
 				}
 			}
 			continue

@@ -6,6 +6,8 @@ import {parser} from '../models';
 
 export function AddGamesFromDrop(arg1:Array<string>):Promise<number>;
 
+export function AddIgnoredPath(arg1:string):Promise<number>;
+
 export function AddScanPath(arg1:string):Promise<void>;
 
 export function AddSingleGameManual():Promise<void>;
@@ -28,6 +30,8 @@ export function CopyCoverToData(arg1:string,arg2:string):Promise<string>;
 
 export function CopyScreenshotToData(arg1:string,arg2:string):Promise<string>;
 
+export function DetectLaunchFiles(arg1:Array<string>):Promise<number>;
+
 export function ExportLibrary():Promise<string>;
 
 export function FindExecutables(arg1:string):Promise<Array<string>>;
@@ -48,11 +52,17 @@ export function GetDocumentsDataDir():Promise<string>;
 
 export function GetGames():Promise<Array<models.Game>>;
 
+export function GetIgnoredPaths():Promise<Array<string>>;
+
 export function GetPortableDataDir():Promise<string>;
+
+export function GetPrivacy():Promise<main.PrivacySettings>;
 
 export function GetScanPaths():Promise<Array<string>>;
 
 export function GetSupportedSources():Promise<Array<parser.Source>>;
+
+export function IgnoreGames(arg1:Array<string>):Promise<number>;
 
 export function ImportLibrary(arg1:string):Promise<number>;
 
@@ -61,6 +71,10 @@ export function InstallLauncherUpdate():Promise<void>;
 export function IsConfigured():Promise<boolean>;
 
 export function Launch(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function Lock():Promise<void>;
+
+export function NotifyWindowShown():Promise<void>;
 
 export function OpenDataDir():Promise<void>;
 
@@ -72,17 +86,27 @@ export function OpenLauncherReleasePage():Promise<void>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
+export function RecalcGameSize(arg1:string):Promise<number>;
+
+export function RefreshSizes():Promise<void>;
+
 export function RelinkAllFound():Promise<number>;
 
 export function RelinkGame(arg1:string,arg2:string):Promise<models.Game>;
 
 export function RemoveGame(arg1:string):Promise<void>;
 
+export function RemoveGames(arg1:Array<string>):Promise<number>;
+
+export function RemoveIgnoredPath(arg1:string):Promise<void>;
+
 export function RemoveMissingGames():Promise<number>;
 
 export function RemoveScanPath(arg1:string):Promise<void>;
 
 export function SaveCollections(arg1:Array<models.Collection>):Promise<void>;
+
+export function SavePrivacy(arg1:main.PrivacySettings):Promise<void>;
 
 export function SaveWindowSize():Promise<void>;
 
@@ -106,6 +130,14 @@ export function SelectRelinkFolder(arg1:string):Promise<string>;
 
 export function SelectScreenshots():Promise<Array<string>>;
 
+export function SetFavorites(arg1:Array<string>,arg2:boolean):Promise<number>;
+
+export function SetPin(arg1:string,arg2:string):Promise<void>;
+
+export function Unlock(arg1:string):Promise<void>;
+
 export function UpdateGame(arg1:models.Game):Promise<void>;
 
 export function UpdateGameMetadata(arg1:string,arg2:string):Promise<void>;
+
+export function VerifyPin(arg1:string):Promise<void>;

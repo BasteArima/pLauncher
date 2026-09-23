@@ -5,11 +5,11 @@
     import { t, tr } from '../i18n.js';
     import { showToast as notify } from '../lib/ui.js';
     import { mediaSrc } from '../lib/util.js';
+    import { coverBlur, blurCls } from '../lib/privacy.js';
     import { FindMissingGames, RelinkGame, RelinkAllFound, SelectRelinkFolder, RemoveGame } from '../../wailsjs/go/main/App.js';
 
     export let onClose = () => {};
     export let onChanged = async () => {};             // перезагрузить библиотеку
-    export let discreet = false;
 
     let items = [];
     let loading = true;
@@ -101,7 +101,7 @@
                     <div class="glass rounded-xl p-3 flex gap-3">
                         <div class="w-12 h-16 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
                             {#if m.cover_path}
-                                <img src={mediaSrc(m.cover_path)} alt="" class="w-full h-full object-cover {discreet ? 'blur-md' : ''}" on:error={(e) => e.target.style.display = 'none'}/>
+                                <img src={mediaSrc(m.cover_path)} alt="" class="w-full h-full object-cover {blurCls($coverBlur, 'self')}" on:error={(e) => e.target.style.display = 'none'}/>
                             {:else}
                                 <span class="text-slate-500 uppercase">{(m.title || '?').slice(0, 1)}</span>
                             {/if}

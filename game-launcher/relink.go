@@ -146,7 +146,7 @@ func listSubdirs(roots []string) []string {
 // найденным новым расположением (если удалось).
 func (a *App) FindMissingGames() ([]MissingGame, error) {
 	out := []MissingGame{}
-	if a.repo == nil {
+	if a.repo == nil || a.isLocked() {
 		return out, nil
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
@@ -248,6 +248,11 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 			fmt.Printf("RelinkGame: дубликат %s не удалён: %v\n", dup.ID, err)
 		}
 	}
+	// Папка другая — размер пересчитаем в фоне
+	if a.repo.SetGameSize(a.ctx, g.ID, 0, 0) == nil {
+		g.SizeBytes, g.SizeCheckedAt = 0, 0
+	}
+	a.refreshSizesAsync(false)
 	a.normalizeGames([]*models.Game{g})
 	return g, nil
 }

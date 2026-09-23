@@ -2,9 +2,9 @@
     // Баннер «Продолжить» на главной.
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle, fmtPlaytime } from '../lib/util.js';
+    import { coverBlur, blurCls } from '../lib/privacy.js';
 
     export let game;
-    export let discreet = false;
     export let onOpen = (g) => {};
     export let onPlay = (g) => {};
     export let onToggleFav = (g) => {};
@@ -13,7 +13,7 @@
 <div class="relative h-[176px] rounded-2xl overflow-hidden ring-1 ring-white/10 mb-7 cursor-pointer animate-rise-in group"
      on:click={() => onOpen(game)}>
     {#if game.cover_path}
-        <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-50 transition-transform duration-700 group-hover:scale-105 {discreet ? 'blur-3xl' : 'blur-sm'}"/>
+        <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-50 transition-transform duration-700 group-hover:scale-105 {$coverBlur === 'none' ? 'blur-sm' : blurCls($coverBlur, 'bg')}"/>
     {/if}
     <div class="absolute inset-0 bg-gradient-to-r from-[#0a0912] via-[#0a0912]/75 to-transparent"></div>
     <div class="absolute inset-0 bg-gradient-to-t from-[#0a0912] via-transparent to-transparent"></div>
@@ -28,7 +28,7 @@
         {#if game.cover_path}
             <img src={mediaSrc(game.cover_path)} alt={game.title}
                  style={coverStyle(game)} on:error={(e) => e.target.style.display = 'none'}
-                 class="hidden sm:block h-full aspect-[3/4] rounded-lg ring-1 ring-white/15 shadow-2xl shrink-0 {discreet ? 'blur-2xl' : ''}"/>
+                 class="hidden sm:block h-full aspect-[3/4] rounded-lg ring-1 ring-white/15 shadow-2xl shrink-0 transition duration-300 {blurCls($coverBlur, 'cover')}"/>
         {/if}
         <div class="min-w-0">
             <div class="text-[10px] uppercase tracking-widest text-indigo-300 mb-1 font-semibold">

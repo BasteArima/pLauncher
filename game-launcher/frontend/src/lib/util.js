@@ -22,6 +22,16 @@ export function fmtPlaytime(min) {
     return h ? tr('time.hm', { h, m }) : tr('time.m', { m });
 }
 
+// Размер в человекочитаемом виде: 1.4 ГБ / 820 МБ
+export function fmtSize(bytes) {
+    if (!bytes || bytes <= 0) return '';
+    const units = ['size.b', 'size.kb', 'size.mb', 'size.gb', 'size.tb'];
+    let i = 0, v = bytes;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    const num = v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1);
+    return tr(units[i], { n: num });
+}
+
 // Сортировка списка игр по ключу (ключ передаётся аргументом — так Svelte видит зависимость)
 export function sortGames(arr, key) {
     const a = [...arr];
@@ -30,6 +40,7 @@ export function sortGames(arr, key) {
         case 'played_desc':   a.sort((x, y) => (y.last_launched_at || 0) - (x.last_launched_at || 0)); break;
         case 'playtime_desc': a.sort((x, y) => (y.time_played || 0) - (x.time_played || 0)); break;
         case 'added_asc':     a.sort((x, y) => (x.added_at || 0) - (y.added_at || 0)); break;
+        case 'size_desc':     a.sort((x, y) => (y.size_bytes || 0) - (x.size_bytes || 0)); break;
         default:              a.sort((x, y) => (y.added_at || 0) - (x.added_at || 0)); // added_desc
     }
     return a;

@@ -3,15 +3,17 @@
     // скриншоты, коллекции и блок метаданных.
     import { t, tr } from '../i18n.js';
     import { showToast } from '../lib/ui.js';
-    import { mediaSrc, coverStyle, fmtPlaytime, copyText } from '../lib/util.js';
-    import { Launch, OpenFolder, SelectExecutable, UpdateGame, UpdateGameMetadata } from '../../wailsjs/go/main/App.js';
+    import { mediaSrc, coverStyle, fmtPlaytime, fmtSize, copyText } from '../lib/util.js';
+    import { Launch, OpenFolder, SelectExecutable, UpdateGame, UpdateGameMetadata, RecalcGameSize } from '../../wailsjs/go/main/App.js';
     import MetadataPanel from './MetadataPanel.svelte';
+    import { coverBlur, blurCls } from '../lib/privacy.js';
 
     export let game;
     export let supportedSources = [];
     export let manualCollections = [];
     export let onEdit = () => {};
     export let onRemove = () => {};
+    export let onIgnore = () => {};
     export let onToggleFav = (g) => {};
     export let onRelink = (g) => {};                     // указать новую папку вручную
     export let onRelinkAll = () => {};                   // окно перепривязки
@@ -23,6 +25,15 @@
 
     let parsing = false;
     const copy = (text, label) => copyText(text, label, showToast);
+
+    let sizing = false;
+    async function recalcSize() {
+        if (sizing) return;
+        sizing = true;
+        try { game.size_bytes = await RecalcGameSize(game.id); }
+        catch (err) { showToast(tr('toast.error', { err }), 'error'); }
+        finally { sizing = false; }
+    }
 
     async function openFolder() {
         try { await OpenFolder(game.folder_path); }
@@ -92,7 +103,7 @@
 
 <div class="relative rounded-2xl overflow-hidden ring-1 ring-white/10 mb-8 min-h-[340px] flex">
     {#if game.cover_path}
-        <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 blur-lg opacity-40"/>
+        <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-40 {$coverBlur === 'none' ? 'blur-lg' : 'blur-3xl'}"/>
     {/if}
     <div class="absolute inset-0 bg-gradient-to-r from-[#0a0912] via-[#0a0912]/80 to-[#0a0912]/40"></div>
     <div class="absolute inset-0 bg-gradient-to-t from-[#0a0912] to-transparent"></div>
@@ -101,7 +112,7 @@
         {#if game.cover_path}
             <img src={mediaSrc(game.cover_path)} alt={game.title}
                  style={coverStyle(game)} on:error={(e) => e.target.style.display = 'none'}
-                 class="w-[210px] aspect-[3/4] rounded-xl ring-1 ring-white/15 shadow-2xl shrink-0 hidden md:block"/>
+                 class="w-[210px] aspect-[3/4] rounded-xl ring-1 ring-white/15 shadow-2xl shrink-0 hidden md:block transition duration-300 {blurCls($coverBlur, 'self')}"/>
         {/if}
         <div class="flex-1 min-w-0 flex flex-col">
             <h1 class="text-4xl xl:text-5xl font-black text-white drop-shadow-xl mb-3 break-words cursor-pointer hover:text-indigo-200 transition-colors" on:click={() => copy(game.title, $t('label.title'))} title={$t("detail.copy_title")}>
@@ -134,6 +145,11 @@
                 {#if game.time_played > 0}
                     <span class={chip}>🕒 {fmtPlaytime(game.time_played)}</span>
                 {/if}
+                {#if !game.folder_missing}
+                    <span class={chipBtn} on:click={recalcSize} title={$t('detail.size_hint')}>
+                        💾 {sizing ? $t('meta.checking') : (fmtSize(game.size_bytes) || $t('detail.size_unknown'))}
+                    </span>
+                {/if}
             </div>
             {#if game.tags && game.tags.length}
                 <div class="flex flex-wrap gap-2 mb-5">
@@ -154,6 +170,7 @@
                     {game.favorite ? '❤️' : '🤍'}
                 </button>
                 <button on:click={onEdit} class="glass hover:bg-white/10 text-slate-200 font-semibold py-3.5 px-5 rounded-xl transition-colors" title={$t("detail.edit")}>✏️</button>
+                <button on:click={onIgnore} class="glass hover:bg-amber-900/40 text-slate-400 hover:text-amber-300 font-semibold py-3.5 px-5 rounded-xl transition-colors" title={$t('ignore.hint')}>🚫</button>
                 <button on:click={onRemove} class="glass hover:bg-red-900/50 text-slate-400 hover:text-red-400 font-semibold py-3.5 px-5 rounded-xl transition-colors" title={$t("detail.remove_from_launcher")}>🗑️</button>
             </div>
         </div>
@@ -175,7 +192,7 @@
         <div class="flex gap-4 overflow-x-auto pb-3">
             {#each game.images as img, i}
                 <div class="relative flex-shrink-0 w-72 aspect-video bg-slate-900 rounded-lg ring-1 ring-white/10 overflow-hidden group hover:ring-indigo-400/50 transition-all">
-                    <img src={mediaSrc(img)} alt="screenshot" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500" on:click={() => onOpenImage(i)}/>
+                    <img src={mediaSrc(img)} alt="screenshot" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition duration-500 {blurCls($coverBlur, 'icon')}" on:click={() => onOpenImage(i)}/>
                 </div>
             {/each}
         </div>

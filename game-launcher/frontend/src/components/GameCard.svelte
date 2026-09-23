@@ -1,16 +1,20 @@
 <script>
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle } from '../lib/util.js';
+    import { coverBlur, blurCls } from '../lib/privacy.js';
+    import { selection, selecting, toggleSelected, selectRange } from '../lib/view.js';
     export let game;
     export let onOpen = () => {};
     export let onPlay = null;        // если задан и есть exec_path — кнопка запуска
     export let onToggleFav = null;   // если задан — кнопка «избранное»
-    export let discreet = false;     // блюр обложки (дискретный режим)
     export let onDrag = null;        // (game) => ... при начале перетаскивания
     export let onContext = null;     // (game, event) => ... ПКМ
 
     $: cover = mediaSrc(game.cover_path);
     $: coverCss = coverStyle(game);
+    // Тип файла запуска для бейджа: EXE, HTML, BAT, JAR…
+    $: launchName = (game.exec_path || '').split(/[\\/]/).pop();
+    $: launchExt = launchName.includes('.') ? launchName.split('.').pop().toUpperCase().slice(0, 8) : '▶';
     let coverError = false;
     $: if (cover) coverError = false; // сбрасываем при смене обложки
 
@@ -19,6 +23,26 @@
         e.dataTransfer.effectAllowed = 'copy';
         try { e.dataTransfer.setData('text/plain', game.id); } catch (_) {}
         onDrag(game);
+    }
+    // Клик: Ctrl — добавить/убрать из выделения, Shift — диапазон; если уже что-то
+    // выделено, обычный клик тоже работает как выделение. Иначе — открыть игру.
+    $: selected = $selection.has(game.id);
+    function handleClick(e) {
+        if (e.shiftKey) { selectRange(e.currentTarget); return; }
+        if (e.ctrlKey || e.metaKey || $selecting) { toggleSelected(game.id); return; }
+        onOpen();
+    }
+    // Клавиатура на сфокусированной карточке: Enter — открыть, Ctrl+Enter — играть,
+    // Пробел — выделить. Стрелки обрабатывает App (переход между карточками).
+    function handleKey(e) {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if ((e.ctrlKey || e.metaKey) && onPlay) onPlay(game); else onOpen();
+        } else if (e.key === ' ') {
+            e.preventDefault();
+            toggleSelected(game.id);
+        }
     }
     function handleContext(e) {
         if (!onContext) return;
@@ -29,24 +53,32 @@
 </script>
 
 <div
-        class="group relative cursor-pointer rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-indigo-400/50 bg-white/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-900/50 {game.update_available ? 'ring-2 ring-amber-400/70' : ''}"
+        data-game-id={game.id}
+        tabindex="0"
+        role="button"
+        aria-pressed={selected}
+        class="group relative cursor-pointer rounded-xl overflow-hidden ring-1 bg-white/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-900/50 outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 {selected ? 'ring-2 ring-indigo-400 shadow-lg shadow-indigo-900/50' : game.update_available ? 'ring-2 ring-amber-400/70' : 'ring-white/10 hover:ring-indigo-400/50'}"
         draggable={!!onDrag}
         on:dragstart={handleDragStart}
         on:contextmenu={handleContext}
-        on:click={onOpen}>
+        on:click={handleClick}
+        on:keydown={handleKey}>
 
     <div class="aspect-[3/4] w-full bg-slate-900/60 relative">
         {#if cover && !coverError}
             <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true}
-                 class="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 {discreet ? 'blur-2xl scale-110' : ''} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
+                 class="absolute inset-0 w-full h-full transition duration-500 group-hover:scale-105 {blurCls($coverBlur, 'card')} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
         {:else}
             <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-2 p-4 text-center">
                 <span class="text-3xl opacity-40">🎮</span>
-                <span class="text-sm leading-snug line-clamp-3">{discreet ? '•••' : game.title}</span>
+                <span class="text-sm leading-snug line-clamp-3">{$coverBlur === 'always' ? '•••' : game.title}</span>
             </div>
         {/if}
 
-        {#if onToggleFav}
+        {#if $selecting}
+            <!-- Режим выделения: чекбокс вместо кнопок -->
+            <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold ring-2 transition-colors {selected ? 'bg-indigo-500 ring-indigo-300 text-white' : 'bg-black/50 ring-white/40 text-transparent'}">✓</span>
+        {:else if onToggleFav}
             <button
                     on:click|stopPropagation={() => onToggleFav(game)}
                     title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
@@ -55,7 +87,7 @@
             </button>
         {/if}
 
-        {#if onPlay && game.exec_path && !game.folder_missing}
+        {#if onPlay && game.exec_path && !game.folder_missing && !$selecting}
             <button
                     on:click|stopPropagation={() => onPlay(game)}
                     title={$t('btn.play')}
@@ -73,9 +105,9 @@
                 {#if game.folder_missing}
                     <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30" title={$t('missing.card_hint')}>⚠ {$t('missing.badge')}</span>
                 {:else if game.exec_path}
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30">EXE</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30" title={$t('card.launch_hint', { file: launchName })}>{launchExt}</span>
                 {:else}
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30">NO EXE</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30">{$t('card.no_launch')}</span>
                 {/if}
             </div>
         </div>

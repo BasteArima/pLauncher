@@ -55,6 +55,34 @@ The app is fully working. Done so far:
 - **Backup** (`backup.go`): export = zip of a `VACUUM INTO` DB snapshot + `covers/` + `languages/` + manifest;
   import extracts to `<dataDir>/.import-tmp`, validates/migrates the DB, rewrites media paths to `covers/…`,
   swaps files with rollback. Game folders are absolute → after moving to a new PC use relink.
+- **Privacy** (`privacy.go`, `hotkey_windows.go`; UI in Settings → Privacy): settings in DB `settings["privacy"]`.
+  PIN (PBKDF2-SHA256, 200k iters, 5 tries then 30 s cooldown) → app starts locked; while locked `GetGames/
+  SearchGames/GetCollections/FindMissingGames` return nothing and `/media` 404s. Idle auto-lock (frontend timer →
+  `Lock`). Panic button = global WinAPI `RegisterHotKey` on its own OS thread; hides/minimizes the window, optionally
+  locks; same combo or a second exe launch (SingleInstanceLock) restores. Cover blur mode none/hover/always via
+  `lib/privacy.js` stores (`coverBlur`, `blurCls(mode, kind)`); Ctrl+H = discreet (always). Hidden collections
+  (`Collection.Hidden`): their games are filtered out of `visibleGames` until Ctrl+Shift+H (asks PIN if set).
+- **Settings** are a tabbed modal: `components/settings/{General,Library,Privacy,Data}Tab.svelte`.
+- **Launch-file detection** (`scanner/launchfinder.go`): if a folder has no `.exe`, a second pass looks for
+  html (index/game/…), bat/cmd, jar, swf, qsp, rags, love (docs/installers skipped). On Linux/macOS native
+  launchers (.sh, .x86_64, .AppImage, .app bundles) win over `.exe`. Re-scan fills an empty `ExecPath` of
+  existing games; `DetectLaunchFiles(ids)` does it on demand. `launcher.isDirectExecutable` decides direct exec
+  vs OS association (`cmd start` / `open` / `xdg-open`).
+- **Folder size** (`sizes.go`): `size_bytes/size_checked_at` columns, computed in a background goroutine
+  (startup, after scan/drop/relink; stale after 7 days) and written ONLY via `repo.SetGameSize` so UI saves
+  never overwrite it. `RecalcGameSize(id)` / `RefreshSizes()`; sort option `size_desc`.
+- **Selection & bulk actions**: `lib/view.js` (selection store, Ctrl/Shift-click, geometric arrow-key focus,
+  card size store), `lib/bulk.js` (favorite, detect launch, check updates, re-parse, remove) +
+  `SelectionBar.svelte`; right-click on a selected card shows bulk items. Backend: `RemoveGames`,
+  `SetFavorites`, `DetectLaunchFiles`.
+- **Ignored folders** (`ignore.go`, `scanner/ignore.go`): settings key `ignored_paths` (JSON list, compared via
+  `NormalizePath`). `ScanFolder` skips them. «Ignore when scanning» = `IgnoreGames(ids)` (adds folders + removes
+  games); list managed in Settings → Library (`GetIgnoredPaths/AddIgnoredPath/RemoveIgnoredPath`). An explicit
+  drop/«single game» of an ignored folder adds it and un-ignores it.
+- **SQLite** is opened with `_pragma=busy_timeout(5000)`: background size calculation writes concurrently with UI.
+- **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`); the reference list
+  lives in `lib/hotkeys.js` (F1 window + Settings → General). F5/Ctrl+R are intercepted (a WebView reload would
+  drop state). Card size: slider in `ViewControls`, Ctrl+wheel, Ctrl +/−/0.
 - **Launcher self-update** (`updater.go`): GitHub Releases of `updateRepo` (ldflag); downloads `pLauncher.exe`,
   verifies `pLauncher.exe.sha256`, renames running exe to `.old`, restarts with `--after-update`.
   Requires the releases repo to be **public** (the code repo currently is private). Silent check ≤1/day.
@@ -89,8 +117,10 @@ game-launcher/
     lib/util.js            mediaSrc, coverStyle, sortGames, fmtPlaytime, localStorage helpers, clickOutside
     lib/shelves.js         shelves (load/build) + buildCol (collection membership)
     lib/inputMenu.js       cut/copy/paste menu for text inputs
+    lib/view.js / bulk.js / hotkeys.js / privacy.js   selection+card size / bulk actions / hotkey list / blur stores
     i18n.js + locales/{en,ru,es}.json
-  ../.github/workflows/    ci.yml (vet/test/vite on push+PR), release.yml (tag v* → exe + sha256 release)
+  ../.github/workflows/    ci.yml (vet/test on Windows+Ubuntu 24.04+macOS), release.yml (tag v* → win exe, linux
+                           binary+tar.gz, macOS universal .app zip, each with .sha256; names = updater.assetNameFor)
   wails.json               app name "pLauncher", build metadata, icon source = build/appicon.png
 ```
 
@@ -186,9 +216,9 @@ High value (turns the app from a gallery into a real collection tracker):
 3. **Rating & notes** — personal star rating + a notes field (spoilers under a toggle).
 
 Privacy (matters for this content):
-4. **PIN/password on launch** + a global "panic" hotkey that minimizes & blurs even when unfocused;
-   optional neutral process name/icon. (Builds on the existing discreet mode / Ctrl+H.)
-5. **Blur covers by default until hover** (option) — extends discreet mode.
+4. ✅ **DONE — PIN lock, idle auto-lock, global panic hotkey, hidden collections.** NOT done: neutral
+   process name/icon.
+5. ✅ **DONE — Blur covers until hover / always** (Settings → Privacy).
 
 Polish / convenience:
 6. ✅ **DONE — Auto-detect engine** from folder contents (`scanner.DetectEngine`, 13 engines:
@@ -201,7 +231,9 @@ Polish / convenience:
 10. **Multi-tag filter** (AND/OR, exclude) and a tag blacklist (hide unwanted genres).
 11. **Localize parser errors via codes** — currently backend errors are plain English strings; switch to
     codes so the frontend dictionary can translate them.
-12. ✅ **DONE (Windows) — Self-update + CI releases.** NOT done: macOS/Linux builds; releases need a public repo.
+12. ✅ **DONE — Self-update + CI releases for Windows/Linux/macOS.** Self-update installs on Windows & Linux;
+    macOS (unsigned .app) only links to the release page. Linux builds need `-tags webkit2_41` (WebKitGTK 4.1).
+    Releases need a public repo. CI for Linux/macOS is written but not yet run.
 
 Owner's note: #1 (update checking) and #2 (statuses) are expected to give the biggest payoff.
 

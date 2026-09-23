@@ -13,11 +13,15 @@ export function defaultShelves() {
     ];
 }
 
-// Сохранённые полки из localStorage (или набор по умолчанию)
+// Сохранённые полки из localStorage (или набор по умолчанию).
+// Раздел «Вся библиотека» может быть только один — лишние (из старых сохранений) отбрасываем.
 export function loadShelves() {
     const raw = lsJSON('plauncher_shelves', null);
     if (Array.isArray(raw) && raw.length) {
-        return raw.map(s => ({ id: s.id || newShelfId(), type: s.type, tag: s.tag, collectionId: s.collectionId }));
+        let seenAll = false;
+        return raw
+            .filter(s => s.type !== 'all' || (!seenAll && (seenAll = true)))
+            .map(s => ({ id: s.id || newShelfId(), type: s.type, tag: s.tag, collectionId: s.collectionId }));
     }
     return defaultShelves();
 }
@@ -29,6 +33,18 @@ function shelfTitle(s) {
 }
 
 // d — готовые списки: { recentlyPlayed, recentlyAdded, favoriteGames, allGamesSorted, games, collectionsView }
+// Полки для отрисовки. Единственное исключение: если сразу под баннером «Продолжить»
+// (первая непустая полка) стоит «Продолжить играть», игру из баннера в ней не повторяем —
+// иначе одна и та же игра идёт два раза подряд. Ниже по странице полка показывается целиком.
+export function renderShelves(shelves, d, heroGame) {
+    const built = shelves.map(s => buildShelf(s, d));
+    const first = built.find(s => s.items.length);
+    if (heroGame && first && first.type === 'continue' && first.items[0] === heroGame) {
+        first.items = first.items.slice(1);
+    }
+    return built;
+}
+
 export function buildShelf(s, d) {
     let items, title = shelfTitle(s);
     switch (s.type) {
