@@ -1,8 +1,8 @@
 <script>
-    // Левая панель: кнопки действий, навигация, дерево коллекций с поиском.
+    // Левая панель: навигация (главная/фильтры), дерево коллекций с поиском.
     import { t, tr } from '../i18n.js';
     import { mediaSrc, lsJSON, lsSet } from '../lib/util.js';
-    import { discreet, coverBlur, blurCls } from '../lib/privacy.js';
+    import { coverBlur, blurCls } from '../lib/privacy.js';
     import { selection, selecting, toggleSelected } from '../lib/view.js';
 
     export let width = 256;
@@ -12,17 +12,13 @@
     export let favoritesCount = 0;
     export let updatesCount = 0;
     export let missingCount = 0;
+    export let noCoverCount = 0;           // игры без обложки (ещё не спарсены)
     export let isHome = true;
     export let activeFilter = 'all';
     export let selectedId = '';
-    export let scanning = false;
-    export let checkingUpdates = false;
-    export let onlyDressed = false;
     export let draggingGame = null;         // игра, которую тащат (из сетки или из сайдбара)
     export let settingsBadge = false;       // точка на ⚙ — доступно обновление лаунчера
 
-    export let onScan = () => {};
-    export let onCheckAll = () => {};
     export let onFilter = (f) => {};
     export let onRelink = () => {};
     export let onSelect = (g) => {};
@@ -76,32 +72,13 @@
             ? 'bg-indigo-500/20 text-white font-semibold ring-1 ring-inset ring-indigo-400/30'
             : 'text-slate-300 hover:bg-white/5 hover:text-white');
     }
-    const iconBtn = 'w-9 h-9 rounded-lg flex items-center justify-center transition-colors';
 </script>
 
 <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{width}px">
-    <div class="flex items-center justify-between flex-wrap gap-y-2 px-4 pt-4 pb-4">
+    <div class="px-4 pt-4 pb-4">
         <h1 class="text-2xl font-black tracking-wide">
             <span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">pLauncher</span>
         </h1>
-        <div class="flex items-center gap-1.5 ml-auto">
-            <button on:click={onScan} disabled={scanning} title={$t("app.scan")}
-                    class="{iconBtn} text-slate-300 bg-white/5 hover:bg-white/10 disabled:opacity-60">
-                <svg class="w-5 h-5 pointer-events-none {scanning ? 'animate-spin' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
-                </svg>
-            </button>
-            <button on:click={onCheckAll} disabled={checkingUpdates} title={$t("app.check_updates")}
-                    class="{iconBtn} text-slate-300 bg-white/5 hover:bg-white/10 disabled:opacity-60">
-                <span class="text-lg pointer-events-none {checkingUpdates ? 'animate-pulse' : ''}">⬆</span>
-            </button>
-            <button on:click={() => onlyDressed = !onlyDressed} title={$t("app.only_dressed")}
-                    class="{iconBtn} text-base {onlyDressed ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-200' : 'bg-white/5 hover:bg-white/10 text-slate-300'}">✨</button>
-            <button on:click={() => discreet.update(v => !v)} title={$discreet ? $t('app.discreet_show') : $t('app.discreet_hide')}
-                    class="{iconBtn} text-lg {$discreet ? 'bg-indigo-500/25 ring-1 ring-indigo-400/40' : 'bg-white/5 hover:bg-white/10'}">
-                {$discreet ? '🙈' : '👁️'}
-            </button>
-        </div>
     </div>
 
     <nav class="flex-1 overflow-y-auto px-2 pb-2">
@@ -115,6 +92,12 @@
                 <button on:click={() => onFilter('updates')} class={navCls(activeFilter === 'updates')}>
                     <span class="text-amber-300">⬆</span> {$t('nav.updates')}
                     <span class="ml-auto text-xs font-bold text-amber-300">{updatesCount}</span>
+                </button>
+            {/if}
+            {#if noCoverCount}
+                <button on:click={() => onFilter('nocover')} class={navCls(activeFilter === 'nocover')} title={$t('nav.no_cover_hint')}>
+                    <span class="text-slate-400">▢</span> {$t('nav.no_cover')}
+                    <span class="ml-auto text-xs text-slate-400">{noCoverCount}</span>
                 </button>
             {/if}
             {#if missingCount}

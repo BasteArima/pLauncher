@@ -34,13 +34,16 @@ The app is fully working. Done so far:
 - **Collections**: manual + dynamic-by-tags; CRUD; sidebar groups & a `collection` shelf type come from
   them; drag a game onto a collection to add it (works for dynamic too via pinned `game_ids`).
 - **Tags & favorites**: auto-tags from parsing + manual editing; favorites (♥) with shelf/filter.
-- **Discreet mode** (👁 / Ctrl+H) blurs all covers; "only games with a cover" toggle (✨) hides un-parsed.
+- **Discreet mode** (👁 in the titlebar / Ctrl+H) blurs all covers. Games without a cover are listed under the
+  sidebar filter «No cover» (`activeFilter === 'nocover'`, shown only when there are any) — a to-do list for parsing.
 - **Cover fit/position editor** (fill/contain/stretch + X/Y), per game.
 - **Playtime tracking** via `cmd.Wait` (no polling); shown on detail; sort by playtime.
-- **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize),
+- **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize; a «Library ▾»
+  menu with scan/add game/check updates/privacy/hotkeys/settings built by `libraryMenuItems()` in App and shown via
+  `ContextMenu` (items support `hint` = shortcut); quick 👁 / 🔒 buttons and a scan/update-check status),
   custom context menus, custom confirm dialog (no native popups), toasts.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
-  sidebar width; sort/layout/collapsed/lang/onlyDressed in localStorage.
+  sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es built-in + user languages from `data/languages/*.json` (README + `_example.json`
   auto-dropped there); language picker on first run and in settings; backend errors are in English.
 - **UX details**: lightbox is a full-window `fixed` overlay (Esc/arrows, mouse back/forward); confirm
@@ -169,10 +172,10 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   recomputes when the **identifiers it textually references** change. Functions like `tr()`, `buildShelf()`,
   `sortGames()` read state that isn't named in the expression, so pass that state in as an argument (see
   `shelfData._lang`, `filterBtn(filter, active)`, `viewTitle = ($langStore, …)`). Forgetting this = stale UI.
-- `libGames` is the base list everywhere (home/shelves/collections/grids); it's `games` filtered by the
-  “only with cover” toggle (`onlyDressed`). Use `libGames`, not `games`, in derived views.
+- `visibleGames` is the base list everywhere (home/shelves/collections/grids); it's `games` without hidden
+  collections (see Privacy). Use `visibleGames`, not `games`, in derived views.
 - UI prefs in `localStorage`: `plauncher_sidebar_w`, `plauncher_shelves`, `plauncher_sort`,
-  `plauncher_collapsed`, `plauncher_only_dressed`, `plauncher_lang`.
+  `plauncher_collapsed`, `plauncher_lang`.
 - Window is **frameless**; custom titlebar uses CSS `--wails-draggable`. Native context menu is disabled;
   there's a custom one (`openCtx(e, items)` in App; `gameMenuItems`/`shelfMenuItems` in App, collection menu in Sidebar).
 - Global keys: components that own keys (ConfirmDialog, Lightbox) call `preventDefault()`; App's window

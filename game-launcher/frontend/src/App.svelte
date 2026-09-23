@@ -26,6 +26,7 @@
         GetPrivacy,
         Lock,
         NotifyWindowShown,
+        AddSingleGameManual,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
@@ -90,8 +91,6 @@
     $: lsSet('plauncher_sort', sortBy);
 
     // «Только оформленные» — скрывать игры без обложки
-    let onlyDressed = lsGet('plauncher_only_dressed') === '1';
-    $: lsSet('plauncher_only_dressed', onlyDressed ? '1' : '0');
 
     // Модалки
     let needsSetup = false;
@@ -183,22 +182,22 @@
     $: hiddenIds = new Set(hiddenCols.flatMap(c => buildCol(c, games).items.map(g => g.id)));
     $: visibleGames = showHidden || !hiddenIds.size ? games : games.filter(g => !hiddenIds.has(g.id));
     $: visibleCollections = showHidden ? collections : collections.filter(c => !c.hidden);
-    // Базовый список, на котором строится вся библиотека/полки/коллекции
-    $: libGames = onlyDressed ? visibleGames.filter(g => g.cover_path) : visibleGames;
-    $: filteredGames = sortGames(libGames.filter(g => {
+    $: filteredGames = sortGames(visibleGames.filter(g => {
         if (activeTag && !(g.tags || []).includes(activeTag)) return false;
         if (activeFilter === 'favorites') return g.favorite;
         if (activeFilter === 'updates') return g.update_available;
+        if (activeFilter === 'nocover') return !g.cover_path;
         return true;
     }), sortBy);
-    $: allGamesSorted = sortGames(libGames, sortBy);
-    $: updatesGames = libGames.filter(g => g.update_available);
+    $: allGamesSorted = sortGames(visibleGames, sortBy);
+    $: updatesGames = visibleGames.filter(g => g.update_available);
     $: missingGames = visibleGames.filter(g => g.folder_missing);
-    $: recentlyPlayed = libGames
+    $: noCoverCount = visibleGames.filter(g => !g.cover_path).length;
+    $: recentlyPlayed = visibleGames
         .filter(g => (g.last_launched_at || 0) > 0)
         .sort((a, b) => (b.last_launched_at || 0) - (a.last_launched_at || 0));
-    $: recentlyAdded = [...libGames].sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
-    $: favoriteGames = libGames.filter(g => g.favorite);
+    $: recentlyAdded = [...visibleGames].sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
+    $: favoriteGames = visibleGames.filter(g => g.favorite);
     $: heroGame = recentlyPlayed[0] || recentlyAdded[0] || null;
     // Домашний вид: без поиска, фильтра и выбранного тега
     $: isHome = searchQuery.trim() === '' && activeFilter === 'all' && !activeTag;
@@ -209,6 +208,7 @@
         : searchQuery.trim() ? tr('view.search')
         : activeFilter === 'favorites' ? tr('shelf.favorites')
         : activeFilter === 'updates' ? tr('nav.updates')
+        : activeFilter === 'nocover' ? tr('nav.no_cover')
         : tr('lib.title'));
 
     // Уникальные теги по всей библиотеке, по частоте
@@ -220,9 +220,9 @@
 
     // --- Коллекции (как в Steam: ручные + динамические по тегам) ---
     let collections = [];
-    $: collectionsView = visibleCollections.map(c => buildCol(c, libGames));
+    $: collectionsView = visibleCollections.map(c => buildCol(c, visibleGames));
     $: categorizedIds = new Set(collectionsView.flatMap(c => c.items.map(g => g.id)));
-    $: uncategorized = sortGames(libGames.filter(g => !categorizedIds.has(g.id)), 'title_asc');
+    $: uncategorized = sortGames(visibleGames.filter(g => !categorizedIds.has(g.id)), 'title_asc');
     $: sidebarGroups = ($langStore, [
         ...collectionsView.map(c => ({ key: c.id, name: c.name, items: sortGames(c.items, 'title_asc'), col: c })),
         ...(uncategorized.length ? [{ key: '__uncat', name: tr('nav.uncategorized'), items: uncategorized, col: null }] : []),
@@ -291,7 +291,7 @@
     $: lsSet('plauncher_shelves', JSON.stringify(shelves));
     let layoutEditing = false;
     // Зависимости перечислены явно, чтобы Svelte пересчитывал при изменении данных
-    $: shelfData = { recentlyPlayed, recentlyAdded, favoriteGames, allGamesSorted, games: libGames, collectionsView, _lang: $langStore };
+    $: shelfData = { recentlyPlayed, recentlyAdded, favoriteGames, allGamesSorted, games: visibleGames, collectionsView, _lang: $langStore };
     // Баннер выключен — дубля нет, полку не трогаем
     $: renderedShelves = renderShelves(shelves, shelfData, $showHero ? heroGame : null);
     function shelfMenuItems(shelf) {
@@ -345,6 +345,7 @@
     }
 
     async function handleScan() {
+        if (scanning) return;
         if (!scanPaths.length) { showToast(tr('toast.scan_first'), 'error'); return; }
         scanning = true;
         try {
@@ -367,6 +368,34 @@
             showToast(n > 0 ? tr('toast.updates_found_n', { n }) : tr('toast.update_none'), 'success');
         } catch (err) { showToast(tr('toast.update_fail', { err }), 'error'); }
         finally { checkingUpdates = false; }
+    }
+
+    async function addSingleGame() {
+        try {
+            await AddSingleGameManual();
+            await loadGames();
+        } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
+    }
+
+    // Меню «Библиотека» в заголовке окна: общие действия + их горячие клавиши
+    function libraryMenuItems() {
+        const items = [
+            { label: tr('menu.scan'), icon: '⟳', hint: 'F5', action: handleScan },
+            { label: tr('menu.add_game'), icon: '＋', action: addSingleGame },
+            { label: checkingUpdates ? tr('menu.checking') : tr('menu.check_updates'), icon: '⬆', action: handleCheckAllUpdates },
+            { sep: true },
+            { label: $discreet ? tr('app.discreet_show') : tr('menu.discreet'), icon: '👁', hint: 'Ctrl+H', action: () => discreet.update(v => !v) },
+        ];
+        if (hiddenCols.length) items.push({ label: showHidden ? tr('menu.hide_hidden') : tr('menu.show_hidden'), icon: '🔒', hint: 'Ctrl+Shift+H', action: toggleHidden });
+        if (privacy && privacy.has_pin) items.push({ label: tr('menu.lock'), icon: '🔐', hint: 'Ctrl+L', action: lockNow });
+        items.push({ sep: true },
+            { label: tr('menu.hotkeys'), icon: '⌨', hint: 'F1', action: () => showHotkeys = true },
+            { label: tr('nav.settings'), icon: '⚙', hint: 'Ctrl+,', action: () => showSettings = true });
+        return items;
+    }
+    function openLibraryMenu(rect) {
+        if (ctx && ctx.menu === 'library') { ctx = null; return; }
+        ctx = { x: rect.left, y: rect.bottom + 4, items: libraryMenuItems(), menu: 'library', width: 290 };
     }
 
     async function handleSearch() {
@@ -732,7 +761,12 @@
      on:dragleave={onDragLeave}
      on:contextmenu={handleGlobalContext}>
 
-    <TitleBar/>
+    <TitleBar menuOpen={!!(ctx && ctx.menu === 'library')}
+              {scanning} {checkingUpdates} {locked}
+              ready={!needsSetup}
+              hasPin={!!(privacy && privacy.has_pin)}
+              onMenu={openLibraryMenu}
+              onLock={lockNow}/>
 
     <div class="flex flex-1 overflow-hidden min-h-0 relative">
         {#if isDragging}
@@ -746,17 +780,14 @@
         <Sidebar width={sidebarWidth}
                  groups={sidebarGroups}
                  totalGames={games.length}
-                 libCount={libGames.length}
+                 libCount={visibleGames.length}
                  favoritesCount={favoriteGames.length}
                  updatesCount={updatesGames.length}
                  missingCount={missingGames.length}
                  {isHome} {activeFilter}
                  selectedId={selectedGame ? selectedGame.id : ''}
-                 {scanning} {checkingUpdates} {draggingGame}
+                 {noCoverCount} {draggingGame}
                  settingsBadge={!!(launcherUpdate && launcherUpdate.available)}
-                 bind:onlyDressed
-                 onScan={handleScan}
-                 onCheckAll={handleCheckAllUpdates}
                  onFilter={applyFilter}
                  onRelink={() => showRelink = true}
                  onSelect={selectGame}
@@ -940,7 +971,7 @@
             <Toast/>
 
             {#if ctx}
-                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => ctx = null}/>
+                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>
             {/if}
         </main>
     </div>
