@@ -1,7 +1,13 @@
-# Релиз по тегу v*: собирает pLauncher.exe, считает SHA-256 и публикует GitHub Release.
-# Лаунчер находит релиз через API (updater.go) и обновляется сам.
+# Релиз по тегу v*: собирает лаунчер под Windows, Linux и macOS, считает SHA-256
+# и публикует GitHub Release. Лаунчер находит релиз через API (updater.go) и обновляется сам.
 #
 #   git tag v1.1.0 && git push origin v1.1.0
+#
+# Файлы релиза (имена должны совпадать с assetNameFor в updater.go):
+#   pLauncher.exe                   — Windows x64 (автообновление)
+#   pLauncher-linux-amd64           — Linux x64, бинарник (автообновление)
+#   pLauncher-linux-amd64.tar.gz    — Linux x64 для ручной установки (с битом исполнения)
+#   pLauncher-macos-universal.zip   — macOS Intel + Apple Silicon (.app, без подписи — вручную)
 #
 # Самообновление работает только если релизы доступны без авторизации, т.е. репозиторий
 # публичный. Для приватного кода заведите публичный репозиторий только под релизы и
@@ -18,12 +24,25 @@ permissions:
 env:
   # Откуда лаунчер берёт обновления. По умолчанию — этот же репозиторий.
   UPDATE_REPO: ${{ vars.UPDATE_REPO || github.repository }}
+  WAILS_VERSION: v2.12.0
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+          - os: ubuntu-24.04
+            platform: linux/amd64
+            tags: webkit2_41          # Ubuntu 24.04 поставляется с WebKitGTK 4.1
+          - os: macos-latest
+            platform: darwin/universal
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
+        shell: bash
         working-directory: game-launcher
     steps:
       - uses: actions/checkout@v4
@@ -39,24 +58,58 @@ jobs:
           cache: npm
           cache-dependency-path: game-launcher/frontend/package-lock.json
 
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
-      - name: Test
-        run: go test ./...
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
 
       - name: Build
-        shell: pwsh
         run: |
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          wails build -clean -ldflags "-X main.appVersion=$version -X main.updateRepo=$env:UPDATE_REPO"
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAGS="${{ matrix.tags }}"
+          wails build -clean -platform "${{ matrix.platform }}" ${TAGS:+-tags "$TAGS"} \
+            -ldflags "-X main.appVersion=${VERSION} -X main.updateRepo=${UPDATE_REPO}"
 
-      - name: Checksum
-        shell: pwsh
+      - name: Test
+        run: go test ${{ matrix.tags && format('-tags {0}', matrix.tags) || '' }} ./...
+
+      - name: Package
         working-directory: game-launcher/build/bin
         run: |
-          $hash = (Get-FileHash pLauncher.exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  pLauncher.exe" | Out-File -Encoding ascii -NoNewline pLauncher.exe.sha256
+          mkdir -p ../../dist-release
+          OUT=../../dist-release
+          sha() { if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi | awk -v n="$1" '{printf "%s  %s", $1, n}' > "$1.sha256"; }
+          case "${{ runner.os }}" in
+            Windows)
+              cp pLauncher.exe "$OUT/" ;;
+            Linux)
+              cp pLauncher "$OUT/pLauncher-linux-amd64"
+              chmod +x "$OUT/pLauncher-linux-amd64"
+              tar -czf "$OUT/pLauncher-linux-amd64.tar.gz" pLauncher ;;
+            macOS)
+              ditto -c -k --keepParent pLauncher.app "$OUT/pLauncher-macos-universal.zip" ;;
+          esac
+          cd "$OUT"
+          for f in *; do case "$f" in *.sha256) ;; *) sha "$f" ;; esac; done
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ runner.os }}
+          path: game-launcher/dist-release/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
 
       # Если UPDATE_REPO — другой (публичный) репозиторий, нужен секрет RELEASE_TOKEN
       # с правом contents:write на него; иначе хватает встроенного GITHUB_TOKEN.
@@ -65,6 +118,4 @@ jobs:
           repository: ${{ env.UPDATE_REPO }}
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
           generate_release_notes: true
-          files: |
-            game-launcher/build/bin/pLauncher.exe
-            game-launcher/build/bin/pLauncher.exe.sha256
+          files: release/*

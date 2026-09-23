@@ -49,10 +49,9 @@ func (c *Controller) OpenFolder(folderPath string) error {
 func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes int)) error {
 	ext := strings.ToLower(filepath.Ext(exePath))
 
-	// Прямой запуск нативных исполняемых: так CreateProcess отдаёт хэндл процесса,
-	// и cmd.Wait позволяет считать время игры без поллинга. На не-Windows оставляем
-	// прямой запуск для всего (это Windows-приложение, там ветка ниже).
-	if runtime.GOOS != "windows" || ext == ".exe" || ext == ".com" {
+	// Прямой запуск нативных исполняемых: так ОС отдаёт хэндл процесса,
+	// и cmd.Wait позволяет считать время игры без поллинга.
+	if isDirectExecutable(exePath, ext) {
 		cmd := exec.Command(exePath)
 		// Рабочей директорией должна быть папка игры, иначе Unity/RenPy не найдут ассеты.
 		cmd.Dir = folderPath
@@ -69,14 +68,38 @@ func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes 
 		return nil
 	}
 
-	// Остальные форматы (html/swf/jar/qsp/rags/lnk/bat…) открываем ассоциированным
-	// приложением через `start`. Процесс отсоединяется, поэтому время игры для них
+	// Остальные форматы (html/swf/jar/qsp/rags/lnk/bat…, на macOS — .app) открываем
+	// ассоциированным приложением. Процесс отсоединяется, поэтому время игры для них
 	// не учитывается (last_launched_at всё равно проставляется на стороне app.go).
-	cmd := exec.Command("cmd", "/C", "start", "", "/D", folderPath, exePath)
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/C", "start", "", "/D", folderPath, exePath)
+	case "darwin":
+		cmd = exec.Command("open", exePath)
+	default:
+		cmd = exec.Command("xdg-open", exePath)
+	}
+	cmd.Dir = folderPath
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("couldn't launch %s: %w", exePath, err)
 	}
 	return nil
+}
+
+// isDirectExecutable — можно ли запустить файл напрямую (а не через ассоциацию ОС).
+// Windows: только .exe/.com. Linux/macOS: файл с битом исполнения, кроме документов
+// и бандлов .app (у распакованных из архивов html/swf бит исполнения бывает случайно).
+func isDirectExecutable(path, ext string) bool {
+	if runtime.GOOS == "windows" {
+		return ext == ".exe" || ext == ".com"
+	}
+	switch ext {
+	case ".app", ".html", ".htm", ".swf", ".jar", ".qsp", ".rags", ".love", ".url", ".exe":
+		return false
+	}
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
 }
 
 // FindExecutables сканирует папку игры и возвращает список путей к .exe файлам.

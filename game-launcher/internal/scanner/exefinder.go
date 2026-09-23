@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 )
 
@@ -35,10 +36,25 @@ var engineSubdirs = map[string]bool{
 	"_commonredist": true, "tools": true, "support": true, "renpy": true,
 }
 
-// FindBestExecutable ищет наиболее вероятный запускающий .exe в папке игры.
-// Кандидаты оцениваются по эвристикам (глубина, имя, совпадение с именем папки),
-// возвращается путь с наибольшим баллом. Если ничего не найдено — пустая строка.
+// FindBestExecutable ищет наиболее вероятный файл запуска в папке игры.
+// Сначала — .exe (оценка по эвристикам: глубина, имя, совпадение с именем папки).
+// Если .exe нет — другие запускалки (html, bat, jar, swf, qsp…), см. findOtherLauncher.
+// Если ничего не найдено — пустая строка.
 func FindBestExecutable(folderPath string) string {
+	// На Linux/macOS нативные запускалки (.sh, .x86_64, .app…) важнее Windows-.exe
+	if goruntime.GOOS != "windows" {
+		if p := findOtherLauncher(folderPath, true); p != "" {
+			return p
+		}
+	}
+	if exe := findBestExe(folderPath); exe != "" {
+		return exe
+	}
+	return findOtherLauncher(folderPath, false)
+}
+
+// findBestExe — лучший .exe в папке игры (или "").
+func findBestExe(folderPath string) string {
 	folderKey := normalizeName(filepath.Base(folderPath))
 
 	bestPath := ""

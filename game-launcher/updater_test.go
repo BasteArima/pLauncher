@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"testing"
 )
 
@@ -33,6 +34,10 @@ func TestNewerVersion(t *testing.T) {
 
 // Полный цикл: релиз с exe и контрольной суммой → скачивание → подмена файла.
 func TestInstallLauncherUpdate(t *testing.T) {
+	asset := assetNameFor(goruntime.GOOS, goruntime.GOARCH)
+	if asset == "" {
+		t.Skip("на этой ОС автоустановки нет")
+	}
 	newBinary := []byte("new launcher binary")
 	sum := sha256.Sum256(newBinary)
 	corrupt := false
@@ -42,11 +47,12 @@ func TestInstallLauncherUpdate(t *testing.T) {
 		switch r.URL.Path {
 		case "/repos/test/repo/releases/latest":
 			fmt.Fprintf(w, `{"tag_name":"v9.9.9","body":"notes","html_url":"%[1]s/rel","assets":[
-				{"name":"pLauncher.exe","browser_download_url":"%[1]s/dl/pLauncher.exe","size":%[2]d},
-				{"name":"pLauncher.exe.sha256","browser_download_url":"%[1]s/dl/pLauncher.exe.sha256","size":64}]}`, srv.URL, len(newBinary))
-		case "/dl/pLauncher.exe":
+				{"name":"other-os-build","browser_download_url":"%[1]s/dl/other","size":1},
+				{"name":"%[3]s","browser_download_url":"%[1]s/dl/bin","size":%[2]d},
+				{"name":"%[3]s.sha256","browser_download_url":"%[1]s/dl/bin.sha256","size":64}]}`, srv.URL, len(newBinary), asset)
+		case "/dl/bin":
 			w.Write(newBinary)
-		case "/dl/pLauncher.exe.sha256":
+		case "/dl/bin.sha256":
 			if corrupt {
 				fmt.Fprint(w, "deadbeef  pLauncher.exe")
 				return

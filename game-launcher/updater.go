@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	goruntime "runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +23,8 @@ import (
 // САМООБНОВЛЕНИЕ ЛАУНЧЕРА
 // Источник — GitHub Releases репозитория updateRepo (должен быть публичным:
 // API без токена приватные репозитории не отдаёт). Релиз собирает CI
-// (.github/workflows/release.yml): pLauncher.exe + pLauncher.exe.sha256.
+// (.github/workflows/release.yml): для каждой ОС свой файл + <имя>.sha256
+// (см. assetNameFor). На macOS бандл .app сам себя не заменит — там только ссылка на релиз.
 // =========================================================================
 
 // updateRepo вшивается при сборке: -ldflags "-X main.updateRepo=owner/repo".
@@ -46,15 +48,16 @@ const afterUpdateFlag = "--after-update"
 
 // LauncherUpdate — результат проверки обновления лаунчера.
 type LauncherUpdate struct {
-	Available bool   `json:"available"`
-	Current   string `json:"current"`
-	Latest    string `json:"latest"`
-	Notes     string `json:"notes"`    // описание релиза (что нового)
-	PageURL   string `json:"page_url"` // страница релиза
-	AssetURL  string `json:"asset_url"`
-	AssetName string `json:"asset_name"`
-	Size      int64  `json:"size"`
-	shaURL    string
+	Available  bool   `json:"available"`
+	CanInstall bool   `json:"can_install"` // есть сборка для этой ОС, которую можно поставить автоматически
+	Current    string `json:"current"`
+	Latest     string `json:"latest"`
+	Notes      string `json:"notes"`    // описание релиза (что нового)
+	PageURL    string `json:"page_url"` // страница релиза
+	AssetURL   string `json:"asset_url"`
+	AssetName  string `json:"asset_name"`
+	Size       int64  `json:"size"`
+	shaURL     string
 }
 
 type ghRelease struct {
@@ -103,8 +106,9 @@ func (a *App) CheckLauncherUpdate() (*LauncherUpdate, error) {
 		Notes:   rel.Body,
 		PageURL: rel.HTMLURL,
 	}
+	want := assetNameFor(goruntime.GOOS, goruntime.GOARCH)
 	for _, as := range rel.Assets {
-		if u.AssetURL == "" && strings.HasSuffix(strings.ToLower(as.Name), ".exe") {
+		if want != "" && u.AssetURL == "" && strings.EqualFold(as.Name, want) {
 			u.AssetURL, u.AssetName, u.Size = as.URL, as.Name, as.Size
 		}
 	}
@@ -113,8 +117,21 @@ func (a *App) CheckLauncherUpdate() (*LauncherUpdate, error) {
 			u.shaURL = as.URL
 		}
 	}
-	u.Available = appVersion != "dev" && u.AssetURL != "" && newerVersion(u.Latest, appVersion)
+	u.Available = appVersion != "dev" && newerVersion(u.Latest, appVersion)
+	u.CanInstall = u.Available && u.AssetURL != ""
 	return u, nil
+}
+
+// assetNameFor — имя файла сборки в релизе для ОС/архитектуры ("" — автоустановки нет).
+// Должно совпадать с именами в .github/workflows/release.yml.
+func assetNameFor(goos, goarch string) string {
+	switch goos {
+	case "windows":
+		return "pLauncher.exe"
+	case "linux":
+		return "pLauncher-linux-" + goarch
+	}
+	return ""
 }
 
 // newerVersion сообщает, что версия a новее b ("1.10.0" > "1.9.3"; суффиксы вида
@@ -161,6 +178,9 @@ func (a *App) InstallLauncherUpdate() error {
 	if !u.Available {
 		return fmt.Errorf("already up to date (%s)", u.Current)
 	}
+	if !u.CanInstall {
+		return fmt.Errorf("automatic update isn’t available on this system — download it from the release page")
+	}
 	exe, err := executablePath()
 	if err != nil {
 		return err
@@ -179,6 +199,9 @@ func (a *App) InstallLauncherUpdate() error {
 			os.Remove(newPath)
 			return err
 		}
+	}
+	if goruntime.GOOS != "windows" {
+		os.Chmod(newPath, 0o755) // скачанный файл без бита исполнения
 	}
 
 	oldPath := exe + ".old"
