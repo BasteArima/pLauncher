@@ -101,14 +101,14 @@ then restart the launcher. The language appears in Settings.
 
 How to:
 1. Copy "_example.json" (a full English template) in this folder.
-2. Rename the copy to your language code, e.g. "pl.json", "tr.json", "ja.json".
+2. Rename the copy to your language code, e.g. "it.json", "ko.json", "nl.json".
 3. Translate ONLY the text on the right side of each line. Keep the keys (left) unchanged.
-4. "__name" is the language name shown in the menu (e.g. "Polski").
+4. "__name" is the language name shown in the menu (e.g. "Italiano").
 5. Keep placeholders like {n}, {path}, {title}, {err} and "\n" as they are.
 6. Save in UTF-8. Restart the launcher.
 
 Note: files starting with "_" are ignored (so "_example.json" is not loaded as a language).
-Tip: you can also fix a built-in language (en/ru/es/pt/de/fr/zh/uk) — put e.g. "en.json" with ONLY the keys
+Tip: you can also fix a built-in language (en/ru/es/pt/de/fr/zh/uk/ja/pl/tr) — put e.g. "en.json" with ONLY the keys
 you want to change; they are merged over the built-in ones, the rest stays intact.
 
 ------------------------------------------------------------------------------
@@ -120,14 +120,14 @@ you want to change; they are merged over the built-in ones, the rest stays intac
 
 Как сделать:
 1. Скопируйте здесь файл "_example.json" (полный английский шаблон).
-2. Переименуйте копию в код языка, напр. "pl.json", "tr.json", "ja.json".
+2. Переименуйте копию в код языка, напр. "it.json", "ko.json", "nl.json".
 3. Переводите ТОЛЬКО текст справа от каждой строки. Ключи (слева) не меняйте.
-4. "__name" — название языка в меню (напр. "Polski").
+4. "__name" — название языка в меню (напр. "Italiano").
 5. Подстановки {n}, {path}, {title}, {err} и "\n" оставляйте как есть.
 6. Сохраняйте в UTF-8. Перезапустите лаунчер.
 
 Примечание: файлы, начинающиеся с "_", игнорируются (поэтому "_example.json" не считается языком).
-Совет: можно поправить встроенный язык (en/ru/es/pt/de/fr/zh/uk) — положите, напр., "en.json" ТОЛЬКО с теми
+Совет: можно поправить встроенный язык (en/ru/es/pt/de/fr/zh/uk/ja/pl/tr) — положите, напр., "en.json" ТОЛЬКО с теми
 ключами, что хотите изменить; они наложатся поверх встроенных, остальное останется как было.
 `
 

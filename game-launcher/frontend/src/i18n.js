@@ -7,10 +7,13 @@ import de from './locales/de.json';
 import fr from './locales/fr.json';
 import zh from './locales/zh.json';
 import uk from './locales/uk.json';
+import ja from './locales/ja.json';
+import pl from './locales/pl.json';
+import trTR from './locales/tr.json';      // не «tr»: так называется функция перевода ниже
 
 // Встроенные языки (код = 2 буквы navigator.language: pt — бразильский, zh — упрощённый китайский).
 // Пользовательские добавляются из data/languages/*.json через addLocales().
-let dicts = { en, ru, es, pt, de, fr, zh, uk };
+let dicts = { en, ru, es, pt, de, fr, zh, uk, ja, pl, tr: trTR };
 let current = 'en';
 
 const tick = writable(0);          // бампается при смене языка/добавлении словарей
