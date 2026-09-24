@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/BasteArima/pLauncher/releases/latest"><img src="https://img.shields.io/github/v/release/BasteArima/pLauncher?color=a855f7&label=release" alt="Latest release"></a>
   <a href="https://github.com/BasteArima/pLauncher/actions/workflows/ci.yml"><img src="https://github.com/BasteArima/pLauncher/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-8b5cf6" alt="License: GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-6366f1" alt="Platforms">
