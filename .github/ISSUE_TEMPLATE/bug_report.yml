@@ -1,0 +1,49 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this!
+        **Before attaching screenshots:** press `Ctrl+H` to blur the covers, or crop them out. Nobody needs to see your library.
+  - type: input
+    id: version
+    attributes:
+      label: pLauncher version
+      description: Settings → General → Launcher update → "Installed version"
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Settings → Library
+        2. Click "Scan folders"
+        3. ...
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or error messages
+      description: Error toasts, a screenshot (covers blurred), anything that helps.

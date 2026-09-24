@@ -1,0 +1,51 @@
+name: Metadata parsing is broken
+description: A supported site stopped giving the right title, version, cover or screenshots
+labels: [bug, parser]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sites change their page layout from time to time, and the parser has to catch up.
+        A link to the exact page makes the fix much faster.
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site
+      options:
+        - F95zone
+        - Pornolab
+        - Erotorrent
+        - Island of Pleasure
+        - Steam
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Link to the game page
+      placeholder: https://…
+    validations:
+      required: true
+  - type: checkboxes
+    id: fields
+    attributes:
+      label: What's wrong?
+      options:
+        - label: Title
+        - label: Version
+        - label: Description
+        - label: Cover
+        - label: Screenshots
+        - label: Tags / languages
+        - label: Author / engine
+        - label: Nothing is parsed, I get an error
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What you got vs. what the page shows. Paste the error message if there is one.
+  - type: input
+    id: version
+    attributes:
+      label: pLauncher version
+      placeholder: "1.0.0"

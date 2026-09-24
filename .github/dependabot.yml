@@ -1,0 +1,30 @@
+# Обновления зависимостей раз в неделю, мелкие версии одним PR на экосистему.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
+    directory: /game-launcher
+    schedule:
+      interval: weekly
+    groups:
+      go:
+        update-types: [minor, patch]
+
+  # Фронтенд на Svelte 3 / Vite / Tailwind 3: мажорные версии ломают сборку, их обновляем вручную
+  - package-ecosystem: npm
+    directory: /game-launcher/frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]

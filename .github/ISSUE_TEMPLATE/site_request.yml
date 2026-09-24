@@ -1,0 +1,49 @@
+name: Support a new site
+description: Suggest a site pLauncher should fetch metadata from
+labels: [enhancement, parser]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New sites are added one parser at a time. The more you can share, the more likely it happens.
+        Sites behind a login or Cloudflare can't be fetched live, but a saved copy of a page still helps
+        to write and test the parser.
+  - type: input
+    id: site
+    attributes:
+      label: Site
+      placeholder: example.com
+    validations:
+      required: true
+  - type: input
+    id: example
+    attributes:
+      label: Link to a typical game page
+      placeholder: https://…
+    validations:
+      required: true
+  - type: checkboxes
+    id: available
+    attributes:
+      label: What does a game page show?
+      options:
+        - label: Title and version
+        - label: Description
+        - label: Cover image
+        - label: Screenshots
+        - label: Tags / genres
+        - label: Languages
+        - label: Developer / engine
+  - type: dropdown
+    id: access
+    attributes:
+      label: Can you see the page without logging in?
+      options:
+        - "Yes"
+        - No, it needs an account
+        - Not sure
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: You can attach a saved page (File → Save page as → "Webpage, HTML only", zipped).

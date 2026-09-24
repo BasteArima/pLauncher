@@ -1,0 +1,30 @@
+name: Translation
+description: Fix a translation or offer a new language
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Translations live in `game-launcher/frontend/src/locales/*.json`. A pull request is the fastest way,
+        but you can also describe the fix here.
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: Deutsch
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it?
+      options:
+        - A wrong or awkward string
+        - A new language
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Where you saw the string (screen or menu), the current text and what it should say.
