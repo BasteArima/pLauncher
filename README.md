@@ -95,9 +95,12 @@ Grab the latest build from [**Releases**](https://github.com/BasteArima/pLaunche
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows 10/11 | `pLauncher.exe` | Portable, no installer. Needs WebView2, which ships with Windows. |
+| Windows 10/11 | `pLauncher.exe` | Portable, no installer. Needs WebView2, which ships with Windows. Not signed: on the SmartScreen warning click **More info → Run anyway**. |
 | Linux x64 | `pLauncher-linux-amd64` or `.tar.gz` | Needs WebKitGTK 4.1 (`libwebkit2gtk-4.1-0` on Ubuntu/Debian). |
 | macOS (Intel + Apple Silicon) | `pLauncher-macos-universal.zip` | Not signed: right-click → **Open** the first time, or run `xattr -dr com.apple.quarantine pLauncher.app`. |
+
+The builds aren't code-signed yet, so Windows and macOS ask for confirmation the first time you run them.
+Every file comes with a `.sha256` checksum if you want to verify it.
 
 On first launch pLauncher asks where to keep its data and which folders contain your games. That's it.
 

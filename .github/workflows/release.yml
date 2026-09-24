@@ -105,6 +105,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # Текст релиза — docs/releases/<тег>.md (если есть); автосписок изменений GitHub добавится ниже
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: docs/releases
+
+      - name: Release notes
+        id: notes
+        run: |
+          f="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ -f "$f" ]; then echo "body_path=$f" >> "$GITHUB_OUTPUT"; else echo "::warning::no $f, using generated notes only"; fi
+
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -117,5 +128,6 @@ jobs:
         with:
           repository: ${{ env.UPDATE_REPO }}
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          body_path: ${{ steps.notes.outputs.body_path }}
           generate_release_notes: true
           files: release/*
