@@ -104,8 +104,13 @@ func TestInstallLauncherUpdate(t *testing.T) {
 	if b, _ := os.ReadFile(exe + ".old"); string(b) != "old" {
 		t.Errorf("старый exe не отложен в .old")
 	}
-	if restarted != exe {
-		t.Errorf("restart = %q, want %q", restarted, exe)
+	// Установщик раскрывает ссылки/короткие имена (RUNNER~1 → runneradmin на CI, /var → /private/var на macOS)
+	wantExe := exe
+	if r, err := filepath.EvalSymlinks(exe); err == nil {
+		wantExe = r
+	}
+	if restarted != wantExe {
+		t.Errorf("restart = %q, want %q", restarted, wantExe)
 	}
 
 	// dev-сборки не обновляются

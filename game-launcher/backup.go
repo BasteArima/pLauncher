@@ -276,7 +276,8 @@ func prepareImportedDB(path string) (int, error) {
 // portableMediaPath превращает абсолютный путь из чужой папки данных
 // ("D:/old/data/covers/x.jpg", "data/covers/x.jpg") в относительный "covers/x.jpg".
 func portableMediaPath(p string) string {
-	s := filepath.ToSlash(p)
+	// Не filepath.ToSlash: на Linux/macOS он не трогает «\», а бэкап мог быть сделан на Windows
+	s := strings.ReplaceAll(p, `\`, "/")
 	if s == "" || strings.HasPrefix(s, "covers/") {
 		return p
 	}
