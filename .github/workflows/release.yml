@@ -45,14 +45,14 @@ jobs:
         shell: bash
         working-directory: game-launcher
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: game-launcher/go.mod
           cache-dependency-path: game-launcher/go.sum
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -99,7 +99,7 @@ jobs:
           for f in *; do case "$f" in *.sha256) ;; *) sha "$f" ;; esac; done
           ls -la
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-${{ runner.os }}
           path: game-launcher/dist-release/*
@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Заголовок «pLauncher X.Y.Z»; текст — docs/releases/<тег>.md (если есть), автосписок изменений GitHub ниже
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: docs/releases
 
@@ -121,7 +121,7 @@ jobs:
           f="docs/releases/${GITHUB_REF_NAME}.md"
           if [ -f "$f" ]; then echo "body_path=$f" >> "$GITHUB_OUTPUT"; else echo "::warning::no $f, using generated notes only"; fi
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: release-*
           path: release
@@ -129,7 +129,7 @@ jobs:
 
       # Если UPDATE_REPO — другой (публичный) репозиторий, нужен секрет RELEASE_TOKEN
       # с правом contents:write на него; иначе хватает встроенного GITHUB_TOKEN.
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           repository: ${{ env.UPDATE_REPO }}
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
