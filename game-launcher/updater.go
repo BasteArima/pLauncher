@@ -57,6 +57,7 @@ type LauncherUpdate struct {
 	AssetURL   string `json:"asset_url"`
 	AssetName  string `json:"asset_name"`
 	Size       int64  `json:"size"`
+	Managed    string `json:"managed"` // "nix" — установлен пакетным менеджером, обновлять через него
 	shaURL     string
 }
 
@@ -118,8 +119,25 @@ func (a *App) CheckLauncherUpdate() (*LauncherUpdate, error) {
 		}
 	}
 	u.Available = appVersion != "dev" && newerVersion(u.Latest, appVersion)
-	u.CanInstall = u.Available && u.AssetURL != ""
+	u.Managed = managedBy()
+	u.CanInstall = u.Available && u.AssetURL != "" && u.Managed == ""
 	return u, nil
+}
+
+// managedBy — чем установлен лаунчер, если не «сам по себе». Из /nix/store (только чтение)
+// заменить exe нельзя: обновление идёт через flake / nixos-rebuild.
+func managedBy() string {
+	exe, err := executablePath()
+	if err != nil {
+		return ""
+	}
+	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = resolved
+	}
+	if strings.HasPrefix(filepath.ToSlash(exe), "/nix/store/") {
+		return "nix"
+	}
+	return ""
 }
 
 // assetNameFor — имя файла сборки в релизе для ОС/архитектуры ("" — автоустановки нет).

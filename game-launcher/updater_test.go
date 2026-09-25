@@ -119,3 +119,18 @@ func TestInstallLauncherUpdate(t *testing.T) {
 		t.Error("dev-сборка не должна предлагать обновление")
 	}
 }
+
+// Установленный через Nix лаунчер (exe в /nix/store) не должен обновлять себя сам
+func TestManagedByNix(t *testing.T) {
+	saved := executablePath
+	defer func() { executablePath = saved }()
+
+	executablePath = func() (string, error) { return "/nix/store/abc123-plauncher-1.0.0/bin/pLauncher", nil }
+	if got := managedBy(); got != "nix" {
+		t.Errorf("managedBy() = %q для /nix/store, want nix", got)
+	}
+	executablePath = func() (string, error) { return filepath.Join(t.TempDir(), "pLauncher"), nil }
+	if got := managedBy(); got != "" {
+		t.Errorf("managedBy() = %q для обычной папки, want пусто", got)
+	}
+}

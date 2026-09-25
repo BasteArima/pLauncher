@@ -83,7 +83,7 @@
             <p class="text-slate-400 text-sm mb-5">{$t("setup.step1")}</p>
 
             <div class="flex flex-col gap-2 mb-5">
-                {#each [['default', 'setup.sys'], ['documents', 'setup.docs'], ['portable', 'setup.portable']] as [key, label]}
+                {#each [['default', 'setup.sys'], ['documents', 'setup.docs'], ['portable', 'setup.portable']].filter(([k]) => paths[k] || k !== 'portable') as [key, label]}
                     <button on:click={() => choice = key} class="text-left p-3 rounded-lg border transition-colors {choice === key ? 'border-indigo-500 bg-indigo-600/15' : 'border-slate-600/50 hover:bg-slate-700/40'}">
                         <div class="font-bold text-white text-sm">{$t(label)} {#if key === 'default'}<span class="text-indigo-400">{$t("setup.recommended")}</span>{/if}</div>
                         <div class="text-xs text-slate-400 break-all mt-0.5 font-mono">{paths[key]}</div>

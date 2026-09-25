@@ -85,6 +85,17 @@ func portableDataDir() string {
 	return filepath.Join(".", "data")
 }
 
+// dirWritable — можно ли создавать файлы в папке (пробный временный файл).
+func dirWritable(dir string) bool {
+	f, err := os.CreateTemp(dir, ".plauncher-write-test-*")
+	if err != nil {
+		return false
+	}
+	f.Close()
+	os.Remove(f.Name())
+	return true
+}
+
 // documentsDataDir — папка в Документах пользователя.
 func documentsDataDir() string {
 	if home, err := os.UserHomeDir(); err == nil {

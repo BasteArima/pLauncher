@@ -423,6 +423,7 @@
   "hk.lock": "锁定（如已设置 PIN）",
   "hk.panic": "老板键（全局）",
   "upd.download": "下载",
+  "upd.nix": "通过 Nix 安装：请运行 `nix flake update` 并重新构建",
   "sel.select": "选择",
   "sel.mode_hint": "选择模式：点击卡片即可选中（也可使用 Ctrl+点击 / Shift+点击）",
   "sel.pick_hint": "点击游戏以选择",

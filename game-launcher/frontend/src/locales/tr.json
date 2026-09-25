@@ -423,6 +423,7 @@
   "hk.lock": "Kilitle (PIN ayarlıysa)",
   "hk.panic": "Panik düğmesi (genel)",
   "upd.download": "İndir",
+  "upd.nix": "Nix ile kuruldu: `nix flake update` çalıştırıp yeniden derleyin",
   "sel.select": "Seç",
   "sel.mode_hint": "Seçim modu: karta tıklamak onu seçer (Ctrl+tık / Shift+tık da çalışır)",
   "sel.pick_hint": "Seçmek için oyunlara tıkla",

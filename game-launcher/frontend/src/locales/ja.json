@@ -423,6 +423,7 @@
   "hk.lock": "ロック（PIN 設定時）",
   "hk.panic": "パニックボタン（グローバル）",
   "upd.download": "ダウンロード",
+  "upd.nix": "Nix でインストール済み：`nix flake update` を実行して再ビルドしてください",
   "sel.select": "選択",
   "sel.mode_hint": "選択モード：カードをクリックすると選択されます（Ctrl+クリック / Shift+クリックも可）",
   "sel.pick_hint": "ゲームをクリックして選択",

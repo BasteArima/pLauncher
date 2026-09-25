@@ -423,6 +423,7 @@
   "hk.lock": "Verrouiller (si un PIN est défini)",
   "hk.panic": "Bouton panique (global)",
   "upd.download": "Télécharger",
+  "upd.nix": "Installé via Nix : lancez `nix flake update` puis reconstruisez",
   "sel.select": "Sélectionner",
   "sel.mode_hint": "Mode sélection : cliquer sur une carte la sélectionne (aussi Ctrl+clic / Shift+clic)",
   "sel.pick_hint": "Cliquez sur les jeux pour les sélectionner",

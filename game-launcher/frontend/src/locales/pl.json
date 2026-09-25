@@ -423,6 +423,7 @@
   "hk.lock": "Zablokuj (jeśli ustawiono PIN)",
   "hk.panic": "Przycisk paniki (globalny)",
   "upd.download": "Pobierz",
+  "upd.nix": "Zainstalowano przez Nix: uruchom `nix flake update` i przebuduj system",
   "sel.select": "Zaznacz",
   "sel.mode_hint": "Tryb zaznaczania: kliknięcie karty ją zaznacza (działa też Ctrl+klik / Shift+klik)",
   "sel.pick_hint": "Klikaj gry, aby je zaznaczyć",

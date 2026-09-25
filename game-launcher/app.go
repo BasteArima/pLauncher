@@ -149,8 +149,15 @@ func (a *App) IsConfigured() bool {
 func (a *App) GetDataDir() string { return a.dataDir }
 
 // GetDefaultDataDir, GetPortableDataDir, GetDocumentsDataDir — варианты для окна выбора.
-func (a *App) GetDefaultDataDir() string   { return defaultDataDir() }
-func (a *App) GetPortableDataDir() string  { return portableDataDir() }
+func (a *App) GetDefaultDataDir() string { return defaultDataDir() }
+func (a *App) GetPortableDataDir() string {
+	// Папка лаунчера только для чтения (/nix/store, Program Files, AppImage) — portable-вариант не предлагаем
+	dir := portableDataDir()
+	if managedBy() != "" || !dirWritable(filepath.Dir(dir)) {
+		return ""
+	}
+	return dir
+}
 func (a *App) GetDocumentsDataDir() string { return documentsDataDir() }
 
 // ConfigureDataDir вызывается при первом запуске: создаёт папку, открывает БД,

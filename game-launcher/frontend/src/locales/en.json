@@ -423,6 +423,7 @@
   "hk.lock": "Lock (if a PIN is set)",
   "hk.panic": "Panic button (global)",
   "upd.download": "Download",
+  "upd.nix": "Installed via Nix: run `nix flake update` and rebuild",
   "sel.select": "Select",
   "sel.mode_hint": "Selection mode: clicking a card selects it (also Ctrl+click / Shift+click)",
   "sel.pick_hint": "Click games to select",
