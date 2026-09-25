@@ -214,6 +214,12 @@ the Go/SQLite parts are CGO-free.
 `git tag -a vX.Y.Z` + push the tag — `release.yml` builds and publishes. **README screenshots:**
 `docs/tools/screenshots/make.ps1` (fictional library + generated artwork, see its README).
 
+**Code signing (planned):** Windows builds are to be signed via the SignPath Foundation (free for OSS, rules at
+signpath.org/terms). README already has the required "Code signing policy" + "Privacy policy" sections with
+status *planned*. When applying: switch the status to *application pending*, owner needs GitHub 2FA; after
+approval: add SignPath's GitHub Action to `release.yml`, drop the status note, and put a "Code signing policy"
+link into every `docs/releases/vX.Y.Z.md`. macOS notarization needs a paid Apple Developer account.
+
 ## Roadmap / suggested improvements (not yet implemented)
 
 Ideas the owner wants to pursue. Roughly ordered by value. Discuss/confirm scope before big ones.

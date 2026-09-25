@@ -101,7 +101,8 @@ Grab the latest build from [**Releases**](https://github.com/BasteArima/pLaunche
 | macOS (Intel + Apple Silicon) | `pLauncher-macos-universal.zip` | Not notarized yet, see [below](#first-launch-on-macos). |
 
 The builds aren't code-signed yet, so Windows and macOS ask for confirmation the first time you run them.
-Every file comes with a `.sha256` checksum if you want to verify it.
+Every file comes with a `.sha256` checksum if you want to verify it. See also the
+[Code signing policy](#code-signing-policy) and the [Privacy policy](#privacy-policy).
 
 #### First launch on macOS
 
@@ -161,6 +162,33 @@ Issues and pull requests are welcome. The most useful contributions:
 - **Translations:** copy `game-launcher/frontend/src/locales/en.json`, translate the values, register the file in
   `frontend/src/i18n.js` and open a PR. `go test` checks that keys and placeholders match.
 - **Bug reports** with your OS and the steps to reproduce.
+
+## Privacy policy
+
+pLauncher doesn't collect, store or send any personal data, and it has no telemetry. Your library, covers,
+screenshots and settings stay in the data folder you choose. The app connects to the internet only:
+
+- to fetch the game pages you paste into it, with their cover and screenshots;
+- to check those pages for new versions when you ask it to;
+- once a day, to check [GitHub Releases](https://github.com/BasteArima/pLauncher/releases) for a new launcher
+  version.
+
+These requests go straight to the sites involved (the game sites you use, GitHub), and their own privacy
+policies apply there.
+
+## Code signing policy
+
+> **Status: planned.** Current builds are not signed yet. We plan to apply for free code signing for the
+> Windows builds from the SignPath Foundation; this section describes how signing will work.
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
+
+- Committers and reviewers: [BasteArima](https://github.com/BasteArima)
+- Approvers: [BasteArima](https://github.com/BasteArima)
+
+Signed files are built from this repository by [GitHub Actions](.github/workflows/release.yml), and every
+release is approved manually before it's signed. See the [Privacy policy](#privacy-policy) above.
 
 ## License
 
