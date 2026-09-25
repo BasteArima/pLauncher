@@ -67,9 +67,6 @@
                 <button on:click={() => OpenLauncherReleasePage()} class="text-xs text-slate-300 hover:text-white">{$t('upd.page')} ↗</button>
                 {#if launcherUpdate.can_install}
                     <button on:click={installLauncher} disabled={updBusy} class="text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">{$t('upd.install')}</button>
-                {:else if launcherUpdate.managed === 'nix'}
-                    <!-- Установлен через Nix: /nix/store только для чтения, обновление — через flake -->
-                    <span class="text-xs text-emerald-100/80">{$t('upd.nix')}</span>
                 {:else}
                     <!-- Для этой ОС автоустановки нет (macOS) — скачать вручную со страницы релиза -->
                     <button on:click={() => OpenLauncherReleasePage()} class="text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg transition-colors">{$t('upd.download')} ↗</button>

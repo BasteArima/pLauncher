@@ -105,28 +105,6 @@ Every file comes with a `.sha256` checksum if you want to verify it.
 
 On first launch pLauncher asks where to keep its data and which folders contain your games. That's it.
 
-### NixOS / Nix
-
-The generic Linux binary won't run on NixOS, so there's a flake instead:
-
-```bash
-nix run github:BasteArima/pLauncher
-```
-
-Releases after 1.0.0 can be pinned by tag: `github:BasteArima/pLauncher/vX.Y.Z`.
-
-To install it permanently, add the flake to your system (or home-manager) config:
-
-```nix
-# flake.nix
-inputs.plauncher.url = "github:BasteArima/pLauncher";
-
-# configuration.nix
-environment.systemPackages = [ inputs.plauncher.packages.${pkgs.system}.default ];
-```
-
-Nix installs don't update themselves: run `nix flake update plauncher` and rebuild. Tips: install an emoji font
-(`noto-fonts-color-emoji`) for the icons, and use `steam-run` for native Linux games that aren't packaged for NixOS.
 
 ## Build from source
 
@@ -141,7 +119,6 @@ wails build                     # → build/bin/pLauncher(.exe)
 ```
 
 - **Linux:** install `libgtk-3-dev libwebkit2gtk-4.1-dev` and build with `wails build -tags webkit2_41`.
-- **Nix:** `nix develop` gives a shell with Go, Node, Wails and the GTK/WebKit libraries; `nix build` builds the package.
 - **Windows:** `.\build.ps1` runs the tests, builds the frontend and the app in one go.
 - Tests: `go test ./...` (run from `game-launcher/`, after the frontend has been built once).
 

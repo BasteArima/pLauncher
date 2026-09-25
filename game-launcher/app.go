@@ -151,9 +151,9 @@ func (a *App) GetDataDir() string { return a.dataDir }
 // GetDefaultDataDir, GetPortableDataDir, GetDocumentsDataDir — варианты для окна выбора.
 func (a *App) GetDefaultDataDir() string { return defaultDataDir() }
 func (a *App) GetPortableDataDir() string {
-	// Папка лаунчера только для чтения (/nix/store, Program Files, AppImage) — portable-вариант не предлагаем
+	// Папка лаунчера только для чтения (Program Files, AppImage) — portable-вариант не предлагаем
 	dir := portableDataDir()
-	if managedBy() != "" || !dirWritable(filepath.Dir(dir)) {
+	if !dirWritable(filepath.Dir(dir)) {
 		return ""
 	}
 	return dir

@@ -89,13 +89,8 @@ The app is fully working. Done so far:
 - **Launcher self-update** (`updater.go`): GitHub Releases of `updateRepo` (ldflag); downloads `pLauncher.exe`,
   verifies `pLauncher.exe.sha256`, renames running exe to `.old`, restarts with `--after-update`.
   Releases come from the public `BasteArima/pLauncher` repo (public since 2026-09-24). Silent check ≤1/day.
-- **Nix / NixOS** (`flake.nix` at the repo root): `buildNpmPackage` (frontend) + `buildGoModule` with tags
-  `desktop production webkit2_41` (what `wails build` does), wrapped with GTK/WebKitGTK 4.1 + xdg-utils.
-  `version` in flake.nix must equal `info.productVersion` in wails.json (CI checks; don't `readFile` it — breaks
-  lazy-tree Nix). **When `go.sum` or `frontend/package-lock.json` change, update `vendorHash` / `npmDepsHash`** — the Nix workflow
-  fails with `hash mismatch … got: sha256-…` in its annotation. Installs from `/nix/store` report `managed: "nix"`
-  in `CheckLauncherUpdate` (no self-install; UI says to update via Nix); `GetPortableDataDir` returns "" when the
-  exe folder isn't writable, so the setup wizard hides the portable option.
+- `GetPortableDataDir` returns "" when the exe folder isn't writable (Program Files, AppImage), so the setup
+  wizard hides the portable option.
 
 What's NOT done yet → see "Roadmap" below.
 
@@ -129,7 +124,6 @@ game-launcher/
     lib/inputMenu.js       cut/copy/paste menu for text inputs
     lib/view.js / bulk.js / hotkeys.js / privacy.js   selection+card size / bulk actions / hotkey list / blur stores
     i18n.js + locales/{en,ru,es}.json
-  ../flake.nix             Nix package / app / devShell (see Current state → Nix)
   ../.github/workflows/    ci.yml (vet/test on Windows+Ubuntu 24.04+macOS), release.yml (tag v* → win exe, linux
                            binary+tar.gz, macOS universal .app zip, each with .sha256; names = updater.assetNameFor)
   wails.json               app name "pLauncher", build metadata, icon source = build/appicon.png

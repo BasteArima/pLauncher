@@ -10,7 +10,6 @@ export namespace main {
 	    asset_url: string;
 	    asset_name: string;
 	    size: number;
-	    managed: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new LauncherUpdate(source);
@@ -27,7 +26,6 @@ export namespace main {
 	        this.asset_url = source["asset_url"];
 	        this.asset_name = source["asset_name"];
 	        this.size = source["size"];
-	        this.managed = source["managed"];
 	    }
 	}
 	export class MissingGame {
