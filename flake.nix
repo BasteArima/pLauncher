@@ -7,8 +7,10 @@
     let
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAll = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
-      # Версия берётся из wails.json — та же, что у релизов
-      version = (builtins.fromJSON (builtins.readFile ./game-launcher/wails.json)).info.productVersion;
+      # Должна совпадать с info.productVersion в game-launcher/wails.json (это проверяет CI).
+      # Не читаем wails.json через builtins.readFile: с «ленивыми» деревьями исходников
+      # (Determinate Nix) это ломает вычисление flake, скачанного через github:.
+      version = "1.0.0";
     in
     {
       packages = forAll (pkgs:

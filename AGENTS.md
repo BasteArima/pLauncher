@@ -91,7 +91,8 @@ The app is fully working. Done so far:
   Releases come from the public `BasteArima/pLauncher` repo (public since 2026-09-24). Silent check ≤1/day.
 - **Nix / NixOS** (`flake.nix` at the repo root): `buildNpmPackage` (frontend) + `buildGoModule` with tags
   `desktop production webkit2_41` (what `wails build` does), wrapped with GTK/WebKitGTK 4.1 + xdg-utils.
-  **When `go.sum` or `frontend/package-lock.json` change, update `vendorHash` / `npmDepsHash`** — the Nix workflow
+  `version` in flake.nix must equal `info.productVersion` in wails.json (CI checks; don't `readFile` it — breaks
+  lazy-tree Nix). **When `go.sum` or `frontend/package-lock.json` change, update `vendorHash` / `npmDepsHash`** — the Nix workflow
   fails with `hash mismatch … got: sha256-…` in its annotation. Installs from `/nix/store` report `managed: "nix"`
   in `CheckLauncherUpdate` (no self-install; UI says to update via Nix); `GetPortableDataDir` returns "" when the
   exe folder isn't writable, so the setup wizard hides the portable option.

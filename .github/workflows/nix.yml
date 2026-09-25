@@ -12,11 +12,22 @@ on:
 
 jobs:
   build:
+    # Обычный Nix и Determinate Nix (у него «ленивые» деревья исходников — другое поведение flake)
+    strategy:
+      fail-fast: false
+      matrix:
+        nix: [upstream, determinate]
+    name: build (${{ matrix.nix }} nix)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v31
+      - if: matrix.nix == 'upstream'
+        uses: cachix/install-nix-action@v31
+      - if: matrix.nix == 'determinate'
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: true
 
       - name: Lock
         run: |
@@ -25,12 +36,25 @@ jobs:
             echo "::notice title=flake.lock is missing, commit this::$(jq -c . flake.lock)"
           fi
 
+      - name: Version matches wails.json
+        run: |
+          flake=$(nix eval --raw .#packages.x86_64-linux.default.version)
+          wails=$(jq -r .info.productVersion game-launcher/wails.json)
+          if [ "$flake" != "$wails" ]; then
+            echo "::error title=flake.nix version is out of date::flake.nix has $flake, wails.json has $wails"
+            exit 1
+          fi
+
+      # При пуше собираем так же, как пользователь: через github:<репозиторий>/<коммит>
       - name: Build
         run: |
-          if nix build .#default -L --keep-going > nix.log 2>&1; then tail -n 20 nix.log; exit 0; fi
+          ref=.#default
+          if [ "$GITHUB_EVENT_NAME" = push ]; then ref="github:$GITHUB_REPOSITORY/$GITHUB_SHA#default"; fi
+          echo "building $ref"
+          if nix build "$ref" -L --keep-going > nix.log 2>&1; then tail -n 20 nix.log; exit 0; fi
           tail -n 200 nix.log
           msg=$(grep -E -A3 'hash mismatch|error:' nix.log | head -40 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
-          echo "::error title=nix build failed::${msg:-see job log}"
+          echo "::error title=nix build failed (${{ matrix.nix }})::${msg:-see job log}"
           exit 1
 
       # Лаунчер запускается под Xvfb с программным OpenGL (Mesa): окно должно продержаться 30 с
