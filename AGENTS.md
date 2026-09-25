@@ -216,7 +216,7 @@ the Go/SQLite parts are CGO-free.
 
 **Code signing (planned):** Windows builds are to be signed via the SignPath Foundation (free for OSS, rules at
 signpath.org/terms). README already has the required "Code signing policy" + "Privacy policy" sections with
-status *planned*. When applying: switch the status to *application pending*, owner needs GitHub 2FA; after
+status *application pending* (applied 2026-09-25; owner needs GitHub 2FA). After
 approval: add SignPath's GitHub Action to `release.yml`, drop the status note, and put a "Code signing policy"
 link into every `docs/releases/vX.Y.Z.md`. macOS notarization needs a paid Apple Developer account.
 

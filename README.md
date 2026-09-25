@@ -178,8 +178,8 @@ policies apply there.
 
 ## Code signing policy
 
-> **Status: planned.** Current builds are not signed yet. We plan to apply for free code signing for the
-> Windows builds from the SignPath Foundation; this section describes how signing will work.
+> **Status: application pending.** Current builds are not signed yet. We've applied to the SignPath Foundation
+> for free code signing of the Windows builds; this section describes how signing will work once approved.
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
 [SignPath Foundation](https://signpath.org/).
