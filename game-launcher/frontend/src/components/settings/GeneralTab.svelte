@@ -1,6 +1,6 @@
 <script>
     // Общие: язык интерфейса и обновление лаунчера.
-    import { t, tr, langStore } from '../../i18n.js';
+    import { t, tr, langStore, localizeError } from '../../i18n.js';
     import { showToast, askConfirm } from '../../lib/ui.js';
     import { OpenLanguagesFolder, CheckLauncherUpdate, InstallLauncherUpdate, OpenLauncherReleasePage } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
@@ -21,7 +21,7 @@
         try {
             launcherUpdate = await CheckLauncherUpdate();
             if (!launcherUpdate.available) showToast(tr('upd.latest'), 'success');
-        } catch (err) { updError = String(err); }
+        } catch (err) { updError = localizeError(err); }
         finally { updBusy = false; }
     }
     async function installLauncher() {
@@ -29,7 +29,7 @@
         if (!ok) return;
         updBusy = true; updError = '';
         try { await InstallLauncherUpdate(); }         // при успехе лаунчер перезапустится
-        catch (err) { updError = String(err); updBusy = false; }
+        catch (err) { updError = localizeError(err); updBusy = false; }
     }
 </script>
 

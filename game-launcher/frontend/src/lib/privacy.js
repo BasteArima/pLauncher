@@ -1,7 +1,7 @@
 // Размытие обложек: режим из настроек + дискретный режим (Ctrl+H / 👁),
 // который временно размывает всё. Компоненты берут класс через blurCls($coverBlur, kind).
 import { writable, derived } from 'svelte/store';
-import { tr } from '../i18n.js';
+import { tr, localizeError } from '../i18n.js';
 
 export const blurMode = writable('none');   // none | hover | always — из настроек приватности
 export const discreet = writable(false);    // дискретный режим (перекрывает blurMode)
@@ -30,5 +30,5 @@ export function pinError(err) {
     if (m) return tr('lock.wait', { s: m[1] });
     m = /at least (\d+)/.exec(msg);
     if (m) return tr('privacy.pin_short', { n: m[1] });
-    return msg.replace(/^Error:\s*/, '');
+    return localizeError(msg.replace(/^Error:\s*/, ''));
 }

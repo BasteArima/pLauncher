@@ -89,6 +89,10 @@ jobs:
               chmod +x "$OUT/pLauncher-linux-amd64"
               tar -czf "$OUT/pLauncher-linux-amd64.tar.gz" pLauncher ;;
             macOS)
+              # Ad-hoc подпись всего бандла: без Developer ID предупреждение Gatekeeper останется,
+              # но подпись .app целостная (иначе Apple Silicon может счесть приложение повреждённым)
+              codesign --force --deep --sign - pLauncher.app
+              codesign --verify --deep --strict pLauncher.app
               ditto -c -k --keepParent pLauncher.app "$OUT/pLauncher-macos-universal.zip" ;;
           esac
           cd "$OUT"

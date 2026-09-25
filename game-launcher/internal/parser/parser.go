@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"game-launcher/internal/apperr"
 	"game-launcher/internal/models"
 )
 
@@ -104,7 +104,7 @@ func GetParser(targetURL string, proxyURL string) (SiteParser, error) {
 		return &SteamParser{client: client}, nil
 	}
 
-	return nil, errors.New("unknown source or unsupported site")
+	return nil, apperr.New("parse.unsupported", nil, "unknown source or unsupported site")
 }
 
 // newHTTPClient создает клиента с таймаутами и (опционально) прокси
@@ -289,4 +289,24 @@ func downloadFile(client *http.Client, urlToDownload, filepath, referer string) 
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// requestErr — площадка недоступна (сеть, DNS, таймаут).
+func requestErr(site string, err error) error {
+	return apperr.New("parse.request", apperr.P{"site": site}, "%s request error: %w", site, err)
+}
+
+// httpStatusErr — площадка ответила ошибкой. 403/429/503 обычно значат Cloudflare,
+// ограничение частоты запросов или требование войти — для них отдельный код с подсказкой.
+func httpStatusErr(site string, status int) error {
+	p := apperr.P{"site": site, "status": status}
+	if status == http.StatusForbidden || status == http.StatusTooManyRequests || status == http.StatusServiceUnavailable {
+		return apperr.New("parse.blocked", p, "%s blocked the request (status %d)", site, status)
+	}
+	return apperr.New("parse.status", p, "%s returned status %d", site, status)
+}
+
+// readErr — страницу получили, но не смогли прочитать.
+func readErr(err error) error {
+	return apperr.New("parse.read", nil, "HTML read error: %w", err)
 }

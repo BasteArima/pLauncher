@@ -45,7 +45,8 @@ The app is fully working. Done so far:
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk/ja/pl/tr built-in + user languages from `data/languages/*.json` (README + `_example.json`
-  auto-dropped there); language picker on first run and in settings; backend errors are in English.
+  auto-dropped there); language picker on first run and in settings. User-facing backend errors carry a code (`internal/apperr`), see
+  Frontend conventions.
 - **UX details**: lightbox is a full-window `fixed` overlay (Esc/arrows, mouse back/forward); confirm
   dialog accepts Enter **and** Space; right-click on any text input gives a custom cut/copy/paste/select-all
   menu (native context menu stays disabled elsewhere). Esc closes the top layer (menu → modal → editor → game).
@@ -162,7 +163,12 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
 - Real saved sample pages for testing selectors are in the user's `C:/Users/user/Downloads/` (pornolab1-6,
   island-of-pleasure, erotorrent). These sites are behind Cloudflare/login — **can't be fetched from a
   sandbox**; iterate against the saved HTML. Pure string logic is covered by `extract_test.go`.
-- Backend error strings are **English**; the “description not found” case leaves description empty so the
+- Backend errors: plain `fmt.Errorf` for internal ones; anything a user may see goes through
+  `apperr.New(code, apperr.P{...}, englishFormat, args...)` → message `[code {json}] English`. The frontend
+  (`localizeError` in i18n.js, applied to every `tr()` param, so `tr('toast.error', { err })` just works) shows
+  `err.<code>` from the locale, falling back to the English text. Add `err.<code>` to **all** locales.
+  Parser helpers: `requestErr` / `httpStatusErr` (403/429/503 → `parse.blocked`) / `readErr`.
+  The “description not found” case leaves description empty so the
   UI shows a localized placeholder.
 
 ## Frontend conventions & gotchas
@@ -203,6 +209,11 @@ wails generate module             # after changing exported Go methods / structs
 Cross-OS builds must run **on the target OS** (or CI) — Wails webview bindings are OS-native, even though
 the Go/SQLite parts are CGO-free.
 
+**Releases:** move the `[Unreleased]` items of `CHANGELOG.md` under the new version, write
+`docs/releases/vX.Y.Z.md` (becomes the GitHub release text), bump `info.productVersion` in `wails.json`, then
+`git tag -a vX.Y.Z` + push the tag — `release.yml` builds and publishes. **README screenshots:**
+`docs/tools/screenshots/make.ps1` (fictional library + generated artwork, see its README).
+
 ## Roadmap / suggested improvements (not yet implemented)
 
 Ideas the owner wants to pursue. Roughly ordered by value. Discuss/confirm scope before big ones.
@@ -234,8 +245,7 @@ Polish / convenience:
 9. ✅ **DONE — Backup/export library** (zip). NOT done: a "library health" dashboard (no cover / no
    description / no exe as actionable lists).
 10. **Multi-tag filter** (AND/OR, exclude) and a tag blacklist (hide unwanted genres).
-11. **Localize parser errors via codes** — currently backend errors are plain English strings; switch to
-    codes so the frontend dictionary can translate them.
+11. ✅ **DONE — Localized errors via codes** (`internal/apperr` + `localizeError` in i18n.js).
 12. ✅ **DONE — Self-update + CI releases for Windows/Linux/macOS.** Self-update installs on Windows & Linux;
     macOS (unsigned .app) only links to the release page. Linux builds need `-tags webkit2_41` (WebKitGTK 4.1).
     CI runs on push; logs need a GitHub login (annotations are readable via the public API).

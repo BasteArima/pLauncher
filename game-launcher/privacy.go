@@ -86,7 +86,7 @@ func (a *App) loadPrivacy() privacyStored {
 
 func (a *App) savePrivacy(p privacyStored) error {
 	if a.repo == nil {
-		return fmt.Errorf("data folder is not selected yet")
+		return errNoDataDir()
 	}
 	p.HasPin, p.Locked = p.PinHash != "", false // вычисляемые поля не храним
 	data, _ := json.Marshal(p)

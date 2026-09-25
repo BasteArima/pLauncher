@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"game-launcher/internal/apperr"
 	"game-launcher/internal/models"
 	"game-launcher/internal/scanner"
 
@@ -196,11 +197,11 @@ func (a *App) FindMissingGames() ([]MissingGame, error) {
 // в коллекциях переносится, дубликат удаляется.
 func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 	if a.repo == nil {
-		return nil, fmt.Errorf("data folder is not selected yet")
+		return nil, errNoDataDir()
 	}
 	info, err := os.Stat(newPath)
 	if err != nil || !info.IsDir() {
-		return nil, fmt.Errorf("folder not found: %s", newPath)
+		return nil, apperr.New("app.folder_missing", apperr.P{"path": newPath}, "folder not found: %s", newPath)
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
 	if err != nil {

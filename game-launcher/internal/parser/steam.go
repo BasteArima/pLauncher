@@ -10,6 +10,8 @@ import (
 	"regexp"
 
 	"game-launcher/internal/models"
+
+	"game-launcher/internal/apperr"
 )
 
 // SteamParser получает данные через официальный appdetails API Steam (без скрейпинга).
@@ -40,7 +42,7 @@ type steamResponse map[string]struct {
 func (p *SteamParser) Parse(ctx context.Context, pageURL string, saveDir string) (*models.Game, error) {
 	m := steamAppID.FindStringSubmatch(pageURL)
 	if len(m) < 2 {
-		return nil, fmt.Errorf("couldn't determine the Steam app ID from the link")
+		return nil, apperr.New("steam.appid", nil, "couldn't determine the Steam app ID from the link")
 	}
 	appID := m[1]
 
@@ -53,11 +55,11 @@ func (p *SteamParser) Parse(ctx context.Context, pageURL string, saveDir string)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Steam request error: %w", err)
+		return nil, requestErr("Steam", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Steam returned status %d", resp.StatusCode)
+		return nil, httpStatusErr("Steam", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -67,11 +69,11 @@ func (p *SteamParser) Parse(ctx context.Context, pageURL string, saveDir string)
 
 	var parsed steamResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, fmt.Errorf("error parsing Steam response: %w", err)
+		return nil, apperr.New("parse.read", nil, "error parsing Steam response: %w", err)
 	}
 	entry, ok := parsed[appID]
 	if !ok || !entry.Success {
-		return nil, fmt.Errorf("Steam returned no data for app %s", appID)
+		return nil, apperr.New("steam.nodata", apperr.P{"id": appID}, "Steam returned no data for app %s", appID)
 	}
 	d := entry.Data
 

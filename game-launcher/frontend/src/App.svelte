@@ -27,6 +27,8 @@
         Lock,
         NotifyWindowShown,
         AddSingleGameManual,
+        SelectFolder,
+        AddScanPath,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
@@ -59,6 +61,7 @@
     import ContextMenu from './components/ContextMenu.svelte';
     import Toast from './components/Toast.svelte';
     import PinDialog from './components/PinDialog.svelte';
+    import EmptyLibrary from './components/EmptyLibrary.svelte';
 
     // --- Состояние библиотеки и навигации ---
     let games = [];
@@ -368,6 +371,17 @@
             showToast(n > 0 ? tr('toast.updates_found_n', { n }) : tr('toast.update_none'), 'success');
         } catch (err) { showToast(tr('toast.update_fail', { err }), 'error'); }
         finally { checkingUpdates = false; }
+    }
+
+    // Пустая библиотека: выбрать папку с играми, добавить в сканирование и сразу просканировать
+    async function addGamesFolder() {
+        try {
+            const p = await SelectFolder();
+            if (!p) return;
+            await AddScanPath(p);
+            scanPaths = await GetScanPaths();
+            await handleScan();
+        } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
     }
 
     async function addSingleGame() {
@@ -895,12 +909,8 @@
                             {/if}
                         {/each}
 
-                        {#if games.length === 0 && !scanning}
-                            <div class="flex flex-col items-center justify-center py-24 text-slate-500 animate-fade-in">
-                                <span class="text-6xl mb-5 opacity-30">🗂️</span>
-                                <p class="text-xl text-slate-400 mb-1">{$t("lib.empty_title")}</p>
-                                <p class="text-sm">{$t("lib.empty_sub")}</p>
-                            </div>
+                        {#if games.length === 0}
+                            <EmptyLibrary {scanPaths} {scanning} onAddFolder={addGamesFolder} onAddSingle={addSingleGame} onScan={handleScan}/>
                         {/if}
                     {/if}
                 {:else}

@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"fmt"
 	"html"
 	"net/http"
 	"strings"
@@ -43,17 +42,17 @@ func (p *IslandParser) Parse(ctx context.Context, pageURL string, saveDir string
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("island-of-pleasure request error: %w", err)
+		return nil, requestErr("Island of Pleasure", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("island-of-pleasure returned status %d", resp.StatusCode)
+		return nil, httpStatusErr("Island of Pleasure", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("HTML read error: %w", err)
+		return nil, readErr(err)
 	}
 
 	game := &models.Game{

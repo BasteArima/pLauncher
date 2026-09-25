@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"game-launcher/internal/scanner"
@@ -45,7 +44,7 @@ func (a *App) addIgnored(paths []string) error {
 // Возвращает число убранных игр.
 func (a *App) IgnoreGames(ids []string) (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	want := map[string]bool{}
 	for _, id := range ids {
@@ -72,7 +71,7 @@ func (a *App) IgnoreGames(ids []string) (int, error) {
 // Возвращает число убранных игр.
 func (a *App) AddIgnoredPath(path string) (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	if strings.TrimSpace(path) == "" {
 		return 0, nil

@@ -3,11 +3,12 @@
 package main
 
 import (
-	"fmt"
 	goruntime "runtime"
 	"sync"
 	"syscall"
 	"unsafe"
+
+	"game-launcher/internal/apperr"
 )
 
 // Глобальная горячая клавиша через WinAPI RegisterHotKey. Регистрация привязана
@@ -62,7 +63,7 @@ func (h *hotkeyManager) Register(mods, vk uint32, onPress func()) error {
 		tid, _, _ := procGetCurrentThreadId.Call()
 		r, _, callErr := procRegisterHotKey.Call(0, hotkeyID, uintptr(mods|modNoRepeat), uintptr(vk))
 		if r == 0 {
-			errc <- fmt.Errorf("the key combination is already used by another program (%v)", callErr)
+			errc <- apperr.New("hotkey.busy", nil, "the key combination is already used by another program (%v)", callErr)
 			close(done)
 			return
 		}

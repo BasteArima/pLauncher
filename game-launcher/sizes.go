@@ -99,7 +99,7 @@ func (a *App) RefreshSizes() {
 // RecalcGameSize синхронно пересчитывает размер одной игры и возвращает его.
 func (a *App) RecalcGameSize(id string) (int64, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	g, err := a.gameByID(id)
 	if err != nil {
@@ -118,7 +118,7 @@ func (a *App) RecalcGameSize(id string) (int64, error) {
 // и вычищает их из ручных списков коллекций. Возвращает число удалённых.
 func (a *App) RemoveGames(ids []string) (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	removed := map[string]bool{}
 	for _, id := range ids {
@@ -181,7 +181,7 @@ func (a *App) DetectLaunchFiles(ids []string) (int, error) {
 // изменившиеся. Возвращает число сохранённых.
 func (a *App) updateMany(ids []string, fn func(g *models.Game) bool) (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
 	if err != nil {

@@ -28,9 +28,22 @@ export function tr(key, params) {
     if (s == null) s = (dicts.en && dicts.en[key]);
     if (s == null) s = key;
     if (params) {
-        for (const k in params) s = s.split('{' + k + '}').join(params[k]);
+        for (const k in params) s = s.split('{' + k + '}').join(localizeError(params[k]));
     }
     return s;
+}
+
+// Ошибки бэкенда с кодом (internal/apperr): "[code {json-параметры}] English text".
+// Показываем перевод ключа err.<code>; нет перевода — английский текст без префикса.
+const ERR_RE = /^(?:Error:\s*)?\[([a-z_.]+)(?: (\{.*?\}))?\] ([\s\S]*)$/;
+export function localizeError(v) {
+    const m = ERR_RE.exec(String(v));
+    if (!m) return v;
+    const key = 'err.' + m[1];
+    if ((dicts[current] || {})[key] == null && (dicts.en || {})[key] == null) return m[3];
+    let params = {};
+    try { if (m[2]) params = JSON.parse(m[2]); } catch (e) {}
+    return tr(key, params);
 }
 
 // $t — реактивная версия для разметки: {$t('key')} / {$t('key', {n: 5})}

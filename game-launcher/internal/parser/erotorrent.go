@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -26,17 +25,17 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erotorrent request error: %w", err)
+		return nil, requestErr("Erotorrent", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("erotorrent returned status %d", resp.StatusCode)
+		return nil, httpStatusErr("Erotorrent", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("HTML read error: %w", err)
+		return nil, readErr(err)
 	}
 
 	game := &models.Game{

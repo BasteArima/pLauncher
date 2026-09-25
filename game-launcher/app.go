@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"game-launcher/internal/apperr"
 	"game-launcher/internal/parser"
 	"io"
 	"os"
@@ -70,7 +71,7 @@ func (a *App) initServices(dataDir string) error {
 	}
 
 	if err := os.MkdirAll(filepath.Join(abs, "covers"), 0755); err != nil {
-		return fmt.Errorf("couldn't create data folder: %w", err)
+		return apperr.New("app.data_create", nil, "couldn't create data folder: %w", err)
 	}
 	// Папка для пользовательских языков (туда можно класть свои <код>.json)
 	langDir := filepath.Join(abs, "languages")
@@ -148,6 +149,11 @@ func (a *App) IsConfigured() bool {
 // GetDataDir возвращает текущую папку данных.
 func (a *App) GetDataDir() string { return a.dataDir }
 
+// errNoDataDir — папка данных ещё не выбрана (первый запуск не завершён).
+func errNoDataDir() error {
+	return apperr.New("app.no_data", nil, "data folder is not selected yet")
+}
+
 // GetDefaultDataDir, GetPortableDataDir, GetDocumentsDataDir — варианты для окна выбора.
 func (a *App) GetDefaultDataDir() string { return defaultDataDir() }
 func (a *App) GetPortableDataDir() string {
@@ -198,7 +204,7 @@ func (a *App) ChangeDataDir(newPath string) error {
 		if err := moveDir(oldAbs, newAbs); err != nil {
 			// Пытаемся вернуть рабочее состояние на старой папке
 			_ = a.initServices(oldAbs)
-			return fmt.Errorf("couldn't move data: %w", err)
+			return apperr.New("app.data_move", nil, "couldn't move data: %w", err)
 		}
 	}
 
@@ -218,7 +224,7 @@ func (a *App) SelectDataFolder() (string, error) {
 // OpenDataDir открывает папку данных в проводнике.
 func (a *App) OpenDataDir() error {
 	if a.dataDir == "" {
-		return fmt.Errorf("data folder is not selected")
+		return errNoDataDir()
 	}
 	return a.launcher.OpenFolder(a.dataDir)
 }
@@ -227,7 +233,7 @@ func (a *App) OpenDataDir() error {
 // Сама папка данных и путь к ней сохраняются.
 func (a *App) ClearData() error {
 	if a.repo == nil {
-		return fmt.Errorf("data is not initialized")
+		return errNoDataDir()
 	}
 	if err := a.repo.DeleteAllGames(a.ctx); err != nil {
 		return err
@@ -291,7 +297,7 @@ func (a *App) GetGames() ([]*models.Game, error) {
 // каждую как игру (с авто-поиском .exe и подхватом старого data.json, если он есть).
 func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 	if a.scanner == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	n, err := a.scanner.ScanFolder(a.ctx, rootPath)
 	a.refreshSizesAsync(false)
@@ -301,7 +307,7 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 // Launch запускает игру
 func (a *App) Launch(gameID string, exePath string, folderPath string) error {
 	if folderMissing(folderPath) {
-		return fmt.Errorf("game folder not found: %s", folderPath)
+		return apperr.New("app.folder_missing", apperr.P{"path": folderPath}, "game folder not found: %s", folderPath)
 	}
 	// Сохраняем время запуска
 	if games, err := a.repo.GetAllGames(a.ctx); err == nil {
@@ -536,7 +542,7 @@ func (a *App) gameByID(id string) (*models.Game, error) {
 // CheckGameUpdates проверяет основную площадку игры и возвращает обновлённую запись.
 func (a *App) CheckGameUpdates(gameID string) (*models.Game, error) {
 	if a.repo == nil {
-		return nil, fmt.Errorf("data folder is not selected yet")
+		return nil, errNoDataDir()
 	}
 	g, err := a.gameByID(gameID)
 	if err != nil {
@@ -558,7 +564,7 @@ func (a *App) CheckGameUpdates(gameID string) (*models.Game, error) {
 // CheckSourceUpdate проверяет конкретную площадку игры (ручная проверка из бейджа).
 func (a *App) CheckSourceUpdate(gameID, platform string) (*models.Game, error) {
 	if a.repo == nil {
-		return nil, fmt.Errorf("data folder is not selected yet")
+		return nil, errNoDataDir()
 	}
 	g, err := a.gameByID(gameID)
 	if err != nil {
@@ -582,7 +588,7 @@ func (a *App) CheckSourceUpdate(gameID, platform string) (*models.Game, error) {
 // у которых найдено обновление.
 func (a *App) CheckAllUpdates() (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
 	if err != nil {
@@ -678,7 +684,7 @@ func (a *App) saveScanPaths(paths []string) error {
 // AddScanPath добавляет папку в список (без дубликатов).
 func (a *App) AddScanPath(path string) error {
 	if a.repo == nil {
-		return fmt.Errorf("data folder is not selected yet")
+		return errNoDataDir()
 	}
 	if strings.TrimSpace(path) == "" {
 		return nil
@@ -712,7 +718,7 @@ func (a *App) RemoveScanPath(path string) error {
 // ScanAllFolders сканирует все сохранённые папки, возвращает число добавленных игр.
 func (a *App) ScanAllFolders() (int, error) {
 	if a.scanner == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	paths, _ := a.GetScanPaths()
 	total := 0
@@ -762,7 +768,7 @@ func (a *App) GetCustomLocales() (map[string]map[string]string, error) {
 // OpenLanguagesFolder открывает папку с пользовательскими языками.
 func (a *App) OpenLanguagesFolder() error {
 	if a.dataDir == "" {
-		return fmt.Errorf("data folder is not selected")
+		return errNoDataDir()
 	}
 	dir := filepath.Join(a.dataDir, "languages")
 	os.MkdirAll(dir, 0755)
@@ -793,7 +799,7 @@ func (a *App) GetCollections() ([]models.Collection, error) {
 // SaveCollections сохраняет весь набор коллекций.
 func (a *App) SaveCollections(cols []models.Collection) error {
 	if a.repo == nil {
-		return fmt.Errorf("data folder is not selected yet")
+		return errNoDataDir()
 	}
 	data, _ := json.Marshal(cols)
 	return a.repo.SetSetting(a.ctx, "collections", string(data))
@@ -854,7 +860,7 @@ func (a *App) CopyCoverToData(gameID string, sourcePath string) (string, error) 
 // относительный путь "covers/<fileName>".
 func (a *App) copyIntoCovers(sourcePath, fileName string) (string, error) {
 	if a.dataDir == "" {
-		return "", fmt.Errorf("data folder is not selected")
+		return "", errNoDataDir()
 	}
 	coversDir := filepath.Join(a.dataDir, "covers")
 	if err := os.MkdirAll(coversDir, 0755); err != nil {
@@ -884,7 +890,7 @@ func (a *App) copyIntoCovers(sourcePath, fileName string) (string, error) {
 // AddGamesFromDrop принимает пути перетаскиваемых папок и добавляет их в БД, если их там нет
 func (a *App) AddGamesFromDrop(paths []string) (int, error) {
 	if a.repo == nil {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	games, err := a.repo.GetAllGames(a.ctx)
 	if err != nil {
@@ -969,7 +975,7 @@ func (a *App) AddSingleGameManual() error {
 		return err
 	}
 	if added == 0 {
-		return fmt.Errorf("Game is already in the library")
+		return apperr.New("app.game_exists", nil, "game is already in the library")
 	}
 	return nil
 }

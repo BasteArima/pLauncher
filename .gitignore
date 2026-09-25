@@ -39,3 +39,6 @@ game-launcher/node_modules
 game-launcher/frontend/node_modules
 game-launcher/frontend/dist
 .idea/workspace.xml
+
+# Временные файлы генератора скриншотов README
+docs/tools/screenshots/out/

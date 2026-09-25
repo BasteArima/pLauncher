@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"game-launcher/internal/apperr"
 	"game-launcher/internal/db"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -39,7 +40,7 @@ type backupManifest struct {
 func (a *App) ExportLibrary() (string, error) {
 	sqlite, ok := a.repo.(*db.SQLiteRepo)
 	if !ok || sqlite == nil {
-		return "", fmt.Errorf("data folder is not selected yet")
+		return "", errNoDataDir()
 	}
 	dest, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:           "Сохранить резервную копию библиотеки",
@@ -152,7 +153,7 @@ func (a *App) SelectBackupFile() (string, error) {
 // (прежние откладываются и возвращаются при сбое) → переоткрытие БД.
 func (a *App) ImportLibrary(zipPath string) (int, error) {
 	if a.dataDir == "" {
-		return 0, fmt.Errorf("data folder is not selected yet")
+		return 0, errNoDataDir()
 	}
 	tmp := filepath.Join(a.dataDir, ".import-tmp")
 	os.RemoveAll(tmp)
@@ -163,7 +164,7 @@ func (a *App) ImportLibrary(zipPath string) (int, error) {
 	}
 	count, err := prepareImportedDB(filepath.Join(tmp, "games.db"))
 	if err != nil {
-		return 0, fmt.Errorf("backup database is damaged: %w", err)
+		return 0, apperr.New("backup.damaged", nil, "backup database is damaged: %w", err)
 	}
 
 	// Закрываем текущую БД, чтобы Windows позволила переместить файл
@@ -194,7 +195,7 @@ func (a *App) ImportLibrary(zipPath string) (int, error) {
 func extractBackup(zipPath, dst string) error {
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return fmt.Errorf("couldn't open archive: %w", err)
+		return apperr.New("backup.open", nil, "couldn't open archive: %w", err)
 	}
 	defer zr.Close()
 
@@ -220,7 +221,7 @@ func extractBackup(zipPath, dst string) error {
 		}
 	}
 	if !hasDB {
-		return fmt.Errorf("this archive is not a pLauncher backup (games.db not found)")
+		return apperr.New("backup.foreign", nil, "this archive is not a pLauncher backup (games.db not found)")
 	}
 	return nil
 }

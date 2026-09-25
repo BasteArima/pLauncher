@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"game-launcher/internal/apperr"
 )
 
 // =========================================================================
@@ -86,13 +88,13 @@ func (a *App) CheckLauncherUpdate() (*LauncherUpdate, error) {
 	req.Header.Set("User-Agent", "pLauncher/"+appVersion)
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't reach GitHub: %w", err)
+		return nil, apperr.New("update.offline", nil, "couldn't reach GitHub: %w", err)
 	}
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusOK:
 	case http.StatusNotFound:
-		return nil, fmt.Errorf("no published releases in %s (or the repository is private)", updateRepo)
+		return nil, apperr.New("update.no_releases", apperr.P{"repo": updateRepo}, "no published releases in %s (or the repository is private)", updateRepo)
 	default:
 		return nil, fmt.Errorf("GitHub answered %s", resp.Status)
 	}
@@ -179,7 +181,7 @@ func (a *App) InstallLauncherUpdate() error {
 		return fmt.Errorf("already up to date (%s)", u.Current)
 	}
 	if !u.CanInstall {
-		return fmt.Errorf("automatic update isn’t available on this system — download it from the release page")
+		return apperr.New("update.manual", nil, "automatic update isn’t available on this system — download it from the release page")
 	}
 	exe, err := executablePath()
 	if err != nil {
@@ -192,7 +194,7 @@ func (a *App) InstallLauncherUpdate() error {
 	newPath := exe + ".new"
 	if err := downloadTo(u.AssetURL, newPath, u.Size); err != nil {
 		os.Remove(newPath)
-		return fmt.Errorf("download failed: %w (you can download it manually from the release page)", err)
+		return apperr.New("update.download", nil, "download failed: %w (you can download it manually from the release page)", err)
 	}
 	if u.shaURL != "" {
 		if err := verifySHA256(newPath, u.shaURL); err != nil {
@@ -208,7 +210,7 @@ func (a *App) InstallLauncherUpdate() error {
 	os.Remove(oldPath)
 	if err := os.Rename(exe, oldPath); err != nil {
 		os.Remove(newPath)
-		return fmt.Errorf("couldn't replace the launcher file (no write access to %s?): %w", filepath.Dir(exe), err)
+		return apperr.New("update.no_write", apperr.P{"path": filepath.Dir(exe)}, "couldn't replace the launcher file (no write access to %s?): %w", filepath.Dir(exe), err)
 	}
 	if err := os.Rename(newPath, exe); err != nil {
 		os.Rename(oldPath, exe) // откат
@@ -274,7 +276,7 @@ func verifySHA256(path, shaURL string) error {
 		return err
 	}
 	if got := hex.EncodeToString(h.Sum(nil)); !strings.EqualFold(got, fields[0]) {
-		return fmt.Errorf("checksum mismatch: the downloaded file is damaged")
+		return apperr.New("update.checksum", nil, "checksum mismatch: the downloaded file is damaged")
 	}
 	return nil
 }

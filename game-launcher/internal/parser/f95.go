@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"fmt"
 	"html"
 	"net/http"
 	"regexp"
@@ -28,17 +27,17 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("f95 request error: %w", err)
+		return nil, requestErr("F95zone", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("f95 returned status %d", resp.StatusCode)
+		return nil, httpStatusErr("F95zone", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("HTML read error: %w", err)
+		return nil, readErr(err)
 	}
 
 	game := &models.Game{

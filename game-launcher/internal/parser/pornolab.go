@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -26,18 +25,18 @@ func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir strin
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("pornolab request error: %w", err)
+		return nil, requestErr("Pornolab", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("pornolab returned status %d", resp.StatusCode)
+		return nil, httpStatusErr("Pornolab", resp.StatusCode)
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
 	doc, err := goquery.NewDocumentFromReader(decoder.Reader(resp.Body))
 	if err != nil {
-		return nil, fmt.Errorf("HTML read error: %w", err)
+		return nil, readErr(err)
 	}
 
 	game := &models.Game{
