@@ -64,7 +64,7 @@ func SupportedSources() []Source {
 	return []Source{
 		{Name: "F95zone", Domain: "f95zone.to"},
 		{Name: "Pornolab", Domain: "pornolab.net"},
-		{Name: "Erotorrent", Domain: "erotorrent.ru"},
+		{Name: "Erotorrent", Domain: "erotorrent.org"},
 		{Name: "Island of Pleasure", Domain: "island-of-pleasure.site"},
 		{Name: "Steam", Domain: "store.steampowered.com"},
 	}
@@ -80,6 +80,9 @@ func SourceName(targetURL string) string {
 	if strings.Contains(targetURL, "pornlab.net") { // алиас домена pornolab
 		return "Pornolab"
 	}
+	if isErotorrent(targetURL) { // старые ссылки на erotorrent.ru
+		return "Erotorrent"
+	}
 	return ""
 }
 
@@ -94,8 +97,8 @@ func GetParser(targetURL string, proxyURL string) (SiteParser, error) {
 
 	if strings.Contains(targetURL, "f95zone") {
 		return &F95Parser{client: client}, nil
-	} else if strings.Contains(targetURL, "erotorrent.ru") {
-		return &ErotorrentParser{client: client}, nil // ДОБАВИЛИ ЭТУ СТРОКУ
+	} else if isErotorrent(targetURL) {
+		return &ErotorrentParser{client: client}, nil
 	} else if strings.Contains(targetURL, "pornlab.net") || strings.Contains(targetURL, "pornolab.net") {
 		return &PornlabParser{client: client}, nil
 	} else if strings.Contains(targetURL, "island-of-pleasure.site") {
@@ -212,6 +215,25 @@ func downloadInto(ctx context.Context, client *http.Client, game *models.Game, c
 }
 
 // absoluteURL дополняет относительные ссылки доменом сайта.
+// isErotorrent — ссылка на erotorrent: сайт переехал с erotorrent.ru на erotorrent.org
+// (.ru отвечает 301), старые ссылки в библиотеке должны продолжать работать.
+func isErotorrent(targetURL string) bool {
+	u, err := url.Parse(targetURL)
+	if err != nil {
+		return false
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	return host == "erotorrent.org" || host == "erotorrent.ru"
+}
+
+// pageOrigin — "https://host" страницы, база для относительных ссылок на картинки.
+func pageOrigin(pageURL, fallback string) string {
+	if u, err := url.Parse(pageURL); err == nil && u.Scheme != "" && u.Host != "" {
+		return u.Scheme + "://" + u.Host
+	}
+	return fallback
+}
+
 func absoluteURL(src, domain string) string {
 	if strings.HasPrefix(src, "//") {
 		return "https:" + src

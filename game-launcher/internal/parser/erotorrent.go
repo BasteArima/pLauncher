@@ -10,7 +10,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// ErotorrentParser реализация парсера для erotorrent.ru
+// ErotorrentParser реализация парсера для erotorrent.org (бывший erotorrent.ru)
 type ErotorrentParser struct {
 	client *http.Client
 }
@@ -80,11 +80,12 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 	}
 
 	var coverURL string
+	origin := pageOrigin(pageURL, "https://erotorrent.org")
 	var screenshotURLs []string
 
 	// 4. Ищем обложку (афишу)
 	if coverSrc, exists := doc.Find("div.left_full_img img.poster").Attr("src"); exists {
-		coverURL = absoluteURL(coverSrc, "https://erotorrent.ru")
+		coverURL = absoluteURL(coverSrc, origin)
 	}
 
 	// 5. Ищем фулл-сайз скриншоты
@@ -93,7 +94,7 @@ func (p *ErotorrentParser) Parse(ctx context.Context, pageURL string, saveDir st
 		if !exists {
 			return
 		}
-		href = absoluteURL(href, "https://erotorrent.ru")
+		href = absoluteURL(href, origin)
 		if href == coverURL {
 			return
 		}

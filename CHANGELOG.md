@@ -19,6 +19,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 - The macOS app is ad-hoc signed as a whole bundle. It still isn't notarized, see the README for how to open it
   on macOS 15.
 
+### Fixed
+- Erotorrent links work again: the site moved from erotorrent.ru to erotorrent.org. Both addresses are
+  recognized, so links already saved in your library keep working.
+
 ## [1.0.0] - 2026-09-24
 
 First public release: folder scanning with launch-file and engine detection, metadata from F95zone, Pornolab,

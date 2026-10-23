@@ -24,6 +24,12 @@ function Check($what) { if ($LASTEXITCODE -ne 0) { throw "$what завершил
 # Версия берётся из wails.json (productVersion) и вшивается в бинарник
 $version = (Get-Content wails.json -Raw | ConvertFrom-Json).info.productVersion
 
+# Go — той же версии, что в go.mod (её же ставит CI). Wails v2.12 разбирает код старой библиотекой
+# golang.org/x/tools, которая не читает стандартную библиотеку более новых Go («package "fmt" without
+# types»), поэтому установленный в системе Go 1.27+ ломал бы генерацию привязок. Тулчейн скачается сам.
+$goVersion = (Select-String -Path go.mod -Pattern '^go\s+(\S+)').Matches[0].Groups[1].Value
+if (-not $env:GOTOOLCHAIN) { $env:GOTOOLCHAIN = "go$goVersion" }
+
 if (-not $NoTests) {
     Step 'go test'
     go test ./...
