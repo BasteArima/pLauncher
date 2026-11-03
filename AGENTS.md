@@ -158,6 +158,10 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   **Do NOT** go back to font-size heuristics for the title — that was the old, broken approach.
 - pornolab pages are **windows-1251** (decoded via `charmap`). Image real URLs are in the `title` attr
   of `var.postImg` (the `src` is localized when the page is saved).
+- **F95zone hides first-post attachments from guests** ("Log in or register to see attachments"), so images come
+  from the public Latest Updates JSON (`f95_latest.go`: `latest_data.php`, matched by thread ID; search works by a
+  single word only, `preview.` → `attachments.` gives full size). No login is needed or stored. Attachments are
+  served as AVIF whatever the URL extension: `fixImageExt` renames downloads to the real format.
 - **Steam** uses the official `store.steampowered.com/api/appdetails` JSON API (not scraping); cover =
   `library_600x900.jpg`.
 - Real saved sample pages for testing selectors are in the user's `C:/Users/user/Downloads/` (pornolab1-6,

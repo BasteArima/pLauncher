@@ -29,6 +29,7 @@ var languageAliases = map[string][]string{
 	"Português": {"португальский", "portuguese"},
 	"한국어":       {"корейский", "korean"},
 	"Italiano":  {"итальянский", "italian"},
+	"Türkçe":    {"турецкий", "turkish"},
 }
 
 // detectLanguages пытается определить языки игры по тексту страницы.
@@ -39,7 +40,7 @@ func detectLanguages(text string) []string {
 
 	// Стабильный порядок вывода
 	order := []string{"Русский", "English", "日本語", "中文", "Español",
-		"Deutsch", "Français", "Português", "한국어", "Italiano"}
+		"Deutsch", "Français", "Português", "한국어", "Italiano", "Türkçe"}
 
 	var found []string
 	for _, canon := range order {
@@ -173,7 +174,7 @@ func DownloadImagesAsync(ctx context.Context, client *http.Client, imageURLs []s
 				return
 			}
 
-			results[index] = localPath
+			results[index] = fixImageExt(localPath)
 		}(i, imgURL)
 	}
 
@@ -187,6 +188,47 @@ func DownloadImagesAsync(ctx context.Context, client *http.Client, imageURLs []s
 		}
 	}
 	return localPaths
+}
+
+// fixImageExt приводит расширение файла к настоящему формату картинки: сайты отдают
+// AVIF/WebP по ссылкам вида .png/.jpg. Возвращает итоговый путь.
+func fixImageExt(path string) string {
+	want := sniffImageExt(path)
+	ext := strings.ToLower(filepath.Ext(path))
+	if want == "" || ext == want || (ext == ".jpeg" && want == ".jpg") {
+		return path
+	}
+	fixed := strings.TrimSuffix(path, filepath.Ext(path)) + want
+	if err := os.Rename(path, fixed); err != nil {
+		return path
+	}
+	return fixed
+}
+
+// sniffImageExt определяет формат картинки по первым байтам ("" — не распознан).
+func sniffImageExt(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	var h [12]byte
+	if _, err := io.ReadFull(f, h[:]); err != nil {
+		return ""
+	}
+	switch {
+	case string(h[4:8]) == "ftyp" && (string(h[8:12]) == "avif" || string(h[8:12]) == "avis"):
+		return ".avif"
+	case string(h[:4]) == "RIFF" && string(h[8:12]) == "WEBP":
+		return ".webp"
+	case string(h[:4]) == "\x89PNG":
+		return ".png"
+	case string(h[:3]) == "\xff\xd8\xff":
+		return ".jpg"
+	case string(h[:4]) == "GIF8":
+		return ".gif"
+	}
+	return ""
 }
 
 // maxScreenshots — сколько скриншотов максимум скачиваем на игру.

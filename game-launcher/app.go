@@ -408,9 +408,8 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 	if len(parsedData.Languages) > 0 {
 		targetGame.Languages = parsedData.Languages
 	}
-	if len(parsedData.Tags) > 0 {
-		targetGame.Tags = parsedData.Tags
-	}
+	// Теги дополняем, а не заменяем: добавленные вручную не должны пропадать при обновлении
+	targetGame.Tags = mergeTags(targetGame.Tags, parsedData.Tags)
 	if parsedData.Author != "" {
 		targetGame.Author = parsedData.Author
 	}
@@ -837,8 +836,8 @@ func (a *App) SelectCoverImage() (string, error) {
 		Title: "Выберите обложку для игры",
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Изображения (*.jpg, *.png, *.webp)",
-				Pattern:     "*.jpg;*.jpeg;*.png;*.webp;*.gif",
+				DisplayName: "Изображения (*.jpg, *.png, *.webp, *.avif)",
+				Pattern:     "*.jpg;*.jpeg;*.png;*.webp;*.avif;*.gif",
 			},
 		},
 	}
@@ -987,7 +986,7 @@ func (a *App) SelectScreenshots() ([]string, error) {
 		Filters: []runtime.FileFilter{
 			{
 				DisplayName: "Изображения",
-				Pattern:     "*.jpg;*.jpeg;*.png;*.webp;*.gif",
+				Pattern:     "*.jpg;*.jpeg;*.png;*.webp;*.avif;*.gif",
 			},
 		},
 	}
@@ -1025,4 +1024,19 @@ func (a *App) SelectExecutable(startDir string) (string, error) {
 	}
 	// OpenFileDialog возвращает путь к одному выбранному файлу
 	return runtime.OpenFileDialog(a.ctx, options)
+}
+
+// mergeTags добавляет к тегам новые, без дублей (регистр не важен).
+func mergeTags(have, add []string) []string {
+	seen := make(map[string]bool, len(have))
+	for _, t := range have {
+		seen[strings.ToLower(t)] = true
+	}
+	for _, t := range add {
+		if k := strings.ToLower(t); !seen[k] {
+			seen[k] = true
+			have = append(have, t)
+		}
+	}
+	return have
 }

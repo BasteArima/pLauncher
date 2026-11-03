@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"fmt"
 	"html"
 	"net/http"
 	"regexp"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+// f95LanguageRe — поле "Language:" в теле первого поста.
+var f95LanguageRe = regexp.MustCompile(`(?is)<b>\s*Languages?\s*:?\s*</b>\s*:?\s*(.*?)<br`)
 
 // F95Parser реализация парсера для f95zone
 type F95Parser struct {
@@ -106,8 +110,21 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 		}
 	}
 
-	// 2.5 Определяем языки по тексту главного поста
-	game.Languages = detectLanguages(doc.Find("article.message-body div.bbWrapper").First().Text())
+	// 2.5 Языки: сначала поле "Language:" первого поста, иначе ищем по всему его тексту
+	// (там легко встретить название языка не по делу).
+	if m := f95LanguageRe.FindStringSubmatch(htmlContent); len(m) > 1 {
+		game.Languages = detectLanguages(html.UnescapeString(stripHTMLTags(m[1])))
+	}
+	if len(game.Languages) == 0 {
+		game.Languages = detectLanguages(doc.Find("article.message-body div.bbWrapper").First().Text())
+	}
+
+	// 2.6 Теги темы (видны и без входа)
+	doc.Find(".js-tagList a.tagItem").Each(func(i int, s *goquery.Selection) {
+		if tag := cleanText(s.Text()); tag != "" {
+			game.Tags = append(game.Tags, tag)
+		}
+	})
 
 	// 3. Собираем ссылки на картинки (только из первого, главного поста)
 	var coverURL string
@@ -156,6 +173,23 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 			}
 		}
 	})
+
+	// 4. Гостю вложения первого поста не показывают — берём картинки из публичного JSON.
+	// В режиме «только метаданные» (saveDir пуст) картинки не нужны, лишних запросов не делаем.
+	if saveDir != "" && (coverURL == "" || len(screenshotURLs) == 0) {
+		if id := f95ThreadID(pageURL); id != 0 {
+			cover, screens, lerr := f95LatestImages(ctx, p.client, id, game.Title)
+			if lerr != nil {
+				fmt.Printf("F95: не удалось получить картинки темы %d: %v\n", id, lerr)
+			}
+			if coverURL == "" {
+				coverURL = cover
+			}
+			if len(screenshotURLs) == 0 {
+				screenshotURLs = screens
+			}
+		}
+	}
 
 	downloadInto(ctx, p.client, game, coverURL, screenshotURLs, saveDir, pageURL)
 	return game, nil

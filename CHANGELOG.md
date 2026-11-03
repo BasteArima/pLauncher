@@ -22,6 +22,11 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ### Fixed
 - Erotorrent links work again: the site moved from erotorrent.ru to erotorrent.org. Both addresses are
   recognized, so links already saved in your library keep working.
+- F95zone covers and screenshots download again. The site now hides attachments in the first post from guests,
+  so pLauncher takes them from its public Latest Updates data.
+- F95zone tags are now imported, and languages come from the thread's Language field (Turkish was added).
+- Updating metadata from a link no longer removes tags you added by hand.
+- Images are saved with their real file extension (AVIF, WebP) instead of the one in the link.
 
 ## [1.0.0] - 2026-09-24
 
