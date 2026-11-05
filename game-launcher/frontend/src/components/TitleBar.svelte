@@ -19,9 +19,13 @@
     export let onToggleHidden = () => {};
     export let onHotkeys = () => {};
     export let onSettings = () => {};
+    export let sidebarWidth = 256;         // поиск начинается над колонкой контента
+    export let searchQuery = '';           // bind
+    export let searchInput = null;         // bind (Ctrl+F)
+    export let onSearch = () => {};
 
     const winBtn = 'h-full px-4 hover:bg-white/10 text-slate-400 hover:text-white transition-colors';
-    const quickBtn = 'h-7 px-2 rounded-md flex items-center gap-1.5 text-xs transition-colors';
+    const quickBtn = 'h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs transition-colors';
 
     // Плашка обновления лаунчера: есть новая версия → идёт загрузка → готово к перезапуску
     $: dlState = $download.state || 'idle';
@@ -29,11 +33,27 @@
     $: dlPercent = $download.total > 0 ? Math.min(100, Math.round($download.done / $download.total * 100)) : 0;
 </script>
 
-<div class="h-9 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
-    <div class="flex items-center gap-1 pl-3 h-full min-w-0">
-        <span class="flex items-center gap-2 pr-2 text-sm font-bold tracking-wide">
-            <span class="w-5 h-5 rounded-md bg-indigo-500 text-white text-[11px] flex items-center justify-center">p</span><span class="text-slate-200">pLauncher</span>
+<div class="h-12 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
+    <div class="flex items-center h-full min-w-0 flex-1">
+        <span class="flex items-center gap-2.5 pl-4 text-[15px] font-semibold tracking-wide shrink-0" style="width:{ready && !locked ? sidebarWidth + 4 : 'auto'}px">
+            <span class="w-6 h-6 rounded-md bg-indigo-500 text-white text-xs flex items-center justify-center">p</span><span class="text-slate-100">pLauncher</span>
         </span>
+        {#if ready && !locked}
+            <!-- Поиск по библиотеке: над колонкой контента, как в макете -->
+            <label class="relative flex items-center w-full max-w-sm ml-8 h-9 rounded-lg bg-slate-900 border border-white/10 focus-within:border-indigo-400/60 transition-colors"
+                   style="--wails-draggable:no-drag" on:dblclick|stopPropagation>
+                <svg class="absolute left-3 w-4 h-4 text-slate-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+                <input type="text" bind:this={searchInput} bind:value={searchQuery} on:input={onSearch}
+                       placeholder={$t('search.placeholder')} aria-label={$t('search.placeholder')}
+                       class="w-full h-full bg-transparent pl-9 pr-16 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"/>
+                {#if searchQuery}
+                    <button on:click={() => { searchQuery = ''; onSearch(); }} aria-label={$t('btn.clear')}
+                            class="absolute right-2 w-6 h-6 rounded text-slate-500 hover:text-white">×</button>
+                {:else}
+                    <span class="absolute right-2.5 text-[11px] text-slate-500 border border-white/10 rounded px-1.5 pointer-events-none">Ctrl F</span>
+                {/if}
+            </label>
+        {/if}
         {#if scanning || checkingUpdates}
             <span class="flex items-center gap-1.5 ml-2 text-xs text-slate-400 truncate">
                 <svg class="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/></svg>

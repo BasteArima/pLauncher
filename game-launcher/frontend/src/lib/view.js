@@ -29,6 +29,10 @@ export const cardWidth = derived([cardSize, cardShape], ([s, shape]) => Math.rou
 export const showHero = writable(lsGet('plauncher_hero', '0') === '1');
 showHero.subscribe(v => lsSet('plauncher_hero', v ? '1' : '0'));
 
+// --- Вид «Все игры»: одна сетка (макет A3, по умолчанию) или полки с настройкой разделов ---
+export const homeView = writable(lsGet('plauncher_home_view', 'grid') === 'shelves' ? 'shelves' : 'grid');
+homeView.subscribe(v => lsSet('plauncher_home_view', v));
+
 // --- Выделение игр ---
 // Хранится Set id; «якорь» — последняя кликнутая карточка (для Shift+клик).
 export const selection = writable(new Set());

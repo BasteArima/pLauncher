@@ -37,7 +37,7 @@
     import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
-    import { showHero, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
+    import { showHero, homeView, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
     import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
     import SmartBanner from './components/SmartBanner.svelte';
@@ -76,6 +76,7 @@
     let searchQuery = '';
     let activeFilter = 'all';
     let activeTag = '';                  // выбранный тег (пусто — не фильтруем)
+    let activeCollection = '';           // открытая коллекция (id; '__uncat' — без категории)
     let isDragging = false;              // оверлей при перетаскивании папок из проводника
     let scanPaths = [];
     let supportedSources = [];
@@ -187,7 +188,13 @@
     $: hiddenIds = new Set(hiddenCols.flatMap(c => buildCol(c, games).items.map(g => g.id)));
     $: visibleGames = showHidden || !hiddenIds.size ? games : games.filter(g => !hiddenIds.has(g.id));
     $: visibleCollections = showHidden ? collections : collections.filter(c => !c.hidden);
+    // Открытая коллекция: её игры (динамические — по тегам), «Без категории» — не попавшие никуда
+    $: collectionIds = !activeCollection ? null
+        : activeCollection === '__uncat' ? new Set(uncategorized.map(g => g.id))
+        : new Set(((collectionsView.find(c => c.id === activeCollection) || {}).items || []).map(g => g.id));
+    $: openedCollection = activeCollection && activeCollection !== '__uncat' ? collectionsView.find(c => c.id === activeCollection) : null;
     $: filteredGames = sortGames(visibleGames.filter(g => {
+        if (collectionIds && !collectionIds.has(g.id)) return false;
         if (activeTag && !(g.tags || []).includes(activeTag)) return false;
         if (activeFilter === 'favorites') return g.favorite;
         if (activeFilter === 'updates') return g.update_available;
@@ -220,17 +227,28 @@
     $: favoriteGames = visibleGames.filter(g => g.favorite);
     $: heroGame = recentlyPlayed[0] || recentlyAdded[0] || null;
     // Домашний вид: без поиска, фильтра и выбранного тега
-    $: isHome = searchQuery.trim() === '' && activeFilter === 'all' && !activeTag;
+    $: isHome = searchQuery.trim() === '' && activeFilter === 'all' && !activeTag && !activeCollection;
+    // Полки — только на «Все игры» без фильтров и если выбран этот вид
+    $: showShelves = isHome && $homeView === 'shelves';
+    // Счётчики для чипсов — в пределах открытой коллекции
+    $: scopeGames = collectionIds ? visibleGames.filter(g => collectionIds.has(g.id)) : visibleGames;
+    $: chips = ($langStore, [
+        { id: 'all', label: tr('chip.all'), n: scopeGames.length },
+        { id: 'favorites', label: tr('nav.favorites'), n: scopeGames.filter(g => g.favorite).length },
+        ...(scopeGames.some(g => g.update_available) ? [{ id: 'updates', label: tr('nav.updates'), n: scopeGames.filter(g => g.update_available).length }] : []),
+    ]);
 
     // Заголовок текущего вида ($langStore — зависимость от языка)
     $: viewTitle = ($langStore,
-        activeTag ? tr('view.tag', { tag: activeTag })
+        activeCollection === '__uncat' ? tr('nav.uncategorized')
+        : openedCollection ? openedCollection.name
         : searchQuery.trim() ? tr('view.search')
+        : activeTag ? tr('view.tag', { tag: activeTag })
         : activeFilter === 'favorites' ? tr('shelf.favorites')
         : activeFilter === 'updates' ? tr('nav.updates')
         : activeFilter === 'nocover' ? tr('nav.no_cover')
         : activeFilter === 'missing' ? tr('missing.nav')
-        : tr('lib.title'));
+        : tr('nav.all_games'));
 
     // Уникальные теги по всей библиотеке, по частоте
     $: allTags = (() => {
@@ -460,15 +478,54 @@
         selectedGame = null;
         isEditing = false;
     }
+    // Пункт боковой панели (все игры, избранное, умные списки): сбрасывает коллекцию и тег
     function applyFilter(filter) {
         clearSelection();
         activeFilter = filter;
         activeTag = '';
+        activeCollection = '';
         closeGame();
+    }
+    // Открыть коллекцию сеткой (щелчок по её названию в панели)
+    function openCollection(key) {
+        clearSelection();
+        activeCollection = key;
+        activeFilter = 'all';
+        activeTag = '';
+        closeGame();
+    }
+    // Чипсы над сеткой: фильтр внутри текущей коллекции
+    function applyChip(id) { clearSelection(); activeFilter = id; }
+    // Сброс всего: поиск, фильтр, тег, коллекция
+    function resetView() {
+        searchQuery = '';
+        applyFilter('all');
+        handleSearch();
+    }
+    // Ввод в поиске (верхняя панель): ищем по всей библиотеке, а не внутри открытой коллекции
+    function onSearchInput() {
+        if (selectedGame) closeGame();
+        if (searchQuery.trim()) { activeCollection = ''; activeFilter = 'all'; activeTag = ''; }
+        handleSearch();
+    }
+    // Меню «Теги ▾»: выбрать тег в пределах текущего вида
+    function openTagMenu(e) {
+        const counts = {};
+        for (const g of scopeGames) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
+        const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 40);
+        const r = e.currentTarget.getBoundingClientRect();
+        ctx = {
+            x: Math.min(r.left, window.innerWidth - 248), y: r.bottom + 4, width: 240,
+            items: [
+                ...(activeTag ? [{ label: tr('tags.clear'), icon: '✕', action: () => activeTag = '' }, { sep: true }] : []),
+                ...tags.map(tag => ({ label: tag, hint: String(counts[tag]), checked: activeTag === tag, action: () => { clearSelection(); activeTag = activeTag === tag ? '' : tag; } })),
+            ],
+        };
     }
     function applyTag(tag) {
         activeTag = activeTag === tag ? '' : tag;
         activeFilter = 'all';
+        activeCollection = '';
         searchQuery = '';
         closeGame();
     }
@@ -781,7 +838,8 @@
      on:dragleave={onDragLeave}
      on:contextmenu={handleGlobalContext}>
 
-    <TitleBar {scanning} {checkingUpdates} {locked} {showHidden}
+    <TitleBar {scanning} {checkingUpdates} {locked} {showHidden} {sidebarWidth}
+              bind:searchQuery bind:searchInput onSearch={onSearchInput}
               ready={!needsSetup}
               hasPin={!!(privacy && privacy.has_pin)}
               hiddenCount={hiddenCols.length}
@@ -806,7 +864,8 @@
                  favoritesCount={favoriteGames.length}
                  updatesCount={updatesGames.length}
                  missingCount={missingGames.length}
-                 {isHome} {activeFilter}
+                 {isHome} {activeFilter} {activeCollection}
+                 onOpenCollection={openCollection}
                  selectedId={selectedGame ? selectedGame.id : ''}
                  {noCoverCount} {draggingGame}
                  recent={recentlyPlayed.slice(0, 3)}
@@ -828,7 +887,7 @@
         <div on:mousedown={startSidebarResize} title={$t("app.resize")}
              class="w-1 shrink-0 self-stretch z-20 cursor-col-resize bg-white/5 hover:bg-indigo-400/50 transition-colors {resizingSidebar ? 'bg-indigo-400/60' : ''}"></div>
 
-        <main class="flex-1 overflow-y-auto p-8 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
+        <main class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
                     <button on:click={closeGame} title="Esc"
@@ -855,25 +914,59 @@
                 </div>
 
             {:else}
-                <div class="flex justify-between items-center mb-7 animate-fade-in gap-4">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <h2 class="text-3xl font-bold text-white tracking-tight truncate">{viewTitle}</h2>
-                        {#if !isHome}
-                            <button on:click={() => { searchQuery = ''; applyFilter('all'); handleSearch(); }}
-                                    class="shrink-0 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-white/10 transition-colors">
-                                ✕ {$t("lib.reset")}
-                            </button>
-                        {/if}
-                    </div>
-
-                    <div class="relative w-80 shrink-0">
-                        <input type="text" bind:this={searchInput} bind:value={searchQuery} on:input={handleSearch} placeholder={$t("search.placeholder")}
-                               class="w-full glass text-white rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all placeholder:text-slate-500"/>
-                        <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">🔍</div>
-                    </div>
+                <!-- Заголовок вида: название + число, справа сортировка -->
+                <div class="flex items-center gap-3 mb-4 animate-fade-in flex-wrap">
+                    <h2 class="text-2xl font-semibold text-white tracking-tight truncate min-w-0">{viewTitle}</h2>
+                    {#if !showShelves}<span class="text-slate-500 text-sm">{filteredGames.length}</span>{/if}
+                    {#if !isHome}
+                        <button on:click={resetView}
+                                class="shrink-0 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-white/10 transition-colors">
+                            ✕ {$t("lib.reset")}
+                        </button>
+                    {/if}
+                    <div class="flex-1"></div>
+                    {#if !showShelves}<ViewControls bind:sortBy/>{/if}
                 </div>
 
-                {#if isHome}
+                {#if smartBanner}
+                    <SmartBanner {...smartBanner}/>
+                {/if}
+
+                {#if games.length}
+                    <!-- Чипсы-фильтры (внутри открытой коллекции), теги, инструменты вида -->
+                    <div class="flex items-center gap-2 flex-wrap mb-6">
+                        {#if !showShelves}
+                            {#each chips as c (c.id)}
+                                <button on:click={() => applyChip(c.id)}
+                                        class="h-8 px-3.5 rounded-full text-[13px] border transition-colors {activeFilter === c.id ? 'border-indigo-500 bg-indigo-900 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'}">
+                                    {c.label} <span class="opacity-70 ml-0.5">{c.n}</span>
+                                </button>
+                            {/each}
+                            <span class="w-px h-5 bg-white/10 mx-1"></span>
+                            <button on:click={openTagMenu}
+                                    class="h-8 px-3.5 rounded-full text-[13px] border transition-colors flex items-center gap-1.5 {activeTag ? 'border-indigo-500 bg-indigo-900 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'}">
+                                {activeTag || $t('tags.label')} <span class="text-[10px] opacity-70">▼</span>
+                            </button>
+                        {/if}
+                        <div class="flex-1"></div>
+                        {#if isHome}
+                            <!-- Вид «Все игры»: сетка или полки -->
+                            <div class="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900 border border-white/10 text-xs" role="group">
+                                <button on:click={() => homeView.set('grid')} class="h-7 px-2.5 rounded-md transition-colors {$homeView === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-200'}">{$t('view.grid')}</button>
+                                <button on:click={() => homeView.set('shelves')} class="h-7 px-2.5 rounded-md transition-colors {$homeView === 'shelves' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-200'}">{$t('view.shelves')}</button>
+                            </div>
+                            {#if showShelves}
+                                <button on:click={() => layoutEditing = true}
+                                        class="h-8 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 rounded-lg border border-white/10 transition-colors">
+                                    ✎ {$t("lib.edit_sections")}
+                                </button>
+                            {/if}
+                        {/if}
+                        <LibraryTools/>
+                    </div>
+                {/if}
+
+                {#if showShelves}
                     {#if layoutEditing}
                         <ShelfEditor bind:shelves {allTags} collections={visibleCollections}
                                      countFor={(s) => buildShelf(s, shelfData).items.length}
@@ -882,23 +975,11 @@
                         {#if heroGame && $showHero}
                             <Hero game={heroGame} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite}/>
                         {/if}
-
-                        {#if games.length}
-                            <!-- Инструменты вида: над всеми разделами, при любом их порядке -->
-                            <div class="flex justify-end items-center gap-3 mb-5 {heroGame && $showHero ? '-mt-2' : ''}">
-                                <LibraryTools/>
-                                <button on:click={() => layoutEditing = true}
-                                        class="text-sm text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors">
-                                    ✎ {$t("lib.edit_sections")}
-                                </button>
-                            </div>
-                        {/if}
-
                         {#each renderedShelves as shelf (shelf.id)}
                             {#if shelf.type === 'all'}
                                 {#if shelf.items.length}
                                     <div class="flex items-center justify-between mb-4" on:contextmenu={(e) => openCtx(e, shelfMenuItems(shelf))}>
-                                        <h3 class="text-lg font-bold text-white tracking-tight">{shelf.title}
+                                        <h3 class="text-lg font-semibold text-white tracking-tight">{shelf.title}
                                             <span class="text-slate-500 text-sm font-medium ml-2">{shelf.items.length}</span>
                                         </h3>
                                         <ViewControls bind:sortBy/>
@@ -913,28 +994,20 @@
                                 </div>
                             {/if}
                         {/each}
-
-                        {#if games.length === 0}
-                            <EmptyLibrary {scanPaths} {scanning} onAddFolder={addGamesFolder} onAddSingle={addSingleGame} onScan={handleScan}/>
-                        {/if}
                     {/if}
                 {:else}
-                    {#if smartBanner}
-                        <SmartBanner {...smartBanner}/>
-                    {/if}
-                    <div class="flex items-center justify-end gap-4 mb-4">
-                        <LibraryTools/>
-                        <ViewControls bind:sortBy/>
-                    </div>
                     <GameGrid items={filteredGames} onOpen={selectGame} onPlay={playGame}
                               onToggleFav={toggleFavorite} onDrag={onGameDragStart} onContext={gameCtx}/>
-                    {#if filteredGames.length === 0}
+                    {#if filteredGames.length === 0 && games.length}
                         <div class="flex flex-col items-center justify-center py-24 text-slate-500 animate-fade-in">
-                            <span class="text-6xl mb-5 opacity-30">🔍</span>
                             <p class="text-xl text-slate-400 mb-1">{$t("lib.not_found_title")}</p>
                             <p class="text-sm">{$t("lib.not_found_sub")}</p>
                         </div>
                     {/if}
+                {/if}
+
+                {#if games.length === 0 && isHome}
+                    <EmptyLibrary {scanPaths} {scanning} onAddFolder={addGamesFolder} onAddSingle={addSingleGame} onScan={handleScan}/>
                 {/if}
             {/if}
 
