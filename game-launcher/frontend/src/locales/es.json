@@ -502,5 +502,14 @@
   "err.update.manual": "La actualización automática no está disponible en este sistema. Descárgala desde la página de la versión.",
   "err.update.download": "Error en la descarga. Puedes obtener la actualización desde la página de la versión.",
   "err.update.no_write": "No se pudo reemplazar el archivo del lanzador: sin permiso de escritura en {path}.",
-  "err.update.checksum": "El archivo descargado está dañado (la suma de comprobación no coincide). Inténtalo de nuevo."
+  "err.update.checksum": "El archivo descargado está dañado (la suma de comprobación no coincide). Inténtalo de nuevo.",
+  "smart.updates_title": "Versiones nuevas encontradas: {n}",
+  "smart.updates_text": "Encontradas en las webs de los juegos en la última comprobación. Abre un juego para ver la nueva versión y su página.",
+  "smart.nocover_title": "Juegos sin portada: {n}",
+  "smart.nocover_text": "Abre un juego y pega el enlace de su página para completar la portada, la descripción y las etiquetas.",
+  "smart.nocover_text_links": "Juegos que ya tienen enlace a su página: {n}. Se pueden completar todos a la vez.",
+  "smart.nocover_action": "Completar desde enlaces",
+  "smart.missing_title": "Carpetas no encontradas: {n}",
+  "smart.missing_text": "Estos juegos se movieron o se eliminaron. pLauncher puede buscarlos en tus carpetas de escaneo, o puedes indicar la nueva carpeta de cada uno.",
+  "smart.missing_action": "Buscar carpetas movidas"
 }

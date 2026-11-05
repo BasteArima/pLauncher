@@ -502,5 +502,14 @@
   "err.update.manual": "A atualização automática não está disponível neste sistema. Baixe-a na página da versão.",
   "err.update.download": "Falha no download. Você pode obter a atualização na página da versão.",
   "err.update.no_write": "Não foi possível substituir o arquivo do launcher: sem permissão de gravação em {path}.",
-  "err.update.checksum": "O arquivo baixado está danificado (checksum não confere). Tente novamente."
+  "err.update.checksum": "O arquivo baixado está danificado (checksum não confere). Tente novamente.",
+  "smart.updates_title": "Novas versões encontradas: {n}",
+  "smart.updates_text": "Encontradas nos sites dos jogos na última verificação. Abra um jogo para ver a nova versão e a página dele.",
+  "smart.nocover_title": "Jogos sem capa: {n}",
+  "smart.nocover_text": "Abra um jogo e cole o link da página dele para preencher a capa, a descrição e as tags.",
+  "smart.nocover_text_links": "Jogos que já têm link da página: {n}. Dá para preencher todos de uma vez.",
+  "smart.nocover_action": "Preencher pelos links",
+  "smart.missing_title": "Pastas não encontradas: {n}",
+  "smart.missing_text": "Estes jogos foram movidos ou excluídos. O pLauncher pode procurá-los nas suas pastas de varredura, ou você pode indicar a nova pasta de cada um.",
+  "smart.missing_action": "Procurar pastas movidas"
 }

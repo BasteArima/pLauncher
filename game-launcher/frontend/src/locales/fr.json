@@ -502,5 +502,14 @@
   "err.update.manual": "La mise à jour automatique n'est pas disponible sur ce système. Téléchargez-la depuis la page de la version.",
   "err.update.download": "Échec du téléchargement. Vous pouvez récupérer la mise à jour depuis la page de la version.",
   "err.update.no_write": "Impossible de remplacer le fichier du lanceur : pas d'accès en écriture à {path}.",
-  "err.update.checksum": "Le fichier téléchargé est endommagé (somme de contrôle incorrecte). Réessayez."
+  "err.update.checksum": "Le fichier téléchargé est endommagé (somme de contrôle incorrecte). Réessayez.",
+  "smart.updates_title": "Nouvelles versions trouvées : {n}",
+  "smart.updates_text": "Trouvées sur les sites des jeux lors de la dernière vérification. Ouvrez un jeu pour voir la nouvelle version et sa page.",
+  "smart.nocover_title": "Jeux sans couverture : {n}",
+  "smart.nocover_text": "Ouvrez un jeu et collez le lien de sa page pour compléter la couverture, la description et les tags.",
+  "smart.nocover_text_links": "Jeux qui ont déjà un lien vers leur page : {n}. Leurs infos peuvent être complétées en une fois.",
+  "smart.nocover_action": "Compléter depuis les liens",
+  "smart.missing_title": "Dossiers introuvables : {n}",
+  "smart.missing_text": "Ces jeux ont été déplacés ou supprimés. pLauncher peut les chercher dans vos dossiers d'analyse, ou vous pouvez indiquer le nouveau dossier de chacun.",
+  "smart.missing_action": "Chercher les dossiers déplacés"
 }

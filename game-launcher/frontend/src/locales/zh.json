@@ -502,5 +502,14 @@
   "err.update.manual": "此系统不支持自动更新。请从发布页面下载。",
   "err.update.download": "下载失败。你可以从发布页面获取更新。",
   "err.update.no_write": "无法替换启动器文件：没有 {path} 的写入权限。",
-  "err.update.checksum": "下载的文件已损坏（校验和不匹配）。请重试。"
+  "err.update.checksum": "下载的文件已损坏（校验和不匹配）。请重试。",
+  "smart.updates_title": "发现新版本：{n}",
+  "smart.updates_text": "在上次检查时于游戏网站上发现。打开游戏即可查看新版本及其页面。",
+  "smart.nocover_title": "没有封面的游戏：{n}",
+  "smart.nocover_text": "打开游戏并粘贴其页面链接，即可补全封面、简介和标签。",
+  "smart.nocover_text_links": "已有页面链接的游戏：{n}。可以一次性补全它们的信息。",
+  "smart.nocover_action": "根据链接补全",
+  "smart.missing_title": "未找到的文件夹：{n}",
+  "smart.missing_text": "这些游戏已被移动或删除。pLauncher 可以在扫描文件夹中查找它们，你也可以为每个游戏指定新文件夹。",
+  "smart.missing_action": "查找移动过的文件夹"
 }

@@ -22,7 +22,6 @@
     export let checkingUpdates = false;
 
     export let onFilter = (f) => {};
-    export let onRelink = () => {};
     export let onSelect = (g) => {};
     export let onPlay = (g) => {};
     export let onScan = () => {};
@@ -153,7 +152,7 @@
                 </button>
             {/if}
             {#if missingCount}
-                <button on:click={onRelink} class={navCls(false)} title={$t('missing.nav_hint')}>
+                <button on:click={() => onFilter('missing')} class={navCls(activeFilter === 'missing')} title={$t('missing.nav_hint')}>
                     <svg class="w-4 h-4 shrink-0 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v3m0 3h.01"/></svg> {$t('missing.nav')}
                     <span class="ml-auto text-xs font-bold text-amber-400">{missingCount}</span>
                 </button>

@@ -39,7 +39,8 @@
     import { discreet, blurMode } from './lib/privacy.js';
     import { showHero, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
-    import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse } from './lib/bulk.js';
+    import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
+    import SmartBanner from './components/SmartBanner.svelte';
 
     import TitleBar from './components/TitleBar.svelte';
     import Sidebar from './components/Sidebar.svelte';
@@ -191,12 +192,27 @@
         if (activeFilter === 'favorites') return g.favorite;
         if (activeFilter === 'updates') return g.update_available;
         if (activeFilter === 'nocover') return !g.cover_path;
+        if (activeFilter === 'missing') return g.folder_missing;
         return true;
     }), sortBy);
     $: allGamesSorted = sortGames(visibleGames, sortBy);
     $: updatesGames = visibleGames.filter(g => g.update_available);
     $: missingGames = visibleGames.filter(g => g.folder_missing);
     $: noCoverCount = visibleGames.filter(g => !g.cover_path).length;
+    // Умные списки: плашка с объяснением и общим действием ($langStore — пересчёт при смене языка)
+    $: noCoverWithLink = visibleGames.filter(g => !g.cover_path && primaryUrl(g));
+    $: smartBanner = ($langStore, searchQuery.trim() || activeTag ? null
+        : activeFilter === 'updates' ? {
+            tone: 'update', title: tr('smart.updates_title', { n: updatesGames.length }), text: tr('smart.updates_text'),
+            action: checkingUpdates ? tr('menu.checking') : tr('menu.check_updates'), busy: checkingUpdates, onAction: handleCheckAllUpdates }
+        : activeFilter === 'nocover' ? {
+            tone: 'info', title: tr('smart.nocover_title', { n: noCoverCount }),
+            text: noCoverWithLink.length ? tr('smart.nocover_text_links', { n: noCoverWithLink.length }) : tr('smart.nocover_text'),
+            action: noCoverWithLink.length ? tr('smart.nocover_action') : '', onAction: () => bulkReparse(noCoverWithLink, loadGames) }
+        : activeFilter === 'missing' ? {
+            tone: 'danger', title: tr('smart.missing_title', { n: missingGames.length }), text: tr('smart.missing_text'),
+            action: tr('smart.missing_action'), onAction: () => showRelink = true }
+        : null);
     $: recentlyPlayed = visibleGames
         .filter(g => (g.last_launched_at || 0) > 0)
         .sort((a, b) => (b.last_launched_at || 0) - (a.last_launched_at || 0));
@@ -213,6 +229,7 @@
         : activeFilter === 'favorites' ? tr('shelf.favorites')
         : activeFilter === 'updates' ? tr('nav.updates')
         : activeFilter === 'nocover' ? tr('nav.no_cover')
+        : activeFilter === 'missing' ? tr('missing.nav')
         : tr('lib.title'));
 
     // Уникальные теги по всей библиотеке, по частоте
@@ -795,7 +812,6 @@
                  recent={recentlyPlayed.slice(0, 3)}
                  {scanning} {checkingUpdates}
                  onFilter={applyFilter}
-                 onRelink={() => showRelink = true}
                  onSelect={selectGame}
                  onPlay={playGame}
                  onScan={scanOrAddFolder}
@@ -909,6 +925,9 @@
                         {/if}
                     {/if}
                 {:else}
+                    {#if smartBanner}
+                        <SmartBanner {...smartBanner}/>
+                    {/if}
                     <div class="flex items-center justify-end gap-4 mb-4">
                         <LibraryTools/>
                         <ViewControls bind:sortBy/>

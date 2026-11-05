@@ -502,5 +502,14 @@
   "err.update.manual": "Automatyczna aktualizacja nie jest dostępna w tym systemie. Pobierz nową wersję ze strony wydania.",
   "err.update.download": "Nie udało się pobrać aktualizacji. Możesz ją pobrać ze strony wydania.",
   "err.update.no_write": "Nie udało się podmienić pliku launchera: brak uprawnień do zapisu w {path}.",
-  "err.update.checksum": "Pobrany plik jest uszkodzony (niezgodna suma kontrolna). Spróbuj ponownie."
+  "err.update.checksum": "Pobrany plik jest uszkodzony (niezgodna suma kontrolna). Spróbuj ponownie.",
+  "smart.updates_title": "Znaleziono nowe wersje: {n}",
+  "smart.updates_text": "Znalezione na stronach gier podczas ostatniego sprawdzania. Otwórz grę, aby zobaczyć nową wersję i jej stronę.",
+  "smart.nocover_title": "Gry bez okładki: {n}",
+  "smart.nocover_text": "Otwórz grę i wklej link do jej strony, aby uzupełnić okładkę, opis i tagi.",
+  "smart.nocover_text_links": "Gry, które mają już link do strony: {n}. Można je uzupełnić wszystkie naraz.",
+  "smart.nocover_action": "Uzupełnij z linków",
+  "smart.missing_title": "Nie znaleziono folderów: {n}",
+  "smart.missing_text": "Te gry zostały przeniesione lub usunięte. pLauncher może poszukać ich w folderach do skanowania albo wskaż nowy folder dla każdej z nich.",
+  "smart.missing_action": "Szukaj przeniesionych folderów"
 }

@@ -25,8 +25,9 @@ const WIDE_K = 1.45;
 export const cardWidth = derived([cardSize, cardShape], ([s, shape]) => Math.round(shape === 'wide' ? s * WIDE_K : s));
 
 // --- Баннер «Продолжить» на главной (можно выключить в настройках) ---
-export const showHero = writable(lsGet('plauncher_show_hero', '1') !== '0');
-showHero.subscribe(v => lsSet('plauncher_show_hero', v ? '1' : '0'));
+// С редизайна 1.2 по умолчанию выключен (новый ключ: старый у всех уже сохранён как «включён»)
+export const showHero = writable(lsGet('plauncher_hero', '0') === '1');
+showHero.subscribe(v => lsSet('plauncher_hero', v ? '1' : '0'));
 
 // --- Выделение игр ---
 // Хранится Set id; «якорь» — последняя кликнутая карточка (для Shift+клик).

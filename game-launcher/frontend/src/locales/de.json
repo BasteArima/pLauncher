@@ -502,5 +502,14 @@
   "err.update.manual": "Automatische Updates sind auf diesem System nicht verfügbar. Lade die neue Version von der Release-Seite herunter.",
   "err.update.download": "Download fehlgeschlagen. Du kannst das Update von der Release-Seite herunterladen.",
   "err.update.no_write": "Die Launcher-Datei konnte nicht ersetzt werden: keine Schreibrechte für {path}.",
-  "err.update.checksum": "Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Versuch es erneut."
+  "err.update.checksum": "Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Versuch es erneut.",
+  "smart.updates_title": "Neue Versionen gefunden: {n}",
+  "smart.updates_text": "Bei der letzten Prüfung auf den Seiten der Spiele gefunden. Öffne ein Spiel, um die neue Version und ihre Seite zu sehen.",
+  "smart.nocover_title": "Spiele ohne Cover: {n}",
+  "smart.nocover_text": "Öffne ein Spiel und füge den Link zu seiner Seite ein, um Cover, Beschreibung und Tags zu ergänzen.",
+  "smart.nocover_text_links": "Spiele, die schon einen Seitenlink haben: {n}. Ihre Infos lassen sich auf einmal ergänzen.",
+  "smart.nocover_action": "Aus Links ergänzen",
+  "smart.missing_title": "Nicht gefundene Ordner: {n}",
+  "smart.missing_text": "Diese Spiele wurden verschoben oder gelöscht. pLauncher kann in deinen Scan-Ordnern nach ihnen suchen, oder du gibst für jedes den neuen Ordner an.",
+  "smart.missing_action": "Verschobene Ordner suchen"
 }

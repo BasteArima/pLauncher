@@ -14,7 +14,7 @@ let cancelled = false;
 export function cancelBulk() { cancelled = true; }
 
 // Ссылка на основную площадку игры (для перепарса/проверки обновлений)
-function primaryUrl(g) {
+export function primaryUrl(g) {
     const list = (g.sources || []).filter(s => s.url);
     const p = list.find(s => s.source === g.primary_source) || list[0];
     return p ? p.url : '';

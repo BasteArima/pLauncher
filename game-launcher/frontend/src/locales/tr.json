@@ -502,5 +502,14 @@
   "err.update.manual": "Bu sistemde otomatik güncelleme kullanılamıyor. Yeni sürümü sürüm sayfasından indir.",
   "err.update.download": "İndirme başarısız oldu. Güncellemeyi sürüm sayfasından alabilirsin.",
   "err.update.no_write": "Başlatıcı dosyası değiştirilemedi. Şu konuma yazma izni yok: {path}",
-  "err.update.checksum": "İndirilen dosya bozuk (sağlama toplamı eşleşmiyor). Tekrar dene."
+  "err.update.checksum": "İndirilen dosya bozuk (sağlama toplamı eşleşmiyor). Tekrar dene.",
+  "smart.updates_title": "Bulunan yeni sürümler: {n}",
+  "smart.updates_text": "Son kontrolde oyunların sitelerinde bulundu. Yeni sürümü ve sayfasını görmek için bir oyunu aç.",
+  "smart.nocover_title": "Kapağı olmayan oyunlar: {n}",
+  "smart.nocover_text": "Kapak, açıklama ve etiketleri doldurmak için bir oyunu aç ve sayfasının bağlantısını yapıştır.",
+  "smart.nocover_text_links": "Sayfa bağlantısı zaten olan oyunlar: {n}. Bilgileri tek seferde doldurulabilir.",
+  "smart.nocover_action": "Bağlantılardan doldur",
+  "smart.missing_title": "Bulunamayan klasörler: {n}",
+  "smart.missing_text": "Bu oyunlar taşındı veya silindi. pLauncher onları tarama klasörlerinde arayabilir ya da her biri için yeni klasörü sen gösterebilirsin.",
+  "smart.missing_action": "Taşınan klasörleri ara"
 }

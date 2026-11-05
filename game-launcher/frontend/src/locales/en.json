@@ -502,5 +502,14 @@
   "err.update.manual": "Automatic update isn't available on this system. Download it from the release page.",
   "err.update.download": "Download failed. You can get the update from the release page.",
   "err.update.no_write": "Couldn't replace the launcher file: no write access to {path}.",
-  "err.update.checksum": "The downloaded file is damaged (checksum mismatch). Try again."
+  "err.update.checksum": "The downloaded file is damaged (checksum mismatch). Try again.",
+  "smart.updates_title": "Newer versions found: {n}",
+  "smart.updates_text": "Found on the games' sites during the last check. Open a game to see the new version and its page.",
+  "smart.nocover_title": "Games without a cover: {n}",
+  "smart.nocover_text": "Open a game and paste its page link to fill in the cover, description and tags.",
+  "smart.nocover_text_links": "Games that already have a page link: {n}. Their info can be filled in all at once.",
+  "smart.nocover_action": "Fill in from links",
+  "smart.missing_title": "Folders not found: {n}",
+  "smart.missing_text": "These games were moved or deleted. pLauncher can look for them in your scan folders, or you can point each one to its new folder.",
+  "smart.missing_action": "Look for moved folders"
 }
