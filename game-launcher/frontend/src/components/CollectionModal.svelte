@@ -27,7 +27,7 @@
 <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" on:click={onClose}>
     <div class="w-[540px] max-w-[92vw] glass-strong rounded-2xl shadow-2xl p-7" on:click|stopPropagation>
         <div class="flex items-center justify-between mb-5">
-            <h2 class="text-2xl font-black text-white">{collection ? $t('col.edit') : $t('col.new')}</h2>
+            <h2 class="text-2xl font-bold text-white">{collection ? $t('col.edit') : $t('col.new')}</h2>
             <button on:click={onClose} class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
         </div>
 

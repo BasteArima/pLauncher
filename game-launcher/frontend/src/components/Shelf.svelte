@@ -1,6 +1,6 @@
 <script>
     import GameCard from './GameCard.svelte';
-    import { cardSize } from '../lib/view.js';
+    import { cardWidth } from '../lib/view.js';
 
     export let title;
     export let items = [];
@@ -31,7 +31,7 @@
         </div>
         <div bind:this={row} class="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1">
             {#each items as g (g.id)}
-                <div class="shrink-0" style="width:{Math.round($cardSize * 0.93)}px">
+                <div class="shrink-0" style="width:{Math.round($cardWidth * 0.93)}px">
                     <GameCard game={g} onOpen={() => onOpen(g)} {onPlay} {onToggleFav} {onDrag} {onContext} />
                 </div>
             {/each}

@@ -3,10 +3,20 @@
     // «Изменить разделы» (над всеми разделами, при любом их порядке), в фильтре/поиске —
     // рядом с сортировкой.
     import { t } from '../i18n.js';
-    import { cardSize, setCardSize, CARD_MIN, CARD_MAX, CARD_DEFAULT, selecting, toggleSelectMode } from '../lib/view.js';
+    import { cardSize, setCardSize, CARD_MIN, CARD_MAX, CARD_DEFAULT, selecting, toggleSelectMode, cardShape } from '../lib/view.js';
+    const shapeBtn = (on) => 'w-8 h-7 rounded-md flex items-center justify-center transition-colors ' + (on ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-200');
 </script>
 
 <div class="flex items-center gap-3 shrink-0">
+    <!-- Форма карточек: широкие (16:9) или вертикальные (3:4) -->
+    <div class="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900 border border-white/10" role="group">
+        <button on:click={() => cardShape.set('wide')} title={$t('view.shape_wide')} aria-label={$t('view.shape_wide')} aria-pressed={$cardShape === 'wide'} class={shapeBtn($cardShape === 'wide')}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="6" width="19" height="12" rx="2"/></svg>
+        </button>
+        <button on:click={() => cardShape.set('tall')} title={$t('view.shape_tall')} aria-label={$t('view.shape_tall')} aria-pressed={$cardShape === 'tall'} class={shapeBtn($cardShape === 'tall')}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/></svg>
+        </button>
+    </div>
     <label class="flex items-center gap-2 text-slate-400" title={$t('view.card_size_hint')}>
         <span class="text-base leading-none">▦</span>
         <input type="range" min={CARD_MIN} max={CARD_MAX} step="5" value={$cardSize}

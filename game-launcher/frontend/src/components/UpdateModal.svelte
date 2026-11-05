@@ -49,7 +49,7 @@
 <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" on:click={close}>
     <div class="w-[520px] max-w-[92vw] max-h-[84vh] flex flex-col glass-strong rounded-2xl shadow-2xl p-6" on:click|stopPropagation>
         {#if state === 'ready'}
-            <h2 class="text-xl font-black text-white mb-1">{$t('upd.ready_title', { v: dl.version })}</h2>
+            <h2 class="text-xl font-bold text-white mb-1">{$t('upd.ready_title', { v: dl.version })}</h2>
             <p class="text-sm text-slate-400 mb-4">{$t('upd.ready_sub')}</p>
             {#if $restarting}
                 <p class="text-sm text-indigo-200 mb-4">{$t('upd.restarting')}</p>
@@ -68,7 +68,7 @@
             </div>
 
         {:else if state === 'downloading'}
-            <h2 class="text-xl font-black text-white mb-3">{$t('upd.downloading', { v: dl.version })}</h2>
+            <h2 class="text-xl font-bold text-white mb-3">{$t('upd.downloading', { v: dl.version })}</h2>
             <div class="h-2 rounded-full bg-white/10 overflow-hidden mb-2">
                 <div class="h-full bg-indigo-400 transition-all duration-150" style="width:{percent}%"></div>
             </div>
@@ -85,7 +85,7 @@
             </div>
 
         {:else if info}
-            <h2 class="text-xl font-black text-white mb-1">{$t('upd.modal_title', { v: info.latest })}</h2>
+            <h2 class="text-xl font-bold text-white mb-1">{$t('upd.modal_title', { v: info.latest })}</h2>
             <p class="text-sm text-slate-400 mb-4">
                 {$t('upd.current', { v: info.current })}{#if info.size > 0}{' · '}{fmtSize(info.size)}{/if}
             </p>

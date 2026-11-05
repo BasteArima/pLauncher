@@ -16,7 +16,7 @@
 {#if $confirmState.show}
     <div class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" on:click={() => closeConfirm(false)}>
         <div class="w-[440px] max-w-[90vw] glass-strong rounded-2xl shadow-2xl p-6" on:click|stopPropagation>
-            <h3 class="text-xl font-black text-white mb-2">{$confirmState.title}</h3>
+            <h3 class="text-xl font-bold text-white mb-2">{$confirmState.title}</h3>
             {#if $confirmState.message}
                 <p class="text-slate-400 text-sm whitespace-pre-line mb-6">{$confirmState.message}</p>
             {:else}

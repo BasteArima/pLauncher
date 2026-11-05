@@ -41,7 +41,7 @@
 <div class="animate-fade-in">
     <div class="flex items-center justify-between mb-4">
         <div>
-            <h2 class="text-2xl font-black text-white">{$t("layout.title")}</h2>
+            <h2 class="text-2xl font-bold text-white">{$t("layout.title")}</h2>
             <p class="text-sm text-slate-400 mt-0.5">{$t("layout.hint")}</p>
         </div>
         <button on:click={onDone} class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors">{$t("btn.done")}</button>

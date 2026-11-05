@@ -105,8 +105,8 @@
     {#if game.cover_path}
         <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-40 {$coverBlur === 'none' ? 'blur-lg' : 'blur-3xl'}"/>
     {/if}
-    <div class="absolute inset-0 bg-gradient-to-r from-[#0a0912] via-[#0a0912]/80 to-[#0a0912]/40"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-[#0a0912] to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-[#0E1014] via-[#0E1014]/80 to-[#0E1014]/40"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-[#0E1014] to-transparent"></div>
 
     <div class="relative flex gap-8 p-8 w-full">
         {#if game.cover_path}
@@ -115,7 +115,7 @@
                  class="w-[210px] aspect-[3/4] rounded-xl ring-1 ring-white/15 shadow-2xl shrink-0 hidden md:block transition duration-300 {blurCls($coverBlur, 'self')}"/>
         {/if}
         <div class="flex-1 min-w-0 flex flex-col">
-            <h1 class="text-4xl xl:text-5xl font-black text-white drop-shadow-xl mb-3 break-words cursor-pointer hover:text-indigo-200 transition-colors" on:click={() => copy(game.title, $t('label.title'))} title={$t("detail.copy_title")}>
+            <h1 class="text-4xl xl:text-5xl font-bold text-white drop-shadow-xl mb-3 break-words cursor-pointer hover:text-indigo-200 transition-colors" on:click={() => copy(game.title, $t('label.title'))} title={$t("detail.copy_title")}>
                 {game.title}
             </h1>
             <div class="flex items-center flex-wrap gap-2.5 text-slate-300 font-medium mb-3">
@@ -161,7 +161,7 @@
             {/if}
             <div class="flex items-center flex-wrap gap-2.5 mt-auto">
                 <button on:click={smartPlay}
-                        class="flex items-center justify-center gap-2.5 font-black py-3.5 px-10 rounded-xl text-lg tracking-wide transition-all hover:-translate-y-0.5 {game.folder_missing ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black' : game.exec_path ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white shadow-lg shadow-emerald-900/40' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white'}">
+                        class="flex items-center justify-center gap-2.5 font-bold py-3.5 px-10 rounded-xl text-lg tracking-wide transition-all hover:-translate-y-0.5 {game.folder_missing ? 'bg-amber-400 hover:bg-amber-300 text-black' : game.exec_path ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-amber-500/90 hover:bg-amber-400 text-amber-950'}">
                     <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     {game.folder_missing ? $t('missing.pick') : game.exec_path ? $t('btn.play') : $t('btn.set_exe')}
                 </button>

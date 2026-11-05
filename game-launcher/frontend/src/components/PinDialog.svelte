@@ -43,7 +43,7 @@
      on:click={() => mode === 'verify' && onCancel()}>
     <div class="w-[360px] max-w-[90vw] glass-strong rounded-2xl shadow-2xl p-7 text-center" on:click|stopPropagation>
         <div class="text-4xl mb-3">🔒</div>
-        <h2 class="text-xl font-black text-white mb-1">{mode === 'lock' ? $t('lock.title') : $t('lock.verify_title')}</h2>
+        <h2 class="text-xl font-bold text-white mb-1">{mode === 'lock' ? $t('lock.title') : $t('lock.verify_title')}</h2>
         <p class="text-sm text-slate-400 mb-5">{mode === 'lock' ? $t('lock.sub') : $t('lock.verify_sub')}</p>
         <input bind:this={input} type="password" bind:value={pin} on:keydown={onKey} autocomplete="off"
                placeholder="••••"

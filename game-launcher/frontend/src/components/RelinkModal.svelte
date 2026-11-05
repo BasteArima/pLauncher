@@ -72,7 +72,7 @@
 <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" on:click={onClose}>
     <div class="w-[720px] max-w-[94vw] max-h-[85vh] flex flex-col glass-strong rounded-2xl shadow-2xl p-7" on:click|stopPropagation>
         <div class="flex items-center justify-between mb-1">
-            <h2 class="text-2xl font-black text-white">{$t('missing.title')}</h2>
+            <h2 class="text-2xl font-bold text-white">{$t('missing.title')}</h2>
             <button on:click={onClose} class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
         </div>
         <p class="text-sm text-slate-400 mb-5">{$t('missing.hint')}</p>

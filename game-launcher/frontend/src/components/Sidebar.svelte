@@ -135,26 +135,26 @@
 
 
         <div class="space-y-0.5 mb-3 px-1">
-            <button on:click={() => onFilter('all')} class={navCls(isHome)}>🏠 {$t('nav.home')}</button>
+            <button on:click={() => onFilter('all')} class={navCls(isHome)}><svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg> {$t('nav.home')}</button>
             <button on:click={() => onFilter('favorites')} class={navCls(activeFilter === 'favorites')}>
-                <span>❤️</span> {$t('nav.favorites')}
+                <svg class="w-4 h-4 shrink-0 text-pink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.3-8.8C1.3 8.2 2.8 5 6 5c2 0 3.2 1.3 6 3.6C14.8 6.3 16 5 18 5c3.2 0 4.7 3.2 3.3 6.2C19 15.6 12 20 12 20z"/></svg> {$t('nav.favorites')}
                 {#if favoritesCount}<span class="ml-auto text-xs text-slate-400">{favoritesCount}</span>{/if}
             </button>
             {#if updatesCount}
                 <button on:click={() => onFilter('updates')} class={navCls(activeFilter === 'updates')}>
-                    <span class="text-amber-300">⬆</span> {$t('nav.updates')}
+                    <svg class="w-4 h-4 shrink-0 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg> {$t('nav.updates')}
                     <span class="ml-auto text-xs font-bold text-amber-300">{updatesCount}</span>
                 </button>
             {/if}
             {#if noCoverCount}
                 <button on:click={() => onFilter('nocover')} class={navCls(activeFilter === 'nocover')} title={$t('nav.no_cover_hint')}>
-                    <span class="text-slate-400">▢</span> {$t('nav.no_cover')}
+                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg> {$t('nav.no_cover')}
                     <span class="ml-auto text-xs text-slate-400">{noCoverCount}</span>
                 </button>
             {/if}
             {#if missingCount}
                 <button on:click={onRelink} class={navCls(false)} title={$t('missing.nav_hint')}>
-                    <span class="text-amber-400">⚠</span> {$t('missing.nav')}
+                    <svg class="w-4 h-4 shrink-0 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v3m0 3h.01"/></svg> {$t('missing.nav')}
                     <span class="ml-auto text-xs font-bold text-amber-400">{missingCount}</span>
                 </button>
             {/if}

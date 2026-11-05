@@ -133,7 +133,7 @@
     </div>
 
     <div class="flex-1 min-w-0">
-        <input type="text" bind:value={game.title} class="w-full text-3xl font-black glass text-white rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400/40" placeholder={$t("edit.title_ph")}/>
+        <input type="text" bind:value={game.title} class="w-full text-3xl font-bold glass text-white rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400/40" placeholder={$t("edit.title_ph")}/>
 
         <div class="flex flex-col gap-3 mb-6 glass rounded-xl p-4">
             <div class="flex items-center gap-3">

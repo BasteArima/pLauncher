@@ -15,8 +15,8 @@
     {#if game.cover_path}
         <img src={mediaSrc(game.cover_path)} alt="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-50 transition-transform duration-700 group-hover:scale-105 {$coverBlur === 'none' ? 'blur-sm' : blurCls($coverBlur, 'bg')}"/>
     {/if}
-    <div class="absolute inset-0 bg-gradient-to-r from-[#0a0912] via-[#0a0912]/75 to-transparent"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-[#0a0912] via-transparent to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-[#0E1014] via-[#0E1014]/75 to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-[#0E1014] via-transparent to-transparent"></div>
 
     <button on:click|stopPropagation={() => onToggleFav(game)}
             title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
@@ -34,7 +34,7 @@
             <div class="text-[10px] uppercase tracking-widest text-indigo-300 mb-1 font-semibold">
                 {game.last_launched_at ? $t('hero.continue') : $t('hero.recent')}
             </div>
-            <h2 class="text-2xl font-black text-white drop-shadow-lg mb-1.5 line-clamp-1">{game.title}</h2>
+            <h2 class="text-2xl font-bold text-white drop-shadow-lg mb-1.5 line-clamp-1">{game.title}</h2>
             <div class="flex items-center gap-2 text-xs text-slate-300 mb-3">
                 <span>{game.version || '—'}</span>
                 {#if game.languages && game.languages.length}
@@ -48,7 +48,7 @@
             </div>
             <div class="flex items-center gap-2.5">
                 <button on:click|stopPropagation={() => onPlay(game)}
-                        class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg shadow-emerald-900/40 transition-all hover:-translate-y-0.5">
+                        class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-6 rounded-lg transition-colors">
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     {game.exec_path ? $t('btn.play') : $t('btn.set_exe')}
                 </button>

@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-    --bg-base: #0a0912;       /* почти чёрный с фиолетовым подтоном */
-    --accent: 99 102 241;     /* indigo-500 (rgb для прозрачностей) */
+    --bg-base: #0E1014;       /* плоский тёмный фон (макеты A3) */
+    --accent: 109 91 208;     /* indigo-500 из tailwind.config.js (rgb для прозрачностей) */
     /* Нативные контролы (выпадающие списки, скроллбары, чекбоксы) — в тёмной теме.
        Без этого WebKitGTK на Linux рисует <select> светлым поверх тёмного интерфейса. */
     color-scheme: dark;
@@ -12,8 +12,8 @@
 
 /* Список вариантов <select> открывается нативно — задаём цвета явно */
 select option {
-    background-color: #14121f;
-    color: #e2e8f0;
+    background-color: #161920;
+    color: #E8EAF0;
 }
 
 body {
@@ -21,29 +21,23 @@ body {
     color: white;
     margin: 0;
     user-select: none; /* Запрещаем выделять текст мышкой */
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01'; /* Inter: прямые «a» и «1» читаются спокойнее */
 }
 
-/* --- Aurora: мягкое многослойное свечение поверх тёмного фона --- */
+/* --- Фон приложения: плоский, без свечения (имя класса оставлено для совместимости) --- */
 .aurora-bg {
     background-color: var(--bg-base);
-    background-image:
-        radial-gradient(60% 55% at 12% 0%, rgba(99, 102, 241, 0.20), transparent 70%),
-        radial-gradient(55% 50% at 95% 8%, rgba(168, 85, 247, 0.16), transparent 70%),
-        radial-gradient(70% 60% at 50% 100%, rgba(56, 189, 248, 0.10), transparent 70%);
 }
 
-/* --- Стеклянные поверхности --- */
+/* --- Поверхности: плоские, без размытия. Имена glass* оставлены, чтобы не трогать все компоненты --- */
 .glass {
-    background: rgba(255, 255, 255, 0.045);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #161920;
+    border: 1px solid #222631;
 }
 .glass-strong {
-    background: rgba(17, 16, 28, 0.55);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #12151A;
+    border: 1px solid #1C2029;
 }
 
 /* --- Анимации --- */
@@ -67,9 +61,9 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: rgba(129, 140, 248, 0.25);
+    background: rgba(163, 169, 182, 0.22);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(129, 140, 248, 0.45);
+    background: rgba(163, 169, 182, 0.4);
 }

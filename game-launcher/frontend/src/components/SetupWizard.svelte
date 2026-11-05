@@ -79,7 +79,7 @@
                     {#each langs as l}<option value={l.code}>{l.name}</option>{/each}
                 </select>
             </div>
-            <h2 class="text-2xl font-black text-white mb-1">{$t("setup.welcome")}</h2>
+            <h2 class="text-2xl font-bold text-white mb-1">{$t("setup.welcome")}</h2>
             <p class="text-slate-400 text-sm mb-5">{$t("setup.step1")}</p>
 
             <div class="flex flex-col gap-2 mb-5">
@@ -99,7 +99,7 @@
                 {busy ? $t('setup.creating') : $t('btn.continue')}
             </button>
         {:else}
-            <h2 class="text-2xl font-black text-white mb-1">{$t("setup.games_title")}</h2>
+            <h2 class="text-2xl font-bold text-white mb-1">{$t("setup.games_title")}</h2>
             <p class="text-slate-400 text-sm mb-5">{$t("setup.step2")}</p>
 
             <div class="flex flex-col gap-2 mb-3 max-h-52 overflow-y-auto">

@@ -31,8 +31,8 @@
 
 <div class="h-9 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
     <div class="flex items-center gap-1 pl-3 h-full min-w-0">
-        <span class="flex items-center gap-2 pr-2 text-sm font-black tracking-wide">
-            <span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">pLauncher</span>
+        <span class="flex items-center gap-2 pr-2 text-sm font-bold tracking-wide">
+            <span class="w-5 h-5 rounded-md bg-indigo-500 text-white text-[11px] flex items-center justify-center">p</span><span class="text-slate-200">pLauncher</span>
         </span>
         {#if scanning || checkingUpdates}
             <span class="flex items-center gap-1.5 ml-2 text-xs text-slate-400 truncate">

@@ -2,7 +2,7 @@
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
-    import { selection, selecting, toggleSelected, selectRange } from '../lib/view.js';
+    import { selection, selecting, toggleSelected, selectRange, cardShape } from '../lib/view.js';
     export let game;
     export let onOpen = () => {};
     export let onPlay = null;        // если задан и есть exec_path — кнопка запуска
@@ -50,6 +50,10 @@
         e.stopPropagation();
         onContext(game, e);
     }
+    $: canPlay = onPlay && game.exec_path && !game.folder_missing;
+    // Кнопки на обложке, как в Epic: появляются при наведении (или фокусе с клавиатуры)
+    const reveal = 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition duration-200';
+    const iconBtn = 'w-9 h-9 rounded-lg flex items-center justify-center bg-slate-950/75 hover:bg-slate-950/95 transition-colors';
 </script>
 
 <div
@@ -57,59 +61,84 @@
         tabindex="0"
         role="button"
         aria-pressed={selected}
-        class="group relative cursor-pointer rounded-xl overflow-hidden ring-1 bg-white/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-900/50 outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 {selected ? 'ring-2 ring-indigo-400 shadow-lg shadow-indigo-900/50' : game.update_available ? 'ring-2 ring-amber-400/70' : 'ring-white/10 hover:ring-indigo-400/50'}"
+        class="group relative cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950"
         draggable={!!onDrag}
         on:dragstart={handleDragStart}
         on:contextmenu={handleContext}
         on:click={handleClick}
         on:keydown={handleKey}>
 
-    <div class="aspect-[3/4] w-full bg-slate-900/60 relative">
+    <div class="relative w-full {$cardShape === 'wide' ? 'aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden bg-slate-900 ring-1 transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_14px_30px_rgba(0,0,0,0.55)] {selected ? 'ring-2 ring-indigo-400' : game.update_available ? 'ring-2 ring-amber-400/70' : 'ring-white/5'}">
         {#if cover && !coverError}
             <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true}
-                 class="absolute inset-0 w-full h-full transition duration-500 group-hover:scale-105 {blurCls($coverBlur, 'card')} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
+                 class="absolute inset-0 w-full h-full transition duration-500 {blurCls($coverBlur, 'card')} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
         {:else}
             <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-2 p-4 text-center">
-                <span class="text-3xl opacity-40">🎮</span>
-                <span class="text-sm leading-snug line-clamp-3">{$coverBlur === 'always' ? '•••' : game.title}</span>
+                <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span class="text-xs">{$t('nav.no_cover')}</span>
             </div>
+        {/if}
+
+        {#if !$selecting}
+            <!-- Затемнение под кнопками -->
+            <div class="absolute inset-0 bg-black/45 pointer-events-none {reveal}"></div>
+        {/if}
+
+        {#if game.update_available}
+            <span class="absolute top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950 whitespace-nowrap shadow"
+                  title={$t('nav.updates')}>⬆ {game.update_version || ''}</span>
         {/if}
 
         {#if $selecting}
             <!-- Режим выделения: чекбокс вместо кнопок -->
             <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold ring-2 transition-colors {selected ? 'bg-indigo-500 ring-indigo-300 text-white' : 'bg-black/50 ring-white/40 text-transparent'}">✓</span>
-        {:else if onToggleFav}
-            <button
-                    on:click|stopPropagation={() => onToggleFav(game)}
-                    title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
-                    class="absolute top-2.5 left-2.5 w-9 h-9 rounded-full flex items-center justify-center transition-all backdrop-blur-sm {game.favorite ? 'bg-pink-500/90 text-white opacity-100' : 'bg-black/40 text-white/80 opacity-0 group-hover:opacity-100 hover:bg-black/60'}">
-                <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill={game.favorite ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.5 8.5 2 5 5.5 5 7.7 5 9 6.5 12 9c3-2.5 4.3-4 6.5-4C22 5 23.5 8.5 22 11.7 19.5 16.4 12 21 12 21z"/></svg>
-            </button>
-        {/if}
+        {:else}
+            {#if onToggleFav}
+                <button on:click|stopPropagation={() => onToggleFav(game)}
+                        title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
+                        aria-label={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
+                        class="absolute top-2.5 left-2.5 {iconBtn} {game.favorite ? 'text-pink-400' : 'text-white ' + reveal}">
+                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill={game.favorite ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-9.3-8.8C1.3 8.2 2.8 5 6 5c2 0 3.2 1.3 6 3.6C14.8 6.3 16 5 18 5c3.2 0 4.7 3.2 3.3 6.2C19 15.6 12 20 12 20z"/></svg>
+                </button>
+            {/if}
+            {#if onContext}
+                <button on:click|stopPropagation={handleContext} title={$t('card.more')} aria-label={$t('card.more')}
+                        class="absolute top-2.5 right-2.5 {iconBtn} text-white {reveal}">
+                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+            {/if}
 
-        {#if onPlay && game.exec_path && !game.folder_missing && !$selecting}
-            <button
-                    on:click|stopPropagation={() => onPlay(game)}
-                    title={$t('btn.play')}
-                    class="absolute top-2.5 right-2.5 w-10 h-10 rounded-full bg-emerald-500/90 hover:bg-emerald-400 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all shadow-lg backdrop-blur-sm">
-                <svg class="w-5 h-5 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-        {/if}
-
-        <div class="absolute inset-x-0 bottom-0 pt-10 pb-2.5 px-3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none">
-            <h3 class="font-bold text-white text-sm line-clamp-1 drop-shadow">{game.title}</h3>
-            <div class="flex items-center justify-between mt-1">
-                <span class="text-[11px] text-slate-300 truncate pr-2 flex items-center gap-1">
-                    {#if game.update_available}<span class="text-amber-300 font-bold">⬆</span>{/if}{game.version || '—'}
-                </span>
-                {#if game.folder_missing}
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30" title={$t('missing.card_hint')}>⚠ {$t('missing.badge')}</span>
-                {:else if game.exec_path}
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30" title={$t('card.launch_hint', { file: launchName })}>{launchExt}</span>
-                {:else}
-                    <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30">{$t('card.no_launch')}</span>
+            <!-- Большая кнопка снизу: запуск без захода на страницу игры -->
+            <div class="absolute inset-x-2.5 bottom-2.5 translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 {reveal}">
+                {#if canPlay}
+                    <button on:click|stopPropagation={() => onPlay(game)} title={$t('btn.play') + ' · Ctrl+Enter'}
+                            class="w-full h-10 rounded-lg flex items-center justify-center gap-2 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
+                        {$t('btn.play')}
+                    </button>
+                {:else if !game.folder_missing && !game.exec_path}
+                    <button on:click|stopPropagation={onOpen}
+                            class="w-full h-10 rounded-lg flex items-center justify-center text-sm font-semibold text-slate-950 bg-slate-100 hover:bg-white transition-colors">
+                        {$t('btn.set_exe')}
+                    </button>
                 {/if}
             </div>
+        {/if}
+    </div>
+
+    <!-- Подпись под обложкой -->
+    <div class="pt-2.5 px-0.5 min-w-0">
+        <h3 class="text-sm font-medium text-slate-100 truncate {game.folder_missing ? 'opacity-60' : ''}">{game.title}</h3>
+        <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 min-w-0">
+            {#if game.update_available}<span class="text-amber-300 font-bold">⬆</span>{/if}
+            <span class="truncate">{game.version || '—'}</span>
+            {#if game.folder_missing}
+                <span class="shrink-0 text-amber-400 font-semibold" title={$t('missing.card_hint')}>· ⚠ {$t('missing.badge')}</span>
+            {:else if game.exec_path}
+                <span class="shrink-0" title={$t('card.launch_hint', { file: launchName })}>· {launchExt}</span>
+            {:else}
+                <span class="shrink-0 text-rose-400 font-semibold">· {$t('card.no_launch')}</span>
+            {/if}
         </div>
     </div>
 </div>

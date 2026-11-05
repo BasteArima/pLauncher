@@ -817,7 +817,7 @@
                 {#if selectedGame.cover_path && !isEditing}
                     <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                         <img src={mediaSrc(selectedGame.cover_path)} alt="bg" class="w-full h-full object-cover blur-2xl scale-110 opacity-20" />
-                        <div class="absolute inset-0 bg-gradient-to-b from-[#0a0912]/70 via-[#0a0912]/90 to-[#0a0912]"></div>
+                        <div class="absolute inset-0 bg-gradient-to-b from-[#0E1014]/70 via-[#0E1014]/90 to-[#0E1014]"></div>
                     </div>
                 {/if}
 
@@ -847,7 +847,7 @@
             {:else}
                 <div class="flex justify-between items-center mb-7 animate-fade-in gap-4">
                     <div class="flex items-center gap-3 min-w-0">
-                        <h2 class="text-3xl font-black text-white tracking-tight truncate">{viewTitle}</h2>
+                        <h2 class="text-3xl font-bold text-white tracking-tight truncate">{viewTitle}</h2>
                         {#if !isHome}
                             <button on:click={() => { searchQuery = ''; applyFilter('all'); handleSearch(); }}
                                     class="shrink-0 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-white/10 transition-colors">

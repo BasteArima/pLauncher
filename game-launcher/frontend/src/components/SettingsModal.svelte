@@ -36,7 +36,7 @@
 <div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" on:click={onClose}>
     <div class="w-[820px] max-w-[94vw] h-[620px] max-h-[88vh] flex glass-strong rounded-2xl shadow-2xl overflow-hidden" on:click|stopPropagation>
         <nav class="w-52 shrink-0 border-r border-white/10 p-4 flex flex-col gap-1 bg-black/10">
-            <h2 class="text-xl font-black text-white px-2 mb-3">{$t('settings.title')}</h2>
+            <h2 class="text-xl font-bold text-white px-2 mb-3">{$t('settings.title')}</h2>
             {#each TABS as x}
                 <button on:click={() => tab = x.id}
                         class="w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm transition-colors {tab === x.id ? 'bg-indigo-500/20 text-white font-semibold ring-1 ring-inset ring-indigo-400/30' : 'text-slate-300 hover:bg-white/5 hover:text-white'}">
@@ -50,7 +50,7 @@
 
         <div class="flex-1 min-w-0 flex flex-col">
             <div class="flex items-center justify-between px-7 pt-6 pb-3">
-                <h3 class="text-2xl font-black text-white">{$t(TABS.find(x => x.id === tab).label)}</h3>
+                <h3 class="text-2xl font-bold text-white">{$t(TABS.find(x => x.id === tab).label)}</h3>
                 <button on:click={onClose} class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
             <div class="flex-1 overflow-y-auto px-7 pb-7">

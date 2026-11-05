@@ -45,9 +45,13 @@ The app is fully working. Done so far:
   a Play button on hover. Custom context menus (`ContextMenu`, items support `hint` = shortcut), custom confirm dialog
   (no native popups), toasts.
 - **Redesign in progress** (2026-11, by the owner's choice instead of the paused Rust rewrite): mockups on the canvas
-  https://claude.ai/artifact/QZNnh6NG3xBRrCTQ58a2wD, row A3 is the target. Done: sidebar + titlebar. Next: flat theme
-  (no aurora/glass), wide 16:9 cards (default) with Epic-style hover (♡/⋯ top, big Play bottom), smart lists opening like
-  collections with a banner action, game page (media left, play card right), «Find info» block for games without metadata.
+  https://claude.ai/artifact/QZNnh6NG3xBRrCTQ58a2wD, row A3 is the target. Done: sidebar + titlebar; flat theme — the
+  palette lives in `tailwind.config.js` (the `slate` and `indigo` scales are **overridden**, so components keep using
+  `text-slate-400` / `bg-indigo-500`), `.glass*` / `.aurora-bg` in `style.css` are now flat surfaces (names kept), font
+  Inter Variable bundled via `@fontsource-variable/inter` (no network fonts); cards: caption under the cover, shape
+  `cardShape` wide 16:9 (default) / tall 3:4 in `lib/view.js` (`cardWidth` = `cardSize` × 1.45 for wide; toggle in
+  `LibraryTools`), Epic-style hover (♡/⋯ top, big Play bottom, dark scrim). Next: smart lists opening like collections
+  with a banner action, home without the big hero, game page (media left, play card right), «Find info» block.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk/ja/pl/tr built-in + user languages from `data/languages/*.json` (README + `_example.json`

@@ -17,6 +17,13 @@ cardSize.subscribe(v => lsSet('plauncher_card_size', String(v)));
 export function setCardSize(v) { cardSize.set(clampCard(v)); }
 export function stepCardSize(dir) { setCardSize(get(cardSize) + dir * 15); }
 
+// --- Форма карточек: широкие 16:9 (обложки F95 и большинства новелл) или вертикальные 3:4 (Steam) ---
+// cardSize задаёт ширину вертикальной карточки; широкая шире в WIDE_K раз, чтобы высота была сопоставимой.
+export const cardShape = writable(lsGet('plauncher_card_shape', 'wide') === 'tall' ? 'tall' : 'wide');
+cardShape.subscribe(v => lsSet('plauncher_card_shape', v));
+const WIDE_K = 1.45;
+export const cardWidth = derived([cardSize, cardShape], ([s, shape]) => Math.round(shape === 'wide' ? s * WIDE_K : s));
+
 // --- Баннер «Продолжить» на главной (можно выключить в настройках) ---
 export const showHero = writable(lsGet('plauncher_show_hero', '1') !== '0');
 showHero.subscribe(v => lsSet('plauncher_show_hero', v ? '1' : '0'));
