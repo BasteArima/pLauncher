@@ -1,7 +1,7 @@
 <script>
     // Корень приложения: состояние библиотеки, навигация и связка компонентов.
     // Разметка крупных частей — в components/, чистые функции — в lib/.
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount, onDestroy, tick } from 'svelte';
     import {
         AddGamesFromDrop,
         GetGames,
@@ -37,7 +37,7 @@
     import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
-    import { showHero, homeView, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
+    import { showHero, homeView, ctxGameId, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
     import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
     import SmartBanner from './components/SmartBanner.svelte';
@@ -48,7 +48,7 @@
     import Shelf from './components/Shelf.svelte';
     import GameGrid from './components/GameGrid.svelte';
     import ViewControls from './components/ViewControls.svelte';
-    import LibraryTools from './components/LibraryTools.svelte';
+    import ViewOptions from './components/ViewOptions.svelte';
     import SelectionBar from './components/SelectionBar.svelte';
     import HotkeysHelp from './components/HotkeysHelp.svelte';
     import ShelfEditor from './components/ShelfEditor.svelte';
@@ -646,7 +646,8 @@
         items.push({ label: tr('ctx.remove_game'), icon: '🗑', danger: true, action: () => removeGame(game) });
         return items;
     }
-    const gameCtx = (g, e) => openCtx(e, gameMenuItems(g));
+    const gameCtx = (g, e) => { openCtx(e, gameMenuItems(g)); ctxGameId.set(g.id); };
+    $: if (!ctx) ctxGameId.set('');
     // Глобальный contextmenu: на текстовом поле — меню буфера, иначе блокируем нативное
     function handleGlobalContext(e) {
         if (isEditableTarget(e.target)) { openCtx(e, inputCtxItems(e.target)); return; }
@@ -680,6 +681,31 @@
         } catch (err) {
             showToast(tr('toast.error', { err }), 'error');
         }
+    }
+
+    // --- История переходов (как в браузере): вид библиотеки + открытая игра ---
+    let navStack = [];
+    let navPos = -1;
+    let navApplying = false;
+    $: navKey = JSON.stringify({ g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: activeTag });
+    $: recordNav(navKey);
+    function recordNav(key) {
+        if (navApplying || navStack[navPos] === key) return;
+        navStack = [...navStack.slice(0, navPos + 1), key].slice(-60);
+        navPos = navStack.length - 1;
+    }
+    async function goNav(dir) {
+        const i = navPos + dir;
+        if (i < 0 || i >= navStack.length || isEditing) return;
+        navApplying = true;
+        navPos = i;
+        const st = JSON.parse(navStack[i]);
+        clearSelection();
+        activeFilter = st.f; activeCollection = st.c; activeTag = st.t;
+        const g = st.g ? games.find(x => x.id === st.g) : null;
+        if (g) selectGame(g); else closeGame();
+        await tick();
+        navApplying = false;
     }
 
     // --- Клавиатура и мышь ---
@@ -726,6 +752,11 @@
             return;
         }
         if (needsSetup) return;
+        if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !modalOpen) {
+            e.preventDefault();
+            goNav(e.key === 'ArrowLeft' ? -1 : 1);
+            return;
+        }
         if (e.key === 'F1') { e.preventDefault(); showHotkeys = !showHotkeys; return; }
         if (ctrl && e.key === ',') { e.preventDefault(); showSettings = true; return; }
         if (ctrl && e.code === 'KeyL') { e.preventDefault(); if (privacy && privacy.has_pin) lockNow(); return; }
@@ -770,7 +801,7 @@
         const handled = e.defaultPrevented; // лайтбокс уже обработал нажатие
         e.preventDefault();
         if (handled || lightboxIndex !== null) return;
-        if (e.button === 3 && selectedGame && !isEditing) closeGame();
+        goNav(e.button === 3 ? -1 : 1);
     }
 
     // --- Старт ---
@@ -838,7 +869,7 @@
      on:dragleave={onDragLeave}
      on:contextmenu={handleGlobalContext}>
 
-    <TitleBar {scanning} {checkingUpdates} {locked} {showHidden} {sidebarWidth}
+    <TitleBar {scanning} {checkingUpdates} {locked} {showHidden}
               bind:searchQuery bind:searchInput onSearch={onSearchInput}
               ready={!needsSetup}
               hasPin={!!(privacy && privacy.has_pin)}
@@ -868,7 +899,6 @@
                  onOpenCollection={openCollection}
                  selectedId={selectedGame ? selectedGame.id : ''}
                  {noCoverCount} {draggingGame}
-                 recent={recentlyPlayed.slice(0, 3)}
                  {scanning} {checkingUpdates}
                  onFilter={applyFilter}
                  onSelect={selectGame}
@@ -949,20 +979,7 @@
                             </button>
                         {/if}
                         <div class="flex-1"></div>
-                        {#if isHome}
-                            <!-- Вид «Все игры»: сетка или полки -->
-                            <div class="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900 border border-white/10 text-xs" role="group">
-                                <button on:click={() => homeView.set('grid')} class="h-7 px-2.5 rounded-md transition-colors {$homeView === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-200'}">{$t('view.grid')}</button>
-                                <button on:click={() => homeView.set('shelves')} class="h-7 px-2.5 rounded-md transition-colors {$homeView === 'shelves' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-200'}">{$t('view.shelves')}</button>
-                            </div>
-                            {#if showShelves}
-                                <button on:click={() => layoutEditing = true}
-                                        class="h-8 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 rounded-lg border border-white/10 transition-colors">
-                                    ✎ {$t("lib.edit_sections")}
-                                </button>
-                            {/if}
-                        {/if}
-                        <LibraryTools/>
+                        <ViewOptions {isHome} onEditSections={() => layoutEditing = true}/>
                     </div>
                 {/if}
 

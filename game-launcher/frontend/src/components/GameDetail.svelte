@@ -37,6 +37,8 @@
     $: if (game.id !== shownId) { shownId = game.id; mediaIndex = 0; }
     $: if (mediaIndex >= media.length) mediaIndex = 0;
     $: current = media[mediaIndex];
+    // Листать картинки прямо на странице, как в Steam (по кругу)
+    function stepMedia(dir) { if (media.length > 1) mediaIndex = (mediaIndex + dir + media.length) % media.length; }
     function openCurrent() {
         if (current && current.shot !== undefined) onOpenImage(current.shot);
         else if ((game.images || []).length) onOpenImage(0);
@@ -145,6 +147,17 @@
                          on:error={(e) => e.target.style.display = 'none'}
                          class="absolute inset-0 w-full h-full object-contain animate-fade-in transition duration-300 {blurCls($coverBlur, 'cover')} {game.folder_missing ? 'grayscale opacity-60' : ''}"/>
                 {/key}
+                {#if media.length > 1}
+                    <button on:click|stopPropagation={() => stepMedia(-1)} aria-label={$t('detail.prev_image')} title={$t('detail.prev_image')}
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white bg-black/35 hover:bg-black/55 backdrop-blur-md ring-1 ring-inset ring-white/15 opacity-0 group-hover:opacity-100 transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+                    </button>
+                    <button on:click|stopPropagation={() => stepMedia(1)} aria-label={$t('detail.next_image')} title={$t('detail.next_image')}
+                            class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white bg-black/35 hover:bg-black/55 backdrop-blur-md ring-1 ring-inset ring-white/15 opacity-0 group-hover:opacity-100 transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                    <span class="absolute bottom-3 right-3 px-2 py-0.5 rounded-md text-[11px] text-white/90 bg-black/40 backdrop-blur-md opacity-0 group-hover:opacity-100 transition">{mediaIndex + 1} / {media.length}</span>
+                {/if}
             {:else}
                 <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500 p-6 text-center">
                     <svg class="w-12 h-12 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>

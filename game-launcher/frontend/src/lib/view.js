@@ -109,3 +109,6 @@ export function focusNeighbor(dir) {
         best.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     }
 }
+
+// --- Игра, для которой открыто контекстное меню (⋯ на карточке): карточка остаётся «под курсором» ---
+export const ctxGameId = writable('');

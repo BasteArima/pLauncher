@@ -1,7 +1,7 @@
 <script>
     // Левая панель: навигация (главная/фильтры), дерево коллекций с поиском.
     import { t, tr } from '../i18n.js';
-    import { mediaSrc, lsJSON, lsSet, fmtPlaytime } from '../lib/util.js';
+    import { mediaSrc, lsJSON, lsSet } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { selection, selecting, toggleSelected } from '../lib/view.js';
 
@@ -19,7 +19,6 @@
     export let onOpenCollection = (key) => {};
     export let selectedId = '';
     export let draggingGame = null;         // игра, которую тащат (из сетки или из сайдбара)
-    export let recent = [];                 // недавно запущенные (уже отсортированы)
     export let scanning = false;
     export let checkingUpdates = false;
 
@@ -82,6 +81,8 @@
     const toolBtn = 'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50';
     const sectionCls = 'px-2.5 mb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider';
     $: hasSmart = updatesCount || noCoverCount || missingCount;
+    // «Все игры» подсвечены, пока не открыта коллекция или умный список (чипсы «Избранное» и т. п. — внутри них)
+    $: allActive = !activeCollection && !['updates', 'nocover', 'missing'].includes(activeFilter);
 </script>
 
 <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{width}px">
@@ -102,52 +103,7 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto px-2 pb-2">
-        {#if recent.length}
-            <div class="mb-4">
-                <div class={sectionCls}>{$t('nav.recent')}</div>
-                <div class="space-y-1 px-1">
-                    {#each recent as g (g.id)}
-                        <div class="flex items-center gap-2 rounded-lg pr-1 hover:bg-white/5 transition-colors {selectedId === g.id ? 'bg-indigo-500/15' : ''}"
-                             on:contextmenu={(e) => onGameContext(g, e)}>
-                            <button on:click={() => onSelect(g)} class="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1.5 text-left">
-                                <span class="w-12 h-8 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
-                                    {#if g.cover_path}
-                                        <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
-                                    {:else}
-                                        <span class="text-[11px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
-                                    {/if}
-                                </span>
-                                <span class="min-w-0 flex flex-col">
-                                    <span class="text-sm text-slate-200 truncate">{g.title}</span>
-                                    {#if g.time_played}<span class="text-[11px] text-slate-500 truncate">{fmtPlaytime(g.time_played)}</span>{/if}
-                                </span>
-                            </button>
-                            {#if canPlay(g)}
-                                <button on:click={() => onPlay(g)} title={$t('btn.play') + ' · ' + g.title}
-                                        class="h-8 px-3 shrink-0 rounded-lg flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
-                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
-                                    {$t('btn.play')}
-                                </button>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-            </div>
-        {/if}
 
-
-        <!-- Библиотека -->
-        <div class="mb-4 px-1">
-            <div class={sectionCls}>{$t('nav.library')}</div>
-            <button on:click={() => onFilter('all')} class={navCls(isHome)}>
-                <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-                {$t('nav.all_games')}<span class="ml-auto text-xs text-slate-500">{libCount}</span>
-            </button>
-            <button on:click={() => onFilter('favorites')} class={navCls(activeFilter === 'favorites' && !activeCollection)}>
-                <svg class="w-4 h-4 shrink-0 text-pink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.3-8.8C1.3 8.2 2.8 5 6 5c2 0 3.2 1.3 6 3.6C14.8 6.3 16 5 18 5c3.2 0 4.7 3.2 3.3 6.2C19 15.6 12 20 12 20z"/></svg>
-                {$t('nav.favorites')}{#if favoritesCount}<span class="ml-auto text-xs text-slate-500">{favoritesCount}</span>{/if}
-            </button>
-        </div>
 
         <!-- Коллекции: щелчок по названию открывает сетку, стрелка раскрывает список игр -->
         <div class="mb-4 px-1">
@@ -169,6 +125,15 @@
                     {/if}
                 </div>
             {/if}
+
+            <!-- Системная коллекция «Все игры» -->
+            <button on:click={() => onFilter('all')}
+                    class="w-full h-8 flex items-center gap-1.5 pr-2.5 rounded-md text-[13px] transition-colors {allActive ? 'bg-slate-800 text-white font-medium' : 'text-slate-300 hover:bg-white/5 hover:text-white'}">
+                <span class="w-6 flex items-center justify-center text-slate-500">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+                </span>
+                {$t('nav.all_games')}<span class="ml-auto text-xs text-slate-500 font-normal">{libCount}</span>
+            </button>
 
             {#each view as group (group.key)}
                 {@const open = !collapsed[group.key] || q}

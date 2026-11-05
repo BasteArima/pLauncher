@@ -19,7 +19,6 @@
     export let onToggleHidden = () => {};
     export let onHotkeys = () => {};
     export let onSettings = () => {};
-    export let sidebarWidth = 256;         // поиск начинается над колонкой контента
     export let searchQuery = '';           // bind
     export let searchInput = null;         // bind (Ctrl+F)
     export let onSearch = () => {};
@@ -35,12 +34,21 @@
 
 <div class="h-12 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
     <div class="flex items-center h-full min-w-0 flex-1">
-        <span class="flex items-center gap-2.5 pl-4 text-[15px] font-semibold tracking-wide shrink-0" style="width:{ready && !locked ? sidebarWidth + 4 : 'auto'}px">
+        <span class="flex items-center gap-2.5 pl-4 text-[15px] font-semibold tracking-wide shrink-0">
             <span class="w-6 h-6 rounded-md bg-indigo-500 text-white text-xs flex items-center justify-center">p</span><span class="text-slate-100">pLauncher</span>
         </span>
+        {#if scanning || checkingUpdates}
+            <span class="flex items-center gap-1.5 ml-2 text-xs text-slate-400 truncate">
+                <svg class="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/></svg>
+                {scanning ? $t('menu.scanning') : $t('menu.checking')}
+            </span>
+        {/if}
+    </div>
+    <div class="flex items-center h-full" style="--wails-draggable:no-drag">
         {#if ready && !locked}
-            <!-- Поиск по библиотеке: над колонкой контента, как в макете -->
-            <label class="relative flex items-center w-full max-w-sm ml-8 h-9 rounded-lg bg-slate-900 border border-white/10 focus-within:border-indigo-400/60 transition-colors"
+        <div class="flex items-center gap-1 pr-2">
+            <!-- Поиск по библиотеке: справа, перед иконками (как в макете) -->
+            <label class="relative flex items-center w-72 mr-3 h-9 rounded-lg bg-slate-900 border border-white/10 focus-within:border-indigo-400/60 transition-colors"
                    style="--wails-draggable:no-drag" on:dblclick|stopPropagation>
                 <svg class="absolute left-3 w-4 h-4 text-slate-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
                 <input type="text" bind:this={searchInput} bind:value={searchQuery} on:input={onSearch}
@@ -53,17 +61,6 @@
                     <span class="absolute right-2.5 text-[11px] text-slate-500 border border-white/10 rounded px-1.5 pointer-events-none">Ctrl F</span>
                 {/if}
             </label>
-        {/if}
-        {#if scanning || checkingUpdates}
-            <span class="flex items-center gap-1.5 ml-2 text-xs text-slate-400 truncate">
-                <svg class="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/></svg>
-                {scanning ? $t('menu.scanning') : $t('menu.checking')}
-            </span>
-        {/if}
-    </div>
-    <div class="flex items-center h-full" style="--wails-draggable:no-drag">
-        {#if ready && !locked}
-        <div class="flex items-center gap-1 pr-2">
             {#if showUpdate}
                 <button on:click={() => updateModalOpen.set(true)} on:dblclick|stopPropagation
                         class="h-6 px-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold ring-1 ring-inset transition-colors mr-1 {dlState === 'ready' ? 'bg-emerald-500/15 text-emerald-200 ring-emerald-400/40 hover:bg-emerald-500/25' : 'bg-amber-500/15 text-amber-200 ring-amber-400/40 hover:bg-amber-500/25'}">
@@ -109,9 +106,8 @@
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
             </button>
             <button on:click={onSettings} on:dblclick|stopPropagation title={$t('nav.settings') + ' · Ctrl+,'}
-                    class="{quickBtn} ml-1 text-slate-300 bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/10 hover:text-white">
+                    aria-label={$t('nav.settings')} class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-                {$t('nav.settings')}
             </button>
         </div>
         {/if}

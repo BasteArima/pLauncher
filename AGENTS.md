@@ -55,12 +55,15 @@ The app is fully working. Done so far:
   `bulkReparse`, look for moved folders). Hero is off by default (key `plauncher_hero`). Game page (`GameDetail`): media
   viewer + thumbnail strip left, play card right (stats, version, update, edit/ignore/remove), description + tags, collections,
   details; a game with no cover/description/links shows `MetadataPanel prominent` («Find game info») right under the media.
-  Layout per A3: search lives in the titlebar (`TitleBar` gets `bind:searchQuery`/`bind:searchInput`; typing resets
-  collection/filter/tag — search is library-wide); main view = header (title + count + Sort) → chips (All / Favorites /
-  Updates, scoped to the open collection) + «Tags ▾» menu → grid. «All games» can switch Grid / Shelves (`homeView` in
-  `lib/view.js`; shelves keep «Edit sections» and the optional hero). Sidebar sections: Recent, Library (All games,
-  Favorites), Collections (caret toggles the game list, the name opens the collection as a grid via `activeCollection`;
-  `'__uncat'` = uncategorized), Smart lists (only when non-empty).
+  Layout per A3: titlebar = logo … search (right, `bind:searchQuery`/`bind:searchInput`; typing resets
+  collection/filter/tag — search is library-wide) + icon buttons (👁, hidden collections, 🔒, hotkeys, ⚙). Main view =
+  header (title + count + Sort) → chips (All / Favorites / Updates, scoped to the open collection) + «Tags ▾» menu +
+  `ViewOptions` popover (grid/shelves via `homeView`, wide/tall, size, select mode, edit sections) → grid. Sidebar: scan row,
+  Collections (system «All games» first; caret toggles the game list, the name opens the collection as a grid via
+  `activeCollection`; `'__uncat'` = uncategorized), Smart lists (only when non-empty). Cards: no update badge/ring on the
+  cover (⬆ version in the caption), hover = soft top/bottom gradients + glass (blurred) buttons sliding in; `ctxGameId`
+  keeps a card in hover state while its ⋯ menu is open (`group-[.is-active]:` variants). Game page media has ‹ › arrows.
+  Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.
   Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.

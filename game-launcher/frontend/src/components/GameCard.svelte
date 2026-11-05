@@ -2,7 +2,7 @@
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
-    import { selection, selecting, toggleSelected, selectRange, cardShape } from '../lib/view.js';
+    import { selection, selecting, toggleSelected, selectRange, cardShape, ctxGameId } from '../lib/view.js';
     export let game;
     export let onOpen = () => {};
     export let onPlay = null;        // если задан и есть exec_path — кнопка запуска
@@ -51,9 +51,14 @@
         onContext(game, e);
     }
     $: canPlay = onPlay && game.exec_path && !game.folder_missing;
-    // Кнопки на обложке, как в Epic: появляются при наведении (или фокусе с клавиатуры)
-    const reveal = 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition duration-200';
-    const iconBtn = 'w-9 h-9 rounded-lg flex items-center justify-center bg-slate-950/75 hover:bg-slate-950/95 transition-colors';
+    // Меню ⋯ этой карточки открыто — держим её в состоянии наведения
+    $: active = $ctxGameId === game.id;
+    // Как в Epic: кнопки быстро выезжают — верхние сверху, нижняя снизу; .is-active держит их видимыми
+    const shown = 'group-hover:opacity-100 group-focus-visible:opacity-100 group-[.is-active]:opacity-100';
+    const slideTop = `opacity-0 -translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 group-[.is-active]:translate-y-0 ${shown} transition duration-150 ease-out`;
+    const slideBottom = `opacity-0 translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 group-[.is-active]:translate-y-0 ${shown} transition duration-150 ease-out`;
+    // Полупрозрачная «стеклянная» кнопка поверх обложки
+    const glassBtn = 'w-9 h-9 rounded-lg flex items-center justify-center text-white bg-white/15 hover:bg-white/25 backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors';
 </script>
 
 <div
@@ -61,14 +66,14 @@
         tabindex="0"
         role="button"
         aria-pressed={selected}
-        class="group relative cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950"
+        class="group relative cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950 {active ? 'is-active' : ''}"
         draggable={!!onDrag}
         on:dragstart={handleDragStart}
         on:contextmenu={handleContext}
         on:click={handleClick}
         on:keydown={handleKey}>
 
-    <div class="relative w-full {$cardShape === 'wide' ? 'aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden bg-slate-900 ring-1 transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_14px_30px_rgba(0,0,0,0.55)] {selected ? 'ring-2 ring-indigo-400' : game.update_available ? 'ring-2 ring-amber-400/70' : 'ring-white/5'}">
+    <div class="relative w-full {$cardShape === 'wide' ? 'aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden bg-slate-900 ring-1 transition duration-200 group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] group-[.is-active]:shadow-[0_12px_28px_rgba(0,0,0,0.5)] {selected ? 'ring-2 ring-indigo-400' : 'ring-white/5 group-hover:ring-white/30 group-[.is-active]:ring-white/30'}">
         {#if cover && !coverError}
             <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true}
                  class="absolute inset-0 w-full h-full transition duration-500 {blurCls($coverBlur, 'card')} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
@@ -79,46 +84,48 @@
             </div>
         {/if}
 
-        {#if !$selecting}
-            <!-- Затемнение под кнопками -->
-            <div class="absolute inset-0 bg-black/45 pointer-events-none {reveal}"></div>
-        {/if}
-
-        {#if game.update_available}
-            <span class="absolute top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950 whitespace-nowrap shadow"
-                  title={$t('nav.updates')}>⬆ {game.update_version || ''}</span>
-        {/if}
-
         {#if $selecting}
             <!-- Режим выделения: чекбокс вместо кнопок -->
             <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold ring-2 transition-colors {selected ? 'bg-indigo-500 ring-indigo-300 text-white' : 'bg-black/50 ring-white/40 text-transparent'}">✓</span>
         {:else}
-            {#if onToggleFav}
-                <button on:click|stopPropagation={() => onToggleFav(game)}
-                        title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
-                        aria-label={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
-                        class="absolute top-2.5 left-2.5 {iconBtn} {game.favorite ? 'text-pink-400' : 'text-white ' + reveal}">
-                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill={game.favorite ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-9.3-8.8C1.3 8.2 2.8 5 6 5c2 0 3.2 1.3 6 3.6C14.8 6.3 16 5 18 5c3.2 0 4.7 3.2 3.3 6.2C19 15.6 12 20 12 20z"/></svg>
-                </button>
+            <!-- Мягкие тени сверху и снизу под кнопками (не сплошное затемнение) -->
+            <div class="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-black/55 to-transparent pointer-events-none opacity-0 {shown} transition-opacity duration-150"></div>
+            <div class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 to-transparent pointer-events-none opacity-0 {shown} transition-opacity duration-150"></div>
+
+            {#if game.favorite}
+                <!-- Метка избранного видна и без наведения -->
+                <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-pink-300 bg-black/35 backdrop-blur-md group-hover:opacity-0 group-[.is-active]:opacity-0 transition-opacity">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.3l-1.3-1.2C5.6 14.5 2.5 11.7 2.5 8.3 2.5 5.6 4.6 3.5 7.3 3.5c1.5 0 3 .7 4 1.9 1-1.2 2.5-1.9 4-1.9 2.7 0 4.8 2.1 4.8 4.8 0 3.4-3.1 6.2-8.2 10.8z"/></svg>
+                </span>
             {/if}
-            {#if onContext}
-                <button on:click|stopPropagation={handleContext} title={$t('card.more')} aria-label={$t('card.more')}
-                        class="absolute top-2.5 right-2.5 {iconBtn} text-white {reveal}">
-                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                </button>
-            {/if}
+            <div class="absolute top-2.5 inset-x-2.5 flex justify-between pointer-events-none {slideTop}">
+                {#if onToggleFav}
+                    <button on:click|stopPropagation={() => onToggleFav(game)}
+                            title={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
+                            aria-label={game.favorite ? $t('ctx.fav_remove') : $t('detail.fav_add')}
+                            class="pointer-events-auto {glassBtn} {game.favorite ? '!text-pink-300' : ''}">
+                        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill={game.favorite ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.6 14.5 2.5 11.7 2.5 8.3 2.5 5.6 4.6 3.5 7.3 3.5c1.5 0 3 .7 4 1.9 1-1.2 2.5-1.9 4-1.9 2.7 0 4.8 2.1 4.8 4.8 0 3.4-3.1 6.2-8.2 10.8z"/></svg>
+                    </button>
+                {:else}<span></span>{/if}
+                {#if onContext}
+                    <button on:click|stopPropagation={handleContext} title={$t('card.more')} aria-label={$t('card.more')}
+                            class="pointer-events-auto {glassBtn}">
+                        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+                    </button>
+                {/if}
+            </div>
 
             <!-- Большая кнопка снизу: запуск без захода на страницу игры -->
-            <div class="absolute inset-x-2.5 bottom-2.5 translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 {reveal}">
+            <div class="absolute inset-x-2.5 bottom-2.5 {slideBottom}">
                 {#if canPlay}
                     <button on:click|stopPropagation={() => onPlay(game)} title={$t('btn.play') + ' · Ctrl+Enter'}
-                            class="w-full h-10 rounded-lg flex items-center justify-center gap-2 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
+                            class="w-full h-10 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
                         {$t('btn.play')}
                     </button>
                 {:else if !game.folder_missing && !game.exec_path}
                     <button on:click|stopPropagation={onOpen}
-                            class="w-full h-10 rounded-lg flex items-center justify-center text-sm font-semibold text-slate-950 bg-slate-100 hover:bg-white transition-colors">
+                            class="w-full h-10 rounded-lg flex items-center justify-center text-sm font-medium text-white bg-white/15 hover:bg-white/25 backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors">
                         {$t('btn.set_exe')}
                     </button>
                 {/if}
@@ -130,7 +137,10 @@
     <div class="pt-2.5 px-0.5 min-w-0">
         <h3 class="text-sm font-medium text-slate-100 truncate {game.folder_missing ? 'opacity-60' : ''}">{game.title}</h3>
         <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 min-w-0">
-            {#if game.update_available}<span class="text-amber-300 font-bold">⬆</span>{/if}
+            {#if game.update_available}
+                <span class="shrink-0 text-amber-300" title={$t('detail.update_to', { v: game.update_version })}>⬆ {game.update_version}</span>
+                <span class="shrink-0 text-slate-600">·</span>
+            {/if}
             <span class="truncate">{game.version || '—'}</span>
             {#if game.folder_missing}
                 <span class="shrink-0 text-amber-400 font-semibold" title={$t('missing.card_hint')}>· ⚠ {$t('missing.badge')}</span>
