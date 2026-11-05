@@ -35,6 +35,7 @@
   "chip.all": "Todos",
   "tags.label": "Tags",
   "tags.clear": "Todas as tags",
+  "tags.search": "Buscar tag…",
   "view.grid": "Grade",
   "view.shelves": "Prateleiras",
   "nav.scan_hint": "Procurar jogos novos nas suas pastas (F5)",

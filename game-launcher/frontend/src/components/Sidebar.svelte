@@ -81,8 +81,9 @@
     const toolBtn = 'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50';
     const sectionCls = 'px-2.5 mb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider';
     $: hasSmart = updatesCount || noCoverCount || missingCount;
-    // «Все игры» подсвечены, пока не открыта коллекция или умный список (чипсы «Избранное» и т. п. — внутри них)
-    $: allActive = !activeCollection && !['updates', 'nocover', 'missing'].includes(activeFilter);
+    // Системные строки «Все игры» и «Избранное»: подсвечены, пока не открыта коллекция или умный список
+    $: allActive = !activeCollection && !['updates', 'nocover', 'missing', 'favorites'].includes(activeFilter);
+    $: favActive = !activeCollection && activeFilter === 'favorites';
 </script>
 
 <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{width}px">
@@ -134,6 +135,14 @@
                 </span>
                 {$t('nav.all_games')}<span class="ml-auto text-xs text-slate-500 font-normal">{libCount}</span>
             </button>
+            <!-- Системная коллекция «Избранное» -->
+            <button on:click={() => onFilter('favorites')}
+                    class="w-full h-8 flex items-center gap-1.5 pr-2.5 rounded-md text-[13px] transition-colors {favActive ? 'bg-slate-800 text-white font-medium' : 'text-slate-300 hover:bg-white/5 hover:text-white'}">
+                <span class="w-6 flex items-center justify-center text-pink-400">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.6 14.5 2.5 11.7 2.5 8.3 2.5 5.6 4.6 3.5 7.3 3.5c1.5 0 3 .7 4 1.9 1-1.2 2.5-1.9 4-1.9 2.7 0 4.8 2.1 4.8 4.8 0 3.4-3.1 6.2-8.2 10.8z"/></svg>
+                </span>
+                {$t('nav.favorites')}<span class="ml-auto text-xs text-slate-500 font-normal">{favoritesCount}</span>
+            </button>
 
             {#each view as group (group.key)}
                 {@const open = !collapsed[group.key] || q}
@@ -169,7 +178,7 @@
                                             class="flex-1 min-w-0 flex items-center gap-2.5 px-2 h-8 text-[13px] text-left">
                                         <span class="w-5 h-5 rounded overflow-hidden bg-slate-800 shrink-0 flex items-center justify-center">
                                             {#if g.cover_path}
-                                                <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
+                                                <img src={mediaSrc(g.cover_path)} alt="" loading="lazy" decoding="async" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
                                             {:else}
                                                 <span class="text-[10px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
                                             {/if}

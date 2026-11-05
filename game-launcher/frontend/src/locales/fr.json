@@ -35,6 +35,7 @@
   "chip.all": "Tous",
   "tags.label": "Tags",
   "tags.clear": "Tous les tags",
+  "tags.search": "Chercher un tag…",
   "view.grid": "Grille",
   "view.shelves": "Étagères",
   "nav.scan_hint": "Chercher de nouveaux jeux dans vos dossiers (F5)",

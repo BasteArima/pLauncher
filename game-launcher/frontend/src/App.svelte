@@ -49,6 +49,7 @@
     import GameGrid from './components/GameGrid.svelte';
     import ViewControls from './components/ViewControls.svelte';
     import ViewOptions from './components/ViewOptions.svelte';
+    import TagFilter from './components/TagFilter.svelte';
     import SelectionBar from './components/SelectionBar.svelte';
     import HotkeysHelp from './components/HotkeysHelp.svelte';
     import ShelfEditor from './components/ShelfEditor.svelte';
@@ -508,20 +509,13 @@
         if (searchQuery.trim()) { activeCollection = ''; activeFilter = 'all'; activeTag = ''; }
         handleSearch();
     }
-    // Меню «Теги ▾»: выбрать тег в пределах текущего вида
-    function openTagMenu(e) {
+    // «Теги ▾»: теги текущего вида (коллекции/фильтра) по частоте
+    $: scopeTags = (() => {
         const counts = {};
         for (const g of scopeGames) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
-        const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 40);
-        const r = e.currentTarget.getBoundingClientRect();
-        ctx = {
-            x: Math.min(r.left, window.innerWidth - 248), y: r.bottom + 4, width: 240,
-            items: [
-                ...(activeTag ? [{ label: tr('tags.clear'), icon: '✕', action: () => activeTag = '' }, { sep: true }] : []),
-                ...tags.map(tag => ({ label: tag, hint: String(counts[tag]), checked: activeTag === tag, action: () => { clearSelection(); activeTag = activeTag === tag ? '' : tag; } })),
-            ],
-        };
-    }
+        return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(tag => ({ tag, n: counts[tag] }));
+    })();
+    function pickTag(tag) { clearSelection(); activeTag = tag; }
     function applyTag(tag) {
         activeTag = activeTag === tag ? '' : tag;
         activeFilter = 'all';
@@ -973,10 +967,7 @@
                                 </button>
                             {/each}
                             <span class="w-px h-5 bg-white/10 mx-1"></span>
-                            <button on:click={openTagMenu}
-                                    class="h-8 px-3.5 rounded-full text-[13px] border transition-colors flex items-center gap-1.5 {activeTag ? 'border-indigo-500 bg-indigo-900 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'}">
-                                {activeTag || $t('tags.label')} <span class="text-[10px] opacity-70">▼</span>
-                            </button>
+                            <TagFilter tags={scopeTags} active={activeTag} onPick={pickTag}/>
                         {/if}
                         <div class="flex-1"></div>
                         <ViewOptions {isHome} onEditSections={() => layoutEditing = true}/>

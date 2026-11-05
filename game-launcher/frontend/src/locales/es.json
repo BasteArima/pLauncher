@@ -35,6 +35,7 @@
   "chip.all": "Todos",
   "tags.label": "Etiquetas",
   "tags.clear": "Todas las etiquetas",
+  "tags.search": "Buscar etiqueta…",
   "view.grid": "Cuadrícula",
   "view.shelves": "Estantes",
   "nav.scan_hint": "Buscar juegos nuevos en tus carpetas (F5)",

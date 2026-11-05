@@ -35,6 +35,7 @@
   "chip.all": "全部",
   "tags.label": "标签",
   "tags.clear": "全部标签",
+  "tags.search": "查找标签…",
   "view.grid": "网格",
   "view.shelves": "分组",
   "nav.scan_hint": "在你的文件夹中查找新游戏 (F5)",

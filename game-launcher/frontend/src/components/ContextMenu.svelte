@@ -29,7 +29,7 @@
 </script>
 
 <div class="fixed inset-0 z-[99]" on:click={onClose} on:contextmenu|preventDefault={onClose}></div>
-<div class="fixed z-[100] glass-strong rounded-xl shadow-2xl py-1.5 text-sm animate-fade-in" style="left:{x}px; top:{y}px; width:{width}px">
+<div class="fixed z-[100] glass-strong rounded-xl shadow-2xl py-1.5 text-sm animate-fade-in overflow-y-auto overscroll-contain" style="left:{x}px; top:{Math.max(8, y)}px; width:{width}px; max-height:calc(100vh - {Math.max(8, y)}px - 8px)">
     {#each items as it, i}
         {#if it.sep}
             <div class="h-px bg-white/10 my-1.5 mx-2"></div>

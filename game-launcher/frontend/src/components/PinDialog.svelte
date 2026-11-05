@@ -39,7 +39,7 @@
 </script>
 
 <!-- Экран блокировки начинается под титлбаром: окно можно свернуть/закрыть -->
-<div class="fixed flex items-center justify-center animate-fade-in {mode === 'lock' ? 'inset-x-0 bottom-0 top-9 z-[200] aurora-bg' : 'inset-0 z-[85] bg-slate-950/80 backdrop-blur-md'}"
+<div class="fixed flex items-center justify-center animate-fade-in {mode === 'lock' ? 'inset-x-0 bottom-0 top-12 z-[200] aurora-bg' : 'inset-0 z-[85] bg-slate-950/80 backdrop-blur-md'}"
      on:click={() => mode === 'verify' && onCancel()}>
     <div class="w-[360px] max-w-[90vw] glass-strong rounded-2xl shadow-2xl p-7 text-center" on:click|stopPropagation>
         <div class="text-4xl mb-3">🔒</div>

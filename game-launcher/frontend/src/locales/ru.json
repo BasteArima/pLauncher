@@ -35,6 +35,7 @@
   "chip.all": "Все",
   "tags.label": "Теги",
   "tags.clear": "Все теги",
+  "tags.search": "Найти тег…",
   "view.grid": "Сетка",
   "view.shelves": "Полки",
   "nav.scan_hint": "Найти новые игры в ваших папках (F5)",

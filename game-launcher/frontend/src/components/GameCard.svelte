@@ -58,7 +58,8 @@
     const slideTop = `opacity-0 -translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 group-[.is-active]:translate-y-0 ${shown} transition duration-150 ease-out`;
     const slideBottom = `opacity-0 translate-y-1.5 group-hover:translate-y-0 group-focus-visible:translate-y-0 group-[.is-active]:translate-y-0 ${shown} transition duration-150 ease-out`;
     // Полупрозрачная «стеклянная» кнопка поверх обложки
-    const glassBtn = 'w-9 h-9 rounded-lg flex items-center justify-center text-white bg-white/15 hover:bg-white/25 backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors';
+    // backdrop-blur — только при наведении: размытие на сотнях скрытых кнопок сильно тормозит прокрутку
+    const glassBtn = 'w-9 h-9 rounded-lg flex items-center justify-center text-white bg-white/15 hover:bg-white/25 group-hover:backdrop-blur-md group-[.is-active]:backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors';
 </script>
 
 <div
@@ -75,7 +76,7 @@
 
     <div class="relative w-full {$cardShape === 'wide' ? 'aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden bg-slate-900 ring-1 transition duration-200 group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.5)] group-[.is-active]:shadow-[0_12px_28px_rgba(0,0,0,0.5)] {selected ? 'ring-2 ring-indigo-400' : 'ring-white/5 group-hover:ring-white/30 group-[.is-active]:ring-white/30'}">
         {#if cover && !coverError}
-            <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true}
+            <img src={cover} alt={game.title} style={coverCss} on:error={() => coverError = true} loading="lazy" decoding="async"
                  class="absolute inset-0 w-full h-full transition duration-500 {blurCls($coverBlur, 'card')} {game.folder_missing ? 'grayscale opacity-50' : ''}"/>
         {:else}
             <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-2 p-4 text-center">
@@ -94,7 +95,7 @@
 
             {#if game.favorite}
                 <!-- Метка избранного видна и без наведения -->
-                <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-pink-300 bg-black/35 backdrop-blur-md group-hover:opacity-0 group-[.is-active]:opacity-0 transition-opacity">
+                <span class="absolute top-2.5 left-2.5 w-7 h-7 rounded-md flex items-center justify-center text-pink-300 bg-black/55 group-hover:opacity-0 group-[.is-active]:opacity-0 transition-opacity">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.3l-1.3-1.2C5.6 14.5 2.5 11.7 2.5 8.3 2.5 5.6 4.6 3.5 7.3 3.5c1.5 0 3 .7 4 1.9 1-1.2 2.5-1.9 4-1.9 2.7 0 4.8 2.1 4.8 4.8 0 3.4-3.1 6.2-8.2 10.8z"/></svg>
                 </span>
             {/if}
@@ -125,7 +126,7 @@
                     </button>
                 {:else if !game.folder_missing && !game.exec_path}
                     <button on:click|stopPropagation={onOpen}
-                            class="w-full h-10 rounded-lg flex items-center justify-center text-sm font-medium text-white bg-white/15 hover:bg-white/25 backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors">
+                            class="w-full h-10 rounded-lg flex items-center justify-center text-sm font-medium text-white bg-white/15 hover:bg-white/25 group-hover:backdrop-blur-md group-[.is-active]:backdrop-blur-md ring-1 ring-inset ring-white/20 transition-colors">
                         {$t('btn.set_exe')}
                     </button>
                 {/if}

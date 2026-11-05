@@ -35,6 +35,7 @@
   "chip.all": "All",
   "tags.label": "Tags",
   "tags.clear": "All tags",
+  "tags.search": "Find a tag…",
   "view.grid": "Grid",
   "view.shelves": "Shelves",
   "nav.scan_hint": "Look for new games in your folders (F5)",

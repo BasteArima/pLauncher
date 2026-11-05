@@ -59,7 +59,7 @@ The app is fully working. Done so far:
   collection/filter/tag — search is library-wide) + icon buttons (👁, hidden collections, 🔒, hotkeys, ⚙). Main view =
   header (title + count + Sort) → chips (All / Favorites / Updates, scoped to the open collection) + «Tags ▾» menu +
   `ViewOptions` popover (grid/shelves via `homeView`, wide/tall, size, select mode, edit sections) → grid. Sidebar: scan row,
-  Collections (system «All games» first; caret toggles the game list, the name opens the collection as a grid via
+  Collections (system «All games» and «Favorites» first; caret toggles the game list, the name opens the collection as a grid via
   `activeCollection`; `'__uncat'` = uncategorized), Smart lists (only when non-empty). Cards: no update badge/ring on the
   cover (⬆ version in the caption), hover = soft top/bottom gradients + glass (blurred) buttons sliding in; `ctxGameId`
   keeps a card in hover state while its ⋯ menu is open (`group-[.is-active]:` variants). Game page media has ‹ › arrows.
@@ -224,6 +224,11 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   handlers skip events with `e.defaultPrevented` — keep this contract when adding key handlers.
 - Drag&drop: external folder drop uses Wails `OnFileDrop` (DOM `file.path` is empty in WebView2). Internal
   game→collection drag is HTML5 DnD; the file-drop overlay is gated on `dataTransfer` containing `Files`.
+- **Performance:** never put `backdrop-blur-*` (backdrop-filter) on elements that exist in every card/row, even hidden
+  with opacity 0 — with ~600 cards scrolling dropped to ~10 fps. Use `group-hover:backdrop-blur-*` (only the hovered card
+  pays) or a solid translucent background. Covers use `loading="lazy" decoding="async"`. Scroll benchmark recipe: headless
+  Edge with `--remote-debugging-port` on the mocked UI (`docs/tools/screenshots`), GetGames patched ×50, scroll `<main>`
+  60 px per rAF and compare frame times.
 - Comments in the code are largely in **Russian** — that's fine, keep them; only user-facing strings are localized.
 
 ## Build & run
