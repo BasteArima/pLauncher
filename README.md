@@ -181,17 +181,17 @@ policies apply there.
 
 ## Code signing policy
 
-> **Status: application pending.** Current builds are not signed yet. We've applied to the SignPath Foundation
-> for free code signing of the Windows builds; this section describes how signing will work once approved.
+> **Status: planned.** Current builds are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper ask
+> for confirmation on first launch (see the release notes). Signing is planned once the project qualifies for a
+> free open-source certificate; this section describes how it will work.
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/).
+Every release file comes with a `.sha256` checksum, and the launcher verifies it before installing an update.
 
 - Committers and reviewers: [BasteArima](https://github.com/BasteArima)
 - Approvers: [BasteArima](https://github.com/BasteArima)
 
-Signed files are built from this repository by [GitHub Actions](.github/workflows/release.yml), and every
-release is approved manually before it's signed. See the [Privacy policy](#privacy-policy) above.
+Release files are built from this repository by [GitHub Actions](.github/workflows/release.yml), and every
+release is published manually by tagging a version. See the [Privacy policy](#privacy-policy) above.
 
 ## License
 
