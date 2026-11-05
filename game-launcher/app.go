@@ -31,6 +31,7 @@ type App struct {
 	dataDir  string // абсолютный путь к папке с данными (БД + обложки)
 	priv     privacyState
 	live     bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
+	upd      updateState
 }
 
 // NewApp создает новое приложение
@@ -45,6 +46,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.live = true
 	a.launcher = launcher.NewController()
+	cleanupAfterUpdate()
 
 	cfg := loadConfig()
 	if cfg.DataDir != "" {
@@ -108,6 +110,17 @@ func (a *App) initServices(dataDir string) error {
 // runtime.WindowGetSize в Wails 2.12 паникует (деление на ноль при DPI=0).
 // Размер сохраняется в реальном времени по ресайзу (см. SaveWindowSize).
 func (a *App) shutdown(ctx context.Context) {
+	a.keepPendingForNextLaunch()
+	a.closeServices()
+}
+
+// domReady вызывается, когда интерфейс загрузился.
+func (a *App) domReady(ctx context.Context) {
+	confirmUpdateStarted()
+}
+
+// closeServices снимает глобальную горячую клавишу и закрывает БД.
+func (a *App) closeServices() {
 	a.priv.hotkeys.Unregister()
 	if a.repo != nil {
 		// Приводим интерфейс к конкретному типу для вызова специфичного метода Close

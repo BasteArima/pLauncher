@@ -82,7 +82,8 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
 - **Keyboard-friendly:** arrows to move around, `Enter` to open, `Ctrl+Enter` to play, `F5` to scan,
   `Ctrl+F` to search, `F1` for the full list.
 - **Backup and restore:** export your whole library (database, covers, custom languages) to a single `.zip`.
-- **Self-update** on Windows and Linux, with SHA-256 verification.
+- **Self-update** on Windows and Linux: a small notice in the title bar, what's new, download progress and a
+  restart, with SHA-256 verification and an automatic rollback if the new version doesn't start.
 - **11 languages:** English, Deutsch, Español, Français, Polski, Português (Brasil), Türkçe, Русский,
   Українська, 日本語, 简体中文. Add your own by dropping a JSON file into the data folder.
 
@@ -141,7 +142,8 @@ Architecture notes for contributors live in [`AGENTS.md`](AGENTS.md).
 
 **Does pLauncher download games?**
 No. It only organizes what's already on your disk. It goes online only to fetch the game pages *you* paste,
-to check them for updates when you ask it to, and once a day to look for a new launcher version.
+to check them for updates when you ask it to, and at startup and every 6 hours to look for a new launcher version
+(you can turn that off in Settings).
 
 **Where is my data stored?**
 In the folder you picked on first launch: a SQLite database plus `covers/`. Nothing leaves your machine.
@@ -170,8 +172,9 @@ screenshots and settings stay in the data folder you choose. The app connects to
 
 - to fetch the game pages you paste into it, with their cover and screenshots;
 - to check those pages for new versions when you ask it to;
-- once a day, to check [GitHub Releases](https://github.com/BasteArima/pLauncher/releases) for a new launcher
-  version.
+- at startup and every 6 hours, to check [GitHub Releases](https://github.com/BasteArima/pLauncher/releases) for
+  a new launcher version (you can turn this off in Settings → General), and to download it when you choose to
+  update.
 
 These requests go straight to the sites involved (the game sites you use, GitHub), and their own privacy
 policies apply there.

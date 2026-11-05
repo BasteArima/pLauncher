@@ -1,11 +1,66 @@
 export namespace main {
 	
+	export class LauncherDownload {
+	    state: string;
+	    version: string;
+	    done: number;
+	    total: number;
+	    speed: number;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LauncherDownload(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.version = source["version"];
+	        this.done = source["done"];
+	        this.total = source["total"];
+	        this.speed = source["speed"];
+	        this.error = source["error"];
+	    }
+	}
+	export class LauncherRelease {
+	    version: string;
+	    notes: string;
+	    url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LauncherRelease(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.notes = source["notes"];
+	        this.url = source["url"];
+	    }
+	}
+	export class LauncherStartInfo {
+	    discreet: boolean;
+	    updated_to: string;
+	    failed_update: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LauncherStartInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.discreet = source["discreet"];
+	        this.updated_to = source["updated_to"];
+	        this.failed_update = source["failed_update"];
+	    }
+	}
 	export class LauncherUpdate {
 	    available: boolean;
 	    can_install: boolean;
+	    manual_reason: string;
 	    current: string;
 	    latest: string;
-	    notes: string;
+	    releases: LauncherRelease[];
 	    page_url: string;
 	    asset_url: string;
 	    asset_name: string;
@@ -19,14 +74,33 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.available = source["available"];
 	        this.can_install = source["can_install"];
+	        this.manual_reason = source["manual_reason"];
 	        this.current = source["current"];
 	        this.latest = source["latest"];
-	        this.notes = source["notes"];
+	        this.releases = this.convertValues(source["releases"], LauncherRelease);
 	        this.page_url = source["page_url"];
 	        this.asset_url = source["asset_url"];
 	        this.asset_name = source["asset_name"];
 	        this.size = source["size"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class MissingGame {
 	    id: string;

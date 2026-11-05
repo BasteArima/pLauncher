@@ -26,20 +26,33 @@ var exampleLocale []byte
 var appVersion = "dev"
 
 func main() {
-	// После самообновления: даём старому процессу завершиться, затем убираем его exe
-	afterUpdate := false
 	for _, arg := range os.Args[1:] {
-		if arg == afterUpdateFlag {
-			afterUpdate = true
-			time.Sleep(1500 * time.Millisecond)
+		switch arg {
+		case afterUpdateFlag:
+			startFlags.afterUpdate = true
+		case startDiscreetFlag:
+			startFlags.discreet = true
+		case startMinimizedFlag:
+			startFlags.minimized = true
 		}
 	}
-	cleanupAfterUpdate()
+
+	cfg := loadConfig()
+	if startFlags.afterUpdate {
+		// Новый установщик сам освобождает БД и ждёт подтверждения, а версия 1.0 просто
+		// завершается после запуска: её метки нет, даём ей время закрыться.
+		if exe, err := currentExe(); err == nil {
+			if _, err := os.Stat(exe + suffixCheck); os.IsNotExist(err) {
+				time.Sleep(1500 * time.Millisecond)
+			}
+		}
+	} else if applyPendingAtStartup(cfg.DataDir) {
+		return // версию, скачанную в прошлый раз, поставили и запустили
+	}
 
 	app := NewApp()
 
 	// Восстанавливаем размер окна из конфига (по умолчанию 1280x768)
-	cfg := loadConfig()
 	width, height := 1280, 768
 	if cfg.WindowWidth >= 800 && cfg.WindowHeight >= 500 {
 		width, height = cfg.WindowWidth, cfg.WindowHeight
@@ -63,6 +76,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 10, G: 9, B: 18, A: 1},
 		OnStartup:        app.startup,
+		OnDomReady:       app.domReady,
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app,
@@ -71,9 +85,12 @@ func main() {
 	if cfg.WindowMaximised {
 		opts.WindowStartState = options.Maximised
 	}
+	if startFlags.minimized {
+		opts.WindowStartState = options.Minimised
+	}
 	// Один экземпляр: повторный запуск exe возвращает окно (в т.ч. спрятанное кнопкой
 	// паники). После самообновления замок не берём — старый процесс может ещё завершаться.
-	if !afterUpdate {
+	if !startFlags.afterUpdate {
 		opts.SingleInstanceLock = &options.SingleInstanceLock{
 			UniqueId:               "plauncher-8e5c1f0a-2d4b-4b7e-9c3a-single",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showFromSecondInstance() },

@@ -4,6 +4,7 @@
     // справа — быстрые кнопки приватности (видны на любом экране) и управление окном.
     import { t } from '../i18n.js';
     import { discreet } from '../lib/privacy.js';
+    import { updateInfo, download, updateModalOpen } from '../lib/update.js';
     import { WindowMinimise, WindowToggleMaximise, Quit } from '../../wailsjs/runtime/runtime';
 
     export let menuOpen = false;
@@ -18,6 +19,11 @@
     let menuBtn;
     const winBtn = 'h-full px-4 hover:bg-white/10 text-slate-400 hover:text-white transition-colors';
     const quickBtn = 'h-7 px-2 rounded-md flex items-center gap-1.5 text-xs transition-colors';
+
+    // Плашка обновления лаунчера: есть новая версия → идёт загрузка → готово к перезапуску
+    $: dlState = $download.state || 'idle';
+    $: showUpdate = dlState === 'downloading' || dlState === 'ready' || ($updateInfo && $updateInfo.available);
+    $: dlPercent = $download.total > 0 ? Math.min(100, Math.round($download.done / $download.total * 100)) : 0;
 </script>
 
 <div class="h-9 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
@@ -41,6 +47,21 @@
     <div class="flex items-center h-full" style="--wails-draggable:no-drag">
         {#if ready && !locked}
         <div class="flex items-center gap-1 pr-2">
+            {#if showUpdate}
+                <button on:click={() => updateModalOpen.set(true)} on:dblclick|stopPropagation
+                        class="h-6 px-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold ring-1 ring-inset transition-colors mr-1 {dlState === 'ready' ? 'bg-emerald-500/15 text-emerald-200 ring-emerald-400/40 hover:bg-emerald-500/25' : 'bg-amber-500/15 text-amber-200 ring-amber-400/40 hover:bg-amber-500/25'}">
+                    {#if dlState === 'ready'}
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                        {$t('upd.pill_restart')}
+                    {:else if dlState === 'downloading'}
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+                        {dlPercent}%
+                    {:else}
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+                        {$t('upd.pill', { v: $updateInfo.latest })}
+                    {/if}
+                </button>
+            {/if}
             <button on:click={() => discreet.update(v => !v)} on:dblclick|stopPropagation
                     title={$discreet ? $t('app.discreet_show') : $t('app.discreet_hide')}
                     class="{quickBtn} {$discreet ? 'bg-indigo-500/25 text-indigo-200 ring-1 ring-inset ring-indigo-400/40' : 'text-slate-400 hover:bg-white/10 hover:text-white'}">

@@ -12,6 +12,10 @@ export function AddScanPath(arg1:string):Promise<void>;
 
 export function AddSingleGameManual():Promise<void>;
 
+export function ApplyLauncherUpdate(arg1:boolean):Promise<void>;
+
+export function CancelLauncherDownload():Promise<void>;
+
 export function ChangeDataDir(arg1:string):Promise<void>;
 
 export function CheckAllUpdates():Promise<number>;
@@ -54,6 +58,12 @@ export function GetGames():Promise<Array<models.Game>>;
 
 export function GetIgnoredPaths():Promise<Array<string>>;
 
+export function GetLauncherDownload():Promise<main.LauncherDownload>;
+
+export function GetLauncherRestartBlocker():Promise<string>;
+
+export function GetLauncherStartInfo():Promise<main.LauncherStartInfo>;
+
 export function GetPortableDataDir():Promise<string>;
 
 export function GetPrivacy():Promise<main.PrivacySettings>;
@@ -65,8 +75,6 @@ export function GetSupportedSources():Promise<Array<parser.Source>>;
 export function IgnoreGames(arg1:Array<string>):Promise<number>;
 
 export function ImportLibrary(arg1:string):Promise<number>;
-
-export function InstallLauncherUpdate():Promise<void>;
 
 export function IsConfigured():Promise<boolean>;
 
@@ -133,6 +141,8 @@ export function SelectScreenshots():Promise<Array<string>>;
 export function SetFavorites(arg1:Array<string>,arg2:boolean):Promise<number>;
 
 export function SetPin(arg1:string,arg2:string):Promise<void>;
+
+export function StartLauncherDownload():Promise<void>;
 
 export function Unlock(arg1:string):Promise<void>;
 

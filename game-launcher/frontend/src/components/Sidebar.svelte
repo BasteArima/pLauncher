@@ -17,7 +17,6 @@
     export let activeFilter = 'all';
     export let selectedId = '';
     export let draggingGame = null;         // игра, которую тащат (из сетки или из сайдбара)
-    export let settingsBadge = false;       // точка на ⚙ — доступно обновление лаунчера
 
     export let onFilter = (f) => {};
     export let onRelink = () => {};
@@ -181,7 +180,6 @@
         <button on:click={onSettings} title={$t("nav.settings")}
                 class="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
             ⚙️
-            {#if settingsBadge}<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900"></span>{/if}
         </button>
     </div>
 </aside>

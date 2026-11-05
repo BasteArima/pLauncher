@@ -5,7 +5,14 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
 ### Added
+- Launcher updates are now seamless: a small notice in the title bar opens a window with what's new, the download
+  progress and a restart. You can tick "Restart automatically", or install on next launch. pLauncher waits for a
+  running game to close, keeps covers hidden if they were, and goes back to the previous version if the new one
+  doesn't start. Your database is copied to `backups/` before each update.
+- Updates are checked at startup and every 6 hours. You can turn this off in Settings → General.
 - An empty library now shows a big **+** button to add your games folder (it's scanned right away), a link to
   add a single game, and a hint when your folders are scanned but no games were found.
 - Error messages are translated into all 11 languages: parser errors (unsupported site, site unreachable, blocked
@@ -35,5 +42,6 @@ Erotorrent, Island of Pleasure and Steam, update tracking, a Steam-style library
 PIN lock, panic button, hidden collections), bulk actions, backup and restore, self-update, 11 languages.
 See the [release notes](https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0).
 
-[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0

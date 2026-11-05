@@ -18,6 +18,14 @@ export function AddSingleGameManual() {
   return window['go']['main']['App']['AddSingleGameManual']();
 }
 
+export function ApplyLauncherUpdate(arg1) {
+  return window['go']['main']['App']['ApplyLauncherUpdate'](arg1);
+}
+
+export function CancelLauncherDownload() {
+  return window['go']['main']['App']['CancelLauncherDownload']();
+}
+
 export function ChangeDataDir(arg1) {
   return window['go']['main']['App']['ChangeDataDir'](arg1);
 }
@@ -102,6 +110,18 @@ export function GetIgnoredPaths() {
   return window['go']['main']['App']['GetIgnoredPaths']();
 }
 
+export function GetLauncherDownload() {
+  return window['go']['main']['App']['GetLauncherDownload']();
+}
+
+export function GetLauncherRestartBlocker() {
+  return window['go']['main']['App']['GetLauncherRestartBlocker']();
+}
+
+export function GetLauncherStartInfo() {
+  return window['go']['main']['App']['GetLauncherStartInfo']();
+}
+
 export function GetPortableDataDir() {
   return window['go']['main']['App']['GetPortableDataDir']();
 }
@@ -124,10 +144,6 @@ export function IgnoreGames(arg1) {
 
 export function ImportLibrary(arg1) {
   return window['go']['main']['App']['ImportLibrary'](arg1);
-}
-
-export function InstallLauncherUpdate() {
-  return window['go']['main']['App']['InstallLauncherUpdate']();
 }
 
 export function IsConfigured() {
@@ -260,6 +276,10 @@ export function SetFavorites(arg1, arg2) {
 
 export function SetPin(arg1, arg2) {
   return window['go']['main']['App']['SetPin'](arg1, arg2);
+}
+
+export function StartLauncherDownload() {
+  return window['go']['main']['App']['StartLauncherDownload']();
 }
 
 export function Unlock(arg1) {

@@ -7,16 +7,23 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 // Controller отвечает за взаимодействие с файловой системой ОС и процессами
-type Controller struct{}
+type Controller struct {
+	running atomic.Int32 // сколько игр запущено напрямую и ещё работают
+}
 
 // NewController создает новый экземпляр контроллера
 func NewController() *Controller {
 	return &Controller{}
 }
+
+// Running — сколько запущенных лаунчером игр ещё работает. Игры, открытые через
+// ассоциацию ОС, не считаются: их процесс отсоединён.
+func (c *Controller) Running() int { return int(c.running.Load()) }
 
 // OpenFolder открывает переданный путь в системном файловом менеджере.
 // Поддерживает Windows, macOS и Linux.
@@ -58,13 +65,15 @@ func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes 
 		if err := cmd.Start(); err != nil {
 			return fmt.Errorf("couldn't launch %s: %w", exePath, err)
 		}
-		if onExit != nil {
-			go func() {
-				start := time.Now()
-				cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
+		c.running.Add(1)
+		go func() {
+			start := time.Now()
+			cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
+			c.running.Add(-1)
+			if onExit != nil {
 				onExit(int(time.Since(start).Minutes()))
-			}()
-		}
+			}
+		}()
 		return nil
 	}
 

@@ -22,7 +22,7 @@
         GetSupportedSources,
         GetCustomLocales,
         GetAppVersion,
-        CheckLauncherUpdate,
+        GetLauncherStartInfo,
         GetPrivacy,
         Lock,
         NotifyWindowShown,
@@ -38,6 +38,7 @@
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
     import { showHero, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
+    import { initUpdater, updateModalOpen } from './lib/update.js';
     import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse } from './lib/bulk.js';
 
     import TitleBar from './components/TitleBar.svelte';
@@ -62,6 +63,7 @@
     import Toast from './components/Toast.svelte';
     import PinDialog from './components/PinDialog.svelte';
     import EmptyLibrary from './components/EmptyLibrary.svelte';
+    import UpdateModal from './components/UpdateModal.svelte';
 
     // --- Состояние библиотеки и навигации ---
     let games = [];
@@ -77,17 +79,15 @@
     let scanPaths = [];
     let supportedSources = [];
     let appVersion = '';
-    let launcherUpdate = null;           // результат проверки обновления лаунчера
 
-    // Тихая проверка обновления лаунчера — не чаще раза в сутки
-    async function autoCheckLauncherUpdate() {
-        const last = parseInt(lsGet('plauncher_upd_checked', '0')) || 0;
-        if (appVersion === 'dev' || Date.now() - last < 24 * 3600 * 1000) return;
+    // Итог прошлого обновления и состояние окна до перезапуска
+    async function applyStartInfo() {
         try {
-            launcherUpdate = await CheckLauncherUpdate();
-            lsSet('plauncher_upd_checked', String(Date.now()));
-            if (launcherUpdate.available) showToast(tr('upd.available', { v: launcherUpdate.latest }), 'success');
-        } catch (e) { /* нет сети или релизов — молча */ }
+            const info = await GetLauncherStartInfo();
+            if (info.discreet) discreet.set(true);
+            if (info.failed_update) showToast(tr('upd.failed', { v: info.failed_update }), 'error');
+            else if (info.updated_to) showToast(tr('upd.updated_to', { v: info.updated_to }), 'success');
+        } catch (e) {}
     }
 
     let sortBy = lsGet('plauncher_sort', 'added_desc');
@@ -121,6 +121,7 @@
     function closeOverlays() {
         clearSelection();
         showHotkeys = false;
+        updateModalOpen.set(false);
         closeGame();
         showSettings = false;
         showRelink = false;
@@ -643,7 +644,7 @@
         if (isConfirmOpen() || lightboxIndex !== null) return;
         const ctrl = e.ctrlKey || e.metaKey;
         const inInput = isEditableTarget(e.target) || (e.target && e.target.tagName === 'SELECT');
-        const modalOpen = needsSetup || showSettings || showRelink || collectionModal || showHotkeys || ctx;
+        const modalOpen = needsSetup || showSettings || showRelink || collectionModal || showHotkeys || ctx || $updateModalOpen;
 
         // F5/Ctrl+R перезагрузили бы страницу WebView (и сбросили состояние): F5 — скан
         if (e.key === 'F5' || (ctrl && e.code === 'KeyR')) {
@@ -654,6 +655,7 @@
         if (e.key === 'Escape') {
             // Escape закрывает верхний слой: меню → модалка → редактор → выделение → карточка игры
             if (ctx) ctx = null;
+            else if ($updateModalOpen) updateModalOpen.set(false);
             else if (showHotkeys) showHotkeys = false;
             else if (collectionModal) collectionModal = null;
             else if (showRelink) showRelink = false;
@@ -733,6 +735,9 @@
 
         try { supportedSources = await GetSupportedSources() || []; } catch (e) {}
         try { appVersion = await GetAppVersion(); } catch (e) {}
+        await applyStartInfo();
+        // Обновление проверяем и на экране блокировки: плашка всё равно появится только после PIN
+        initUpdater({ appVersion, busy: () => isEditing ? 'editing' : '' });
 
         // Первый запуск: папка для данных ещё не выбрана — мастер настройки
         try {
@@ -746,7 +751,6 @@
         if (privacy && privacy.locked) { locked = true; return; }
         await reloadLibrary(false);
         await loadCustomLocales();
-        autoCheckLauncherUpdate();
     });
 
     onDestroy(() => {
@@ -801,7 +805,6 @@
                  {isHome} {activeFilter}
                  selectedId={selectedGame ? selectedGame.id : ''}
                  {noCoverCount} {draggingGame}
-                 settingsBadge={!!(launcherUpdate && launcherUpdate.available)}
                  onFilter={applyFilter}
                  onRelink={() => showRelink = true}
                  onSelect={selectGame}
@@ -938,8 +941,11 @@
                 <SetupWizard {langs} onChangeLang={changeLang} onConfigured={onSetupConfigured} onFinish={onSetupFinish}/>
             {/if}
 
+            {#if $updateModalOpen}
+                <UpdateModal/>
+            {/if}
             {#if showSettings}
-                <SettingsModal bind:scanPaths bind:launcherUpdate bind:privacy {langs} {appVersion}
+                <SettingsModal bind:scanPaths bind:privacy {langs} {appVersion}
                                hiddenCount={hiddenCols.length} {showHidden}
                                onToggleHidden={toggleHidden}
                                onLockNow={lockNow}

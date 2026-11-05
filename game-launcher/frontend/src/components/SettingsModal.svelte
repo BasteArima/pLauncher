@@ -2,6 +2,7 @@
     // Окно настроек с вкладками. Содержимое вкладок — в components/settings/.
     import { t } from '../i18n.js';
     import { lsGet, lsSet } from '../lib/util.js';
+    import { updateInfo } from '../lib/update.js';
     import GeneralTab from './settings/GeneralTab.svelte';
     import LibraryTab from './settings/LibraryTab.svelte';
     import PrivacyTab from './settings/PrivacyTab.svelte';
@@ -10,7 +11,6 @@
     export let scanPaths = [];
     export let langs = [];
     export let appVersion = '';
-    export let launcherUpdate = null;                    // bind
     export let privacy = null;                           // bind
     export let hiddenCount = 0;
     export let showHidden = false;
@@ -41,7 +41,7 @@
                 <button on:click={() => tab = x.id}
                         class="w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm transition-colors {tab === x.id ? 'bg-indigo-500/20 text-white font-semibold ring-1 ring-inset ring-indigo-400/30' : 'text-slate-300 hover:bg-white/5 hover:text-white'}">
                     <span class="w-5 text-center">{x.icon}</span> {$t(x.label)}
-                    {#if x.id === 'general' && launcherUpdate && launcherUpdate.available}
+                    {#if x.id === 'general' && $updateInfo && $updateInfo.available}
                         <span class="ml-auto w-2 h-2 rounded-full bg-emerald-400"></span>
                     {/if}
                 </button>
@@ -55,7 +55,7 @@
             </div>
             <div class="flex-1 overflow-y-auto px-7 pb-7">
                 {#if tab === 'general'}
-                    <GeneralTab {langs} {appVersion} bind:launcherUpdate {onChangeLang} panicLabel={privacy && privacy.panic_enabled ? privacy.panic_label : ''}/>
+                    <GeneralTab {langs} {appVersion} {onChangeLang} panicLabel={privacy && privacy.panic_enabled ? privacy.panic_label : ''}/>
                 {:else if tab === 'library'}
                     <LibraryTab bind:scanPaths {onScan} {onReload} onRelink={() => { onClose(); onRelink(); }}/>
                 {:else if tab === 'privacy' && privacy}

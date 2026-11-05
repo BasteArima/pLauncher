@@ -87,9 +87,16 @@ The app is fully working. Done so far:
 - **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`); the reference list
   lives in `lib/hotkeys.js` (F1 window + Settings → General). F5/Ctrl+R are intercepted (a WebView reload would
   drop state). Card size: slider in `ViewControls`, Ctrl+wheel, Ctrl +/−/0.
-- **Launcher self-update** (`updater.go`): GitHub Releases of `updateRepo` (ldflag); downloads `pLauncher.exe`,
-  verifies `pLauncher.exe.sha256`, renames running exe to `.old`, restarts with `--after-update`.
-  Releases come from the public `BasteArima/pLauncher` repo (public since 2026-09-24). Silent check ≤1/day.
+- **Launcher self-update**: check in `updater.go` (GitHub Releases of `updateRepo`, ldflag; public repo since
+  2026-09-24), download + install in `updater_install.go`, UI in `lib/update.js` + `UpdateModal.svelte` + the pill in
+  `TitleBar`. Flow: `StartLauncherDownload` (event `launcher-download`) → `.new` + `.new.verified` →
+  `ApplyLauncherUpdate`: DB copied to `<data>/backups`, exe → `.old`, `.new` → exe, new process started with
+  `--after-update`; the old process **waits** for the `.update-check` marker to disappear (`domReady` →
+  `confirmUpdateStarted`) and rolls back if the new one exits or hangs (`.update-failed` → toast). On exit a ready
+  download becomes `.new.ok` and `applyPendingAtStartup` installs it before the window opens. Auto-restart waits for
+  `GetLauncherRestartBlocker` (running game, panic-hidden) and an open editor. Release **asset names are a contract**
+  with installed versions (`assetNameFor`). Release body: `## What's new` is what the modal shows (`whatsNew`).
+  Test the flow on prereleases: tag `vX.Y.Z-rc.N`, run with `PLAUNCHER_UPDATE_PRERELEASE=1`.
 - `GetPortableDataDir` returns "" when the exe folder isn't writable (Program Files, AppImage), so the setup
   wizard hides the portable option.
 
@@ -214,7 +221,7 @@ Cross-OS builds must run **on the target OS** (or CI) — Wails webview bindings
 the Go/SQLite parts are CGO-free.
 
 **Releases:** move the `[Unreleased]` items of `CHANGELOG.md` under the new version, write
-`docs/releases/vX.Y.Z.md` (becomes the GitHub release text), bump `info.productVersion` in `wails.json`, then
+`docs/releases/vX.Y.Z.md` (becomes the GitHub release text; start it with a `## What's new` list), bump `info.productVersion` in `wails.json`, then
 `git tag -a vX.Y.Z` + push the tag — `release.yml` builds and publishes. **README screenshots:**
 `docs/tools/screenshots/make.ps1` (fictional library + generated artwork, see its README).
 

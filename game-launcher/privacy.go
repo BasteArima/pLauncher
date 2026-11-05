@@ -195,9 +195,9 @@ func (a *App) setLocked(v bool) {
 
 // emit шлёт событие во фронтенд; вне запущенного Wails (тесты) — ничего не делает,
 // иначе runtime.EventsEmit завершает процесс из-за «чужого» контекста.
-func (a *App) emit(name string) {
+func (a *App) emit(name string, data ...interface{}) {
 	if a.live {
-		runtime.EventsEmit(a.ctx, name)
+		runtime.EventsEmit(a.ctx, name, data...)
 	}
 }
 
