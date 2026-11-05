@@ -33,7 +33,7 @@
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
     import { showToast, askConfirm, isConfirmOpen } from './lib/ui.js';
-    import { mediaSrc, sortGames, lsGet, lsSet } from './lib/util.js';
+    import { sortGames, lsGet, lsSet } from './lib/util.js';
     import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
@@ -830,15 +830,9 @@
 
         <main class="flex-1 overflow-y-auto p-8 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
-                {#if selectedGame.cover_path && !isEditing}
-                    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                        <img src={mediaSrc(selectedGame.cover_path)} alt="bg" class="w-full h-full object-cover blur-2xl scale-110 opacity-20" />
-                        <div class="absolute inset-0 bg-gradient-to-b from-[#0E1014]/70 via-[#0E1014]/90 to-[#0E1014]"></div>
-                    </div>
-                {/if}
-
                 <div class="animate-fade-in relative z-10">
-                    <button on:click={closeGame} class="mb-6 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 font-semibold">
+                    <button on:click={closeGame} title="Esc"
+                            class="mb-5 h-9 px-3 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
                         {$t("detail.back")}
                     </button>
 

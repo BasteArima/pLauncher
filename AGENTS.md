@@ -50,8 +50,12 @@ The app is fully working. Done so far:
   `text-slate-400` / `bg-indigo-500`), `.glass*` / `.aurora-bg` in `style.css` are now flat surfaces (names kept), font
   Inter Variable bundled via `@fontsource-variable/inter` (no network fonts); cards: caption under the cover, shape
   `cardShape` wide 16:9 (default) / tall 3:4 in `lib/view.js` (`cardWidth` = `cardSize` × 1.45 for wide; toggle in
-  `LibraryTools`), Epic-style hover (♡/⋯ top, big Play bottom, dark scrim). Next: smart lists opening like collections
-  with a banner action, home without the big hero, game page (media left, play card right), «Find info» block.
+  `LibraryTools`), Epic-style hover (♡/⋯ top, big Play bottom, dark scrim). Smart lists (`activeFilter` updates / nocover /
+  missing) open like any list with a `SmartBanner` (one action for all: check updates, fill in from saved links via
+  `bulkReparse`, look for moved folders). Hero is off by default (key `plauncher_hero`). Game page (`GameDetail`): media
+  viewer + thumbnail strip left, play card right (stats, version, update, edit/ignore/remove), description + tags, collections,
+  details; a game with no cover/description/links shows `MetadataPanel prominent` («Find game info») right under the media.
+  Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk/ja/pl/tr built-in + user languages from `data/languages/*.json` (README + `_example.json`

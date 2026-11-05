@@ -11,6 +11,7 @@
     export let parsing = false;
     export let onParse = async (url) => {};             // распарсить ссылку в эту игру
     export let onReload = async () => {};
+    export let prominent = false;                       // игра без информации: крупный блок «Найти информацию»
 
     let parseUrl = '';
     let showSources = false;
@@ -41,8 +42,17 @@
     const checkSource = (platform) => runCheck(() => CheckSourceUpdate(game.id, platform));
 </script>
 
-<div class="glass p-5 rounded-xl">
-    <div class="flex items-center gap-2 mb-3 relative">
+<div class="rounded-2xl border p-5 {prominent ? 'bg-indigo-950 border-indigo-800 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
+    {#if prominent}
+        <h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>
+        <p class="text-sm text-indigo-100/80 mt-1 mb-3">{$t('meta.find_hint')}</p>
+        <div class="flex flex-wrap gap-1.5 mb-4">
+            {#each supportedSources as s}
+                <span class="px-2.5 py-0.5 rounded-full text-xs bg-indigo-900 text-indigo-100" title={s.domain}>{s.name}</span>
+            {/each}
+        </div>
+    {/if}
+    <div class="flex items-center gap-2 mb-3 relative {prominent ? 'hidden' : ''}">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
         <button on:click={() => showSources = !showSources} title={$t("meta.sources")}
                 class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">?</button>
@@ -84,9 +94,9 @@
     <div class="flex gap-3">
         <input type="text" bind:value={parseUrl} placeholder={$t("meta.url_ph")}
                on:keydown={(e) => { if (e.key === 'Enter') parse(); }}
-               class="flex-1 bg-slate-900/60 border border-white/10 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all"/>
-        <button on:click={parse} disabled={parsing || !parseUrl} class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-6 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-            {parsing ? $t('meta.downloading') : $t('meta.update')}
+               class="flex-1 min-w-0 bg-slate-950 border border-white/10 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all"/>
+        <button on:click={parse} disabled={parsing || !parseUrl} class="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            {parsing ? $t('meta.downloading') : prominent ? $t('meta.get_info') : $t('meta.update')}
         </button>
     </div>
 </div>
