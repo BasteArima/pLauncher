@@ -392,25 +392,10 @@
         } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
     }
 
-    // Меню «Библиотека» в заголовке окна: общие действия + их горячие клавиши
-    function libraryMenuItems() {
-        const items = [
-            { label: tr('menu.scan'), icon: '⟳', hint: 'F5', action: handleScan },
-            { label: tr('menu.add_game'), icon: '＋', action: addSingleGame },
-            { label: checkingUpdates ? tr('menu.checking') : tr('menu.check_updates'), icon: '⬆', action: handleCheckAllUpdates },
-            { sep: true },
-            { label: $discreet ? tr('app.discreet_show') : tr('menu.discreet'), icon: '👁', hint: 'Ctrl+H', action: () => discreet.update(v => !v) },
-        ];
-        if (hiddenCols.length) items.push({ label: showHidden ? tr('menu.hide_hidden') : tr('menu.show_hidden'), icon: '🔒', hint: 'Ctrl+Shift+H', action: toggleHidden });
-        if (privacy && privacy.has_pin) items.push({ label: tr('menu.lock'), icon: '🔐', hint: 'Ctrl+L', action: lockNow });
-        items.push({ sep: true },
-            { label: tr('menu.hotkeys'), icon: '⌨', hint: 'F1', action: () => showHotkeys = true },
-            { label: tr('nav.settings'), icon: '⚙', hint: 'Ctrl+,', action: () => showSettings = true });
-        return items;
-    }
-    function openLibraryMenu(rect) {
-        if (ctx && ctx.menu === 'library') { ctx = null; return; }
-        ctx = { x: rect.left, y: rect.bottom + 4, items: libraryMenuItems(), menu: 'library', width: 290 };
+    // Кнопка «Сканировать» в боковой панели: без папок для сканирования — сразу выбор папки
+    function scanOrAddFolder() {
+        if (scanPaths.length) handleScan();
+        else addGamesFolder();
     }
 
     async function handleSearch() {
@@ -779,12 +764,14 @@
      on:dragleave={onDragLeave}
      on:contextmenu={handleGlobalContext}>
 
-    <TitleBar menuOpen={!!(ctx && ctx.menu === 'library')}
-              {scanning} {checkingUpdates} {locked}
+    <TitleBar {scanning} {checkingUpdates} {locked} {showHidden}
               ready={!needsSetup}
               hasPin={!!(privacy && privacy.has_pin)}
-              onMenu={openLibraryMenu}
-              onLock={lockNow}/>
+              hiddenCount={hiddenCols.length}
+              onLock={lockNow}
+              onToggleHidden={toggleHidden}
+              onHotkeys={() => showHotkeys = true}
+              onSettings={() => showSettings = true}/>
 
     <div class="flex flex-1 overflow-hidden min-h-0 relative">
         {#if isDragging}
@@ -805,10 +792,15 @@
                  {isHome} {activeFilter}
                  selectedId={selectedGame ? selectedGame.id : ''}
                  {noCoverCount} {draggingGame}
+                 recent={recentlyPlayed.slice(0, 3)}
+                 {scanning} {checkingUpdates}
                  onFilter={applyFilter}
                  onRelink={() => showRelink = true}
                  onSelect={selectGame}
-                 onSettings={() => showSettings = true}
+                 onPlay={playGame}
+                 onScan={scanOrAddFolder}
+                 onAddGame={addSingleGame}
+                 onCheckUpdates={handleCheckAllUpdates}
                  onCreateCollection={openCreateCollection}
                  onEditCollection={openEditCollection}
                  onDeleteCollection={deleteCollection}

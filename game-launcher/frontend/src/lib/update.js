@@ -35,8 +35,8 @@ let postponed = false;
 // busy() — что ещё мешает перезапуску на стороне интерфейса (открытый редактор игры).
 export function initUpdater({ appVersion, busy }) {
     busyCheck = busy;
-    EventsOn('launcher-download', (d) => download.set(d));
-    GetLauncherDownload().then(d => download.set(d)).catch(() => {});
+    EventsOn('launcher-download', (d) => download.set(d || { state: 'idle' }));
+    GetLauncherDownload().then(d => download.set(d || { state: 'idle' })).catch(() => {});
 
     // Готово и стоит галочка: перезапуск, как только ничего не мешает
     download.subscribe(scheduleAutoRestart);

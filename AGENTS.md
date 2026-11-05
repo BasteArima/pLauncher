@@ -38,10 +38,16 @@ The app is fully working. Done so far:
   sidebar filter «No cover» (`activeFilter === 'nocover'`, shown only when there are any) — a to-do list for parsing.
 - **Cover fit/position editor** (fill/contain/stretch + X/Y), per game.
 - **Playtime tracking** via `cmd.Wait` (no polling); shown on detail; sort by playtime.
-- **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize; a «Library ▾»
-  menu with scan/add game/check updates/privacy/hotkeys/settings built by `libraryMenuItems()` in App and shown via
-  `ContextMenu` (items support `hint` = shortcut); quick 👁 / 🔒 buttons and a scan/update-check status),
-  custom context menus, custom confirm dialog (no native popups), toasts.
+- **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize; scan/update-check
+  status; quick buttons 👁 discreet / hidden collections (only if any) / 🔒 lock (only with PIN) / hotkeys / ⚙ Settings with a
+  label). Frequent actions live at the top of the **sidebar**: «Scan folders» (no scan paths → folder picker), + add game,
+  ⬆ check game updates; then **Recent** (3 last launched with a big Play) and the collection tree, whose game rows show
+  a Play button on hover. Custom context menus (`ContextMenu`, items support `hint` = shortcut), custom confirm dialog
+  (no native popups), toasts.
+- **Redesign in progress** (2026-11, by the owner's choice instead of the paused Rust rewrite): mockups on the canvas
+  https://claude.ai/artifact/QZNnh6NG3xBRrCTQ58a2wD, row A3 is the target. Done: sidebar + titlebar. Next: flat theme
+  (no aurora/glass), wide 16:9 cards (default) with Epic-style hover (♡/⋯ top, big Play bottom), smart lists opening like
+  collections with a banner action, game page (media left, play card right), «Find info» block for games without metadata.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk/ja/pl/tr built-in + user languages from `data/languages/*.json` (README + `_example.json`
@@ -225,11 +231,11 @@ the Go/SQLite parts are CGO-free.
 `git tag -a vX.Y.Z` + push the tag — `release.yml` builds and publishes. **README screenshots:**
 `docs/tools/screenshots/make.ps1` (fictional library + generated artwork, see its README).
 
-**Code signing (planned):** Windows builds are to be signed via the SignPath Foundation (free for OSS, rules at
-signpath.org/terms). README already has the required "Code signing policy" + "Privacy policy" sections with
-status *application pending* (applied 2026-09-25; owner needs GitHub 2FA). After
-approval: add SignPath's GitHub Action to `release.yml`, drop the status note, and put a "Code signing policy"
-link into every `docs/releases/vX.Y.Z.md`. macOS notarization needs a paid Apple Developer account.
+**Code signing (planned):** the SignPath Foundation application (2026-09-25) was **declined** for lack of public
+visibility (stars/forks/contributors, external mentions); they invite a re-application once the project is better
+known (paid SignPath is the other option). README keeps "Code signing policy" (status *planned*) + "Privacy policy".
+If approved later: add SignPath's GitHub Action to `release.yml`, restore the SignPath attribution in README, drop the
+status note, and link the policy from every `docs/releases/vX.Y.Z.md`. macOS notarization needs a paid Apple Developer account.
 
 ## Roadmap / suggested improvements (not yet implemented)
 

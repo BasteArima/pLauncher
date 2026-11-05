@@ -1,22 +1,25 @@
 <script>
     // Свой титлбар безрамочного окна (перетаскивание через --wails-draggable).
-    // Слева — меню «Библиотека» (общие действия) и статус фоновых операций,
-    // справа — быстрые кнопки приватности (видны на любом экране) и управление окном.
+    // Слева — название и статус фоновых операций, справа — быстрые кнопки
+    // (приватность, горячие клавиши, настройки; видны на любом экране) и управление окном.
+    // Сканирование и добавление игр — в боковой панели.
     import { t } from '../i18n.js';
     import { discreet } from '../lib/privacy.js';
     import { updateInfo, download, updateModalOpen } from '../lib/update.js';
     import { WindowMinimise, WindowToggleMaximise, Quit } from '../../wailsjs/runtime/runtime';
 
-    export let menuOpen = false;
     export let scanning = false;
     export let checkingUpdates = false;
     export let hasPin = false;
+    export let hiddenCount = 0;            // скрытых коллекций (кнопка показа — только если они есть)
+    export let showHidden = false;
     export let locked = false;             // экран PIN: только управление окном
     export let ready = true;               // false — идёт мастер первого запуска
-    export let onMenu = (rect) => {};
     export let onLock = () => {};
+    export let onToggleHidden = () => {};
+    export let onHotkeys = () => {};
+    export let onSettings = () => {};
 
-    let menuBtn;
     const winBtn = 'h-full px-4 hover:bg-white/10 text-slate-400 hover:text-white transition-colors';
     const quickBtn = 'h-7 px-2 rounded-md flex items-center gap-1.5 text-xs transition-colors';
 
@@ -28,15 +31,9 @@
 
 <div class="h-9 shrink-0 flex items-center justify-between glass-strong border-b border-white/5 select-none z-30" style="--wails-draggable:drag" on:dblclick={() => WindowToggleMaximise()}>
     <div class="flex items-center gap-1 pl-3 h-full min-w-0">
-        <span class="flex items-center gap-2 pr-2 text-slate-400 text-xs font-semibold tracking-wide"><span class="text-indigo-400">◆</span> pLauncher</span>
-        {#if ready && !locked}
-        <button bind:this={menuBtn} on:click={() => onMenu(menuBtn.getBoundingClientRect())} on:dblclick|stopPropagation
-                style="--wails-draggable:no-drag"
-                class="{quickBtn} {menuOpen ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}">
-            {$t('menu.library')}
-            <svg class="w-3 h-3 transition-transform {menuOpen ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        {/if}
+        <span class="flex items-center gap-2 pr-2 text-sm font-black tracking-wide">
+            <span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">pLauncher</span>
+        </span>
         {#if scanning || checkingUpdates}
             <span class="flex items-center gap-1.5 ml-2 text-xs text-slate-400 truncate">
                 <svg class="w-3.5 h-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/></svg>
@@ -72,12 +69,30 @@
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c1.7-4.1 5.5-7 10-7s8.3 2.9 10 7c-1.7 4.1-5.5 7-10 7s-8.3-2.9-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                 {/if}
             </button>
+            {#if hiddenCount}
+                <button on:click={onToggleHidden} on:dblclick|stopPropagation
+                        title={(showHidden ? $t('menu.hide_hidden') : $t('menu.show_hidden')) + ' · Ctrl+Shift+H'}
+                        aria-label={showHidden ? $t('menu.hide_hidden') : $t('menu.show_hidden')}
+                        class="{quickBtn} {showHidden ? 'bg-amber-500/20 text-amber-200 ring-1 ring-inset ring-amber-400/40' : 'text-slate-400 hover:bg-white/10 hover:text-white'}">
+                    <!-- Папка с замком: скрытые коллекции -->
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"/><rect x="14" y="15" width="8" height="6" rx="1"/><path d="M16 15v-2a2 2 0 0 1 4 0v2"/></svg>
+                </button>
+            {/if}
             {#if hasPin}
-                <button on:click={onLock} on:dblclick|stopPropagation title={$t('menu.lock') + ' · Ctrl+L'}
+                <button on:click={onLock} on:dblclick|stopPropagation title={$t('menu.lock') + ' · Ctrl+L'} aria-label={$t('menu.lock')}
                         class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 </button>
             {/if}
+            <button on:click={onHotkeys} on:dblclick|stopPropagation title={$t('menu.hotkeys') + ' · F1'} aria-label={$t('menu.hotkeys')}
+                    class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+            </button>
+            <button on:click={onSettings} on:dblclick|stopPropagation title={$t('nav.settings') + ' · Ctrl+,'}
+                    class="{quickBtn} ml-1 text-slate-300 bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/10 hover:text-white">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                {$t('nav.settings')}
+            </button>
         </div>
         {/if}
         <button on:click={() => WindowMinimise()} class={winBtn} title={$t("titlebar.min")} aria-label={$t("titlebar.min")}>

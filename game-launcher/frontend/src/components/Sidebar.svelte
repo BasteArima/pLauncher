@@ -1,7 +1,7 @@
 <script>
     // Левая панель: навигация (главная/фильтры), дерево коллекций с поиском.
     import { t, tr } from '../i18n.js';
-    import { mediaSrc, lsJSON, lsSet } from '../lib/util.js';
+    import { mediaSrc, lsJSON, lsSet, fmtPlaytime } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { selection, selecting, toggleSelected } from '../lib/view.js';
 
@@ -17,11 +17,17 @@
     export let activeFilter = 'all';
     export let selectedId = '';
     export let draggingGame = null;         // игра, которую тащат (из сетки или из сайдбара)
+    export let recent = [];                 // недавно запущенные (уже отсортированы)
+    export let scanning = false;
+    export let checkingUpdates = false;
 
     export let onFilter = (f) => {};
     export let onRelink = () => {};
     export let onSelect = (g) => {};
-    export let onSettings = () => {};
+    export let onPlay = (g) => {};
+    export let onScan = () => {};
+    export let onAddGame = () => {};
+    export let onCheckUpdates = () => {};
     export let onCreateCollection = () => {};
     export let onEditCollection = (col) => {};
     export let onDeleteCollection = (col) => {};
@@ -71,16 +77,63 @@
             ? 'bg-indigo-500/20 text-white font-semibold ring-1 ring-inset ring-indigo-400/30'
             : 'text-slate-300 hover:bg-white/5 hover:text-white');
     }
+    const canPlay = (g) => g.exec_path && !g.folder_missing;
+    const toolBtn = 'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50';
+    const sectionCls = 'px-3 mb-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 </script>
 
 <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{width}px">
-    <div class="px-4 pt-4 pb-4">
-        <h1 class="text-2xl font-black tracking-wide">
-            <span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">pLauncher</span>
-        </h1>
+    <!-- Частые действия: всегда под рукой, а не в меню -->
+    <div class="px-3 pt-3 pb-3 flex gap-2">
+        <button on:click={onScan} disabled={scanning} title={$t('nav.scan_hint')}
+                class="flex-1 min-w-0 h-10 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-indigo-100 bg-indigo-500/25 border border-indigo-400/40 hover:bg-indigo-500/35 transition-colors disabled:cursor-default">
+            <svg class="w-4 h-4 shrink-0 {scanning ? 'animate-spin' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            <span class="truncate">{scanning ? $t('menu.scanning') : $t('menu.scan')}</span>
+        </button>
+        <button on:click={onAddGame} title={$t('menu.add_game')} aria-label={$t('menu.add_game')} class={toolBtn}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button on:click={onCheckUpdates} disabled={checkingUpdates} title={checkingUpdates ? $t('menu.checking') : $t('menu.check_updates')}
+                aria-label={$t('menu.check_updates')} class={toolBtn}>
+            <svg class="w-4 h-4 {checkingUpdates ? 'animate-pulse' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+        </button>
     </div>
 
     <nav class="flex-1 overflow-y-auto px-2 pb-2">
+        {#if recent.length}
+            <div class="mb-4">
+                <div class={sectionCls}>{$t('nav.recent')}</div>
+                <div class="space-y-1 px-1">
+                    {#each recent as g (g.id)}
+                        <div class="flex items-center gap-2 rounded-lg pr-1 hover:bg-white/5 transition-colors {selectedId === g.id ? 'bg-indigo-500/15' : ''}"
+                             on:contextmenu={(e) => onGameContext(g, e)}>
+                            <button on:click={() => onSelect(g)} class="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1.5 text-left">
+                                <span class="w-12 h-8 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
+                                    {#if g.cover_path}
+                                        <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
+                                    {:else}
+                                        <span class="text-[11px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
+                                    {/if}
+                                </span>
+                                <span class="min-w-0 flex flex-col">
+                                    <span class="text-sm text-slate-200 truncate">{g.title}</span>
+                                    {#if g.time_played}<span class="text-[11px] text-slate-500 truncate">{fmtPlaytime(g.time_played)}</span>{/if}
+                                </span>
+                            </button>
+                            {#if canPlay(g)}
+                                <button on:click={() => onPlay(g)} title={$t('btn.play') + ' · ' + g.title}
+                                        class="h-8 px-3 shrink-0 rounded-lg flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
+                                    {$t('btn.play')}
+                                </button>
+                            {/if}
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+
+
         <div class="space-y-0.5 mb-3 px-1">
             <button on:click={() => onFilter('all')} class={navCls(isHome)}>🏠 {$t('nav.home')}</button>
             <button on:click={() => onFilter('favorites')} class={navCls(activeFilter === 'favorites')}>
@@ -144,21 +197,31 @@
                 {#if !collapsed[group.key] || q}
                     <div class="ml-2 border-l border-white/10 pl-1.5 mb-1">
                         {#each group.items as g (g.id)}
-                            <button on:click={(e) => (e.ctrlKey || e.metaKey || $selecting) ? toggleSelected(g.id) : onSelect(g)}
-                                    draggable="true"
-                                    on:dragstart={(e) => { onGameDragStart(g); try { e.dataTransfer.setData('text/plain', g.id); } catch (_) {} }}
-                                    on:contextmenu={(e) => onGameContext(g, e)}
-                                    class="group w-full flex items-center gap-2.5 px-2 py-1 rounded-md text-sm text-left transition-colors {$selection.has(g.id) ? 'bg-indigo-500/25 text-white ring-1 ring-inset ring-indigo-400/50' : selectedId === g.id ? 'bg-indigo-500/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}">
-                                <span class="w-7 h-7 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
-                                    {#if g.cover_path}
-                                        <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
-                                    {:else}
-                                        <span class="text-[11px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
-                                    {/if}
-                                </span>
-                                <span class="truncate {g.folder_missing ? 'opacity-60' : ''}">{g.title}</span>
-                                {#if g.folder_missing}<span class="ml-auto text-amber-400 text-xs shrink-0" title={$t('missing.card_hint')}>⚠</span>{/if}
-                            </button>
+                            <div draggable="true"
+                                 on:dragstart={(e) => { onGameDragStart(g); try { e.dataTransfer.setData('text/plain', g.id); } catch (_) {} }}
+                                 on:contextmenu={(e) => onGameContext(g, e)}
+                                 class="group w-full flex items-center rounded-md transition-colors {$selection.has(g.id) ? 'bg-indigo-500/25 text-white ring-1 ring-inset ring-indigo-400/50' : selectedId === g.id ? 'bg-indigo-500/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}">
+                                <button on:click={(e) => (e.ctrlKey || e.metaKey || $selecting) ? toggleSelected(g.id) : onSelect(g)}
+                                        class="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1 text-sm text-left">
+                                    <span class="w-7 h-7 rounded-md overflow-hidden bg-slate-800 ring-1 ring-white/10 shrink-0 flex items-center justify-center">
+                                        {#if g.cover_path}
+                                            <img src={mediaSrc(g.cover_path)} alt="" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
+                                        {:else}
+                                            <span class="text-[11px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
+                                        {/if}
+                                    </span>
+                                    <span class="truncate {g.folder_missing ? 'opacity-60' : ''}">{g.title}</span>
+                                    {#if g.folder_missing}<span class="ml-auto text-amber-400 text-xs shrink-0" title={$t('missing.card_hint')}>⚠</span>{/if}
+                                </button>
+                                {#if canPlay(g) && !$selecting}
+                                    <!-- Запуск прямо из дерева, без захода на страницу игры -->
+                                    <button on:click={() => onPlay(g)} title={$t('btn.play')} aria-label={$t('btn.play') + ' · ' + g.title}
+                                            class="mr-1 h-6 px-2 shrink-0 rounded-md flex items-center gap-1 text-[11px] font-bold text-white bg-indigo-500 hover:bg-indigo-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
+                                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
+                                        {$t('btn.play')}
+                                    </button>
+                                {/if}
+                            </div>
                         {/each}
                         {#if group.items.length === 0}
                             <p class="text-xs text-slate-600 px-2 py-1">{$t("nav.empty")}</p>
@@ -175,11 +238,7 @@
         {/if}
     </nav>
 
-    <div class="px-3 py-2 border-t border-white/10 flex items-center justify-between">
+    <div class="px-4 py-2 border-t border-white/10">
         <span class="text-xs text-slate-500 tracking-wide">{$t("nav.games", { n: libCount })}</span>
-        <button on:click={onSettings} title={$t("nav.settings")}
-                class="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
-            ⚙️
-        </button>
     </div>
 </aside>

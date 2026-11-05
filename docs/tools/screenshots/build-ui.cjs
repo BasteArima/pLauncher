@@ -70,7 +70,7 @@ const mock = `(function () {
       if (h) h.scrollIntoView({ block: 'start' });
       await sleep(400);
     }
-    if (shot === 'menu') { document.querySelector('.h-9 button').click(); await sleep(400); }
+
     if (shot === 'settings') {
       key(',', { ctrlKey: true }); await sleep(300);
       [...document.querySelectorAll('.fixed button')].find(b => b.textContent.includes('Privacy')).click(); await sleep(400);
