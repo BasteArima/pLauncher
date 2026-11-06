@@ -77,3 +77,13 @@ Start the server and dedicated Edge with matching ports; never reuse a normal br
 `window.__statsMock` exposes delay, error, sessionError, emptyActivity and calls, plus complete(gameID),
 advanceDay() and emptyLibrary(). `window.__mockEmit(name, ...args)` simulates revision/privacy/error events.
 Only fictional local assets are used. These checks do not open real games or a real library.
+
+## Metadata header layout
+
+Run `node docs/tools/screenshots/test-metadata-layout.cjs` against the same mock server
+and dedicated Edge CDP instance (`UI_PORT` / `CDP_PORT` overrides are supported).
+It checks compact and prominent panels in English and Russian at 1440, 1280, 1024
+and 900 pixels (the native minimum window width): single-line headings, alignment,
+clipping and both tab actions. Screenshots are `out/find-header-*.png`; results are
+`out/metadata-layout-checks.json`. Responsive sizing follows the card's container
+width because GameDetail changes between one and two columns as the window resizes.

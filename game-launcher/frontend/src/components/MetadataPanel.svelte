@@ -47,15 +47,15 @@
     const checkSource = (platform) => runCheck(() => CheckSourceUpdate(game.id, platform));
 </script>
 
-<div class="rounded-2xl border p-5 {prominent ? 'bg-slate-900/60 border-white/10 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
-    <div class="flex flex-wrap items-center gap-3 mb-5">
+<div class="metadata-panel rounded-2xl border p-5 {prominent ? 'bg-slate-900/60 border-white/10 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
+    <div class="metadata-header mb-5">
         {#if prominent}
-            <h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>
+            <h3 class="metadata-title text-xl font-bold text-white">{$t('meta.find_title')}</h3>
         {:else}
-            <div class="flex items-center gap-2 relative">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
+            <div class="metadata-heading flex items-center gap-2 relative">
+                <h3 class="metadata-label text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
                 <button on:click={() => showSources = !showSources} title={$t("meta.sources")}
-                        class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">?</button>
+                        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">?</button>
                 {#if showSources}
                     <div class="absolute left-0 top-7 z-20 w-64 glass-strong rounded-xl shadow-2xl p-3 animate-fade-in" use:clickOutside on:clickoutside={() => showSources = false}>
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{$t("meta.sources")}</div>
@@ -72,7 +72,7 @@
                 {/if}
             </div>
         {/if}
-        <div class="flex gap-1 p-1 rounded-xl bg-slate-950 ml-auto" role="group" aria-label={$t('meta.find_title')}>
+        <div class="metadata-tabs flex gap-1 p-1 rounded-xl bg-slate-950" role="group" aria-label={$t('meta.find_title')}>
             <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
                     class="px-3 py-2 text-sm rounded-lg transition {tab === 'name' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
             <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
@@ -114,3 +114,18 @@
         <button data-find-dismiss on:click={onDismiss} class="mt-4 text-xs text-slate-400 hover:text-white underline underline-offset-4">{$t('find.dismiss')}</button>
     {/if}
 </div>
+
+<style>
+    .metadata-panel { container-type: inline-size; }
+    .metadata-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+    .metadata-heading { min-width: 0; }
+    .metadata-tabs button { white-space: nowrap; }
+    /* Card width changes independently of the window when the detail columns wrap. */
+    @container (max-width: 600px) {
+        .metadata-header { gap: 8px; }
+        .metadata-title { font-size: 16px; line-height: 24px; }
+        .metadata-label { font-size: 11px; letter-spacing: 0; }
+        .metadata-tabs { gap: 2px; padding: 3px; }
+        .metadata-tabs button { font-size: 12px; padding-left: 8px; padding-right: 8px; }
+    }
+</style>
