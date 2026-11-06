@@ -2,6 +2,7 @@
     // Настройка разделов главной: состав, порядок (drag), тип полки.
     import { t } from '../i18n.js';
     import { newShelfId } from '../lib/shelves.js';
+    import Icon from './Icon.svelte';
 
     export let shelves = [];
     export let allTags = [];
@@ -75,7 +76,7 @@
                     </select>
                 {/if}
                 <span class="ml-auto text-xs text-slate-500">{$t("layout.games_n", { n: countFor(s) })}</span>
-                <button on:click={() => remove(s.id)} class="text-slate-400 hover:text-red-400 transition-colors" title={$t("layout.remove")}>🗑️</button>
+                <button on:click={() => remove(s.id)} class="text-slate-400 hover:text-red-400 transition-colors" title={$t("layout.remove")}><Icon name="trash" size={16}/></button>
             </div>
         {/each}
     </div>

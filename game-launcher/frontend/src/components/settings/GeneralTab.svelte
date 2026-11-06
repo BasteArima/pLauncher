@@ -5,6 +5,7 @@
     import { showToast } from '../../lib/ui.js';
     import { OpenLanguagesFolder } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
+    import Icon from '../Icon.svelte';
     import HotkeyList from '../HotkeyList.svelte';
     import { showHero } from '../../lib/view.js';
     import { btn, input } from './styles.js';
@@ -31,7 +32,7 @@
         <select value={$langStore} on:change={(e) => onChangeLang(e.target.value)} class="flex-1 {input}">
             {#each langs as l}<option value={l.code}>{l.name}</option>{/each}
         </select>
-        <button on:click={() => OpenLanguagesFolder()} title={$t('settings.custom_lang')} class="{btn} text-lg">📂</button>
+        <button on:click={() => OpenLanguagesFolder()} title={$t('settings.custom_lang')} class="{btn} inline-flex items-center"><Icon name="folder" size={16}/></button>
     </div>
 </Section>
 

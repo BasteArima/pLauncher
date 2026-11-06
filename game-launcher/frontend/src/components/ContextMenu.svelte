@@ -1,6 +1,11 @@
 <script>
     // Кастомное контекстное меню (нативное отключено).
-    // items: [{label, icon?, hint?, danger?, action}] | {sep:true} | {label, icon?, submenu:[{label, checked?, action}]}
+    // items: [{label, icon?, tone?, hint?, danger?, action}] | {sep:true} | {label, icon?, submenu:[{label, checked?, action}]}
+    // icon — имя из lib/icons.js (линейная иконка); tone: 'pink' | 'amber' — цвет для важных действий.
+    import Icon from './Icon.svelte';
+    import { isIcon } from '../lib/icons.js';
+    const TONE = { pink: 'text-pink-400', amber: 'text-amber-300' };
+    const iconCls = (it) => it.danger ? '' : (TONE[it.tone] || 'text-slate-400');
     export let x = 0;
     export let y = 0;
     export let items = [];
@@ -37,14 +42,14 @@
             <button on:mouseenter={(e) => openSub(e, i, it.submenu)} on:mouseleave={leaveSub}
                     on:click={(e) => openSub(e, i, it.submenu)}
                     class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-slate-200 transition-colors {sub && sub.idx === i ? 'bg-white/10' : 'hover:bg-white/10'}">
-                {#if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
+                {#if isIcon(it.icon)}<Icon name={it.icon} class="w-4 {iconCls(it)}"/>{:else if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
                 <span class="flex-1">{it.label}</span>
                 <span class="text-slate-500">›</span>
             </button>
         {:else}
             <button on:click={() => run(it.action)} on:mouseenter={closeSub}
                     class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors {it.danger ? 'text-rose-300 hover:bg-rose-500/20' : 'text-slate-200 hover:bg-white/10'}">
-                {#if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
+                {#if isIcon(it.icon)}<Icon name={it.icon} class="w-4 {iconCls(it)}"/>{:else if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
                 <span class="flex-1">{it.label}</span>
                 {#if it.hint}<span class="text-[11px] text-slate-500 shrink-0">{it.hint}</span>{/if}
             </button>

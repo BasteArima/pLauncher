@@ -4,6 +4,7 @@
     import { t, tr } from '../i18n.js';
     import { showToast, askConfirm } from '../lib/ui.js';
     import { mediaSrc, coverStyle, coverPosXY } from '../lib/util.js';
+    import Icon from './Icon.svelte';
     import {
         SelectCoverImage, CopyCoverToData, SelectScreenshots, CopyScreenshotToData, SelectExecutable,
     } from '../../wailsjs/go/main/App.js';
@@ -121,7 +122,7 @@
             </div>
         {:else}
             <div class="aspect-[3/4] w-full rounded-xl ring-1 ring-white/10 bg-white/5 flex flex-col items-center justify-center text-slate-600 mb-4">
-                <span class="text-6xl mb-4 opacity-30">🖼️</span>
+                <Icon name="image" size={56} class="mb-4 opacity-40"/>
                 <button on:click|stopPropagation={selectCover} class="border-2 border-indigo-600/50 hover:border-indigo-500 text-indigo-400 hover:text-indigo-300 font-bold py-2 px-6 rounded-lg transition-all">{$t("cover.add")}</button>
             </div>
         {/if}
@@ -151,7 +152,7 @@
             <div class="flex items-center gap-3">
                 <span class={labelCls}>{$t("edit.exe_label")}</span>
                 <input type="text" bind:value={game.exec_path} class="{inputCls} flex-1 font-mono text-xs" placeholder="C:\Games\Game\Game.exe · index.html · start.bat" />
-                <button on:click={selectExecutable} class="bg-white/10 hover:bg-white/20 text-slate-200 px-3 py-1.5 rounded-md border border-white/10 transition-colors" title={$t("edit.choose_file")}>📁</button>
+                <button on:click={selectExecutable} class="bg-white/10 hover:bg-white/20 text-slate-200 px-3 py-1.5 rounded-md border border-white/10 transition-colors" title={$t("edit.choose_file")}><Icon name="folder" size={16}/></button>
             </div>
             <div class="flex items-start gap-3">
                 <span class="{labelCls} pt-2">{$t("edit.tags_label")}</span>

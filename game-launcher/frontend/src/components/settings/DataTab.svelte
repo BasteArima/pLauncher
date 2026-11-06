@@ -8,6 +8,7 @@
         ExportLibrary, SelectBackupFile, ImportLibrary, GetScanPaths,
     } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
+    import Icon from '../Icon.svelte';
     import { btn } from './styles.js';
 
     export let scanPaths = [];
@@ -71,7 +72,7 @@
 <Section title={$t('settings.data_folder')}>
     <div class="flex gap-2 items-stretch mb-2">
         <div class="flex-1 bg-slate-900/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono break-all">{dataDir || '—'}</div>
-        <button on:click={openDataDir} title={$t('settings.open_folder')} class="{btn} text-lg">📂</button>
+        <button on:click={openDataDir} title={$t('settings.open_folder')} class="{btn} inline-flex items-center"><Icon name="folder" size={16}/></button>
     </div>
     <button on:click={changeDataDir} class="w-full {btn}">{$t('settings.change_folder')}</button>
 </Section>

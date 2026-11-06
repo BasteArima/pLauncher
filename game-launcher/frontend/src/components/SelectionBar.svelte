@@ -2,6 +2,7 @@
     // Нижняя панель массовых действий (видна, когда выделена хотя бы одна игра).
     import { t } from '../i18n.js';
     import { clickOutside } from '../lib/util.js';
+    import Icon from './Icon.svelte';
     import { selection, clearSelection, selectAllVisible } from '../lib/view.js';
     import { bulkProgress, cancelBulk, bulkFavorite, bulkDetectLaunch, bulkRemove, bulkIgnore, bulkCheckUpdates, bulkReparse } from '../lib/bulk.js';
 
@@ -41,7 +42,7 @@
             <span class="w-px h-6 bg-white/10 mx-1"></span>
 
             <div class="relative">
-                <button on:click={() => menu = menu === 'add' ? '' : 'add'} disabled={none || !collections.length} class="{btn} text-slate-200 hover:bg-white/10">＋ {$t('bulk.add_to')} ▾</button>
+                <button on:click={() => menu = menu === 'add' ? '' : 'add'} disabled={none || !collections.length} class="{btn} text-slate-200 hover:bg-white/10"><Icon name="plus" size={15} class="text-slate-400"/>{$t('bulk.add_to')} ▾</button>
                 {#if menu === 'add'}
                     <div class="absolute bottom-full mb-2 left-0 w-56 glass-strong rounded-xl shadow-2xl py-1.5 max-h-64 overflow-y-auto" use:clickOutside on:clickoutside={() => menu = ''}>
                         {#each collections as c}
@@ -64,15 +65,15 @@
             {/if}
 
             <button on:click={() => bulkFavorite(ids, !allFav, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10">
-                {allFav ? '🤍 ' + $t('ctx.fav_remove') : '❤️ ' + $t('bulk.fav')}
+                {#if allFav}<Icon name="heart-off" size={15} class="text-slate-400"/>{$t('ctx.fav_remove')}{:else}<Icon name="heart" size={15} class="text-pink-400"/>{$t('bulk.fav')}{/if}
             </button>
-            <button on:click={() => bulkDetectLaunch(ids, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10" title={$t('bulk.detect_hint')}>🔎 {$t('bulk.detect')}</button>
-            <button on:click={() => bulkCheckUpdates(picked, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10">⬆ {$t('bulk.check')}</button>
-            <button on:click={() => bulkReparse(picked, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10" title={$t('bulk.reparse_hint')}>↻ {$t('bulk.reparse')}</button>
-            <button on:click={() => bulkIgnore(ids, reload)} disabled={none} class="{btn} text-amber-200 hover:bg-amber-500/15" title={$t('ignore.hint')}>🚫 {$t('ignore.action')}</button>
-            <button on:click={() => bulkRemove(ids, reload)} disabled={none} class="{btn} text-rose-300 hover:bg-rose-500/20" title="Delete">🗑 {$t('btn.delete')}</button>
+            <button on:click={() => bulkDetectLaunch(ids, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10" title={$t('bulk.detect_hint')}><Icon name="search" size={15} class="text-slate-400"/>{$t('bulk.detect')}</button>
+            <button on:click={() => bulkCheckUpdates(picked, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10"><Icon name="update" size={15} class="text-amber-300"/>{$t('bulk.check')}</button>
+            <button on:click={() => bulkReparse(picked, reload)} disabled={none} class="{btn} text-slate-200 hover:bg-white/10" title={$t('bulk.reparse_hint')}><Icon name="refresh" size={15} class="text-slate-400"/>{$t('bulk.reparse')}</button>
+            <button on:click={() => bulkIgnore(ids, reload)} disabled={none} class="{btn} text-amber-200 hover:bg-amber-500/15" title={$t('ignore.hint')}><Icon name="ban" size={15}/>{$t('ignore.action')}</button>
+            <button on:click={() => bulkRemove(ids, reload)} disabled={none} class="{btn} text-rose-300 hover:bg-rose-500/20" title="Delete"><Icon name="trash" size={15}/>{$t('btn.delete')}</button>
             <span class="w-px h-6 bg-white/10 mx-1"></span>
-            <button on:click={clearSelection} class="{btn} text-slate-400 hover:text-white hover:bg-white/10" title="Esc">✕</button>
+            <button on:click={clearSelection} class="{btn} text-slate-400 hover:text-white hover:bg-white/10" title="Esc"><Icon name="x" size={15}/></button>
         {/if}
     </div>
 </div>

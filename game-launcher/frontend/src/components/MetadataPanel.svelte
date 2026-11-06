@@ -3,6 +3,7 @@
     // и загрузка данных по ссылке через парсер.
     import { t, tr } from '../i18n.js';
     import { showToast } from '../lib/ui.js';
+    import Icon from './Icon.svelte';
     import { clickOutside } from '../lib/util.js';
     import { OpenURL, CheckGameUpdates, CheckSourceUpdate } from '../../wailsjs/go/main/App.js';
 
@@ -80,9 +81,9 @@
                         {#if s.source === game.primary_source}<span class="text-amber-400" title={$t("edit.primary_source")}>★</span> {/if}{s.source} ↗
                     </button>
                     <button on:click={() => parseUrl = s.url} title={$t("meta.use_for_parse")}
-                            class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-indigo-300 border-l border-white/10 transition-colors">↧</button>
+                            class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-indigo-300 border-l border-white/10 transition-colors"><Icon name="download" size={13}/></button>
                     <button on:click={() => checkSource(s.source)} disabled={checking} title={$t("meta.check_source")}
-                            class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-amber-300 border-l border-white/10 transition-colors disabled:opacity-50">↻</button>
+                            class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-amber-300 border-l border-white/10 transition-colors disabled:opacity-50"><Icon name="refresh" size={13}/></button>
                 </span>
             {/each}
         </div>

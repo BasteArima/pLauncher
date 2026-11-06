@@ -3,6 +3,7 @@
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle, fmtPlaytime } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
+    import Icon from './Icon.svelte';
 
     export let game;
     export let onOpen = (g) => {};
@@ -43,7 +44,7 @@
                 {/if}
                 {#if game.time_played > 0}
                     <span class="text-slate-600">•</span>
-                    <span>🕒 {fmtPlaytime(game.time_played)}</span>
+                    <span class="inline-flex items-center gap-1"><Icon name="clock" size={13}/>{fmtPlaytime(game.time_played)}</span>
                 {/if}
             </div>
             <div class="flex items-center gap-2.5">

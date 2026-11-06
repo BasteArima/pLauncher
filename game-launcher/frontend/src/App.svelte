@@ -50,6 +50,7 @@
     import ViewControls from './components/ViewControls.svelte';
     import ViewOptions from './components/ViewOptions.svelte';
     import TagFilter from './components/TagFilter.svelte';
+    import Icon from './components/Icon.svelte';
     import { STATUSES } from './lib/status.js';
     import SelectionBar from './components/SelectionBar.svelte';
     import HotkeysHelp from './components/HotkeysHelp.svelte';
@@ -77,7 +78,10 @@
     let originalGameSnapshot = '';       // слепок игры для «есть ли несохранённые изменения»
     let searchQuery = '';
     let activeFilter = 'all';
-    let activeTag = '';                  // выбранный тег (пусто — не фильтруем)
+    // Фильтр по тегам: нужные (все или любой из них) и исключённые
+    const emptyTags = () => ({ inc: [], exc: [], mode: 'all' });
+    let tagFilter = emptyTags();
+    $: hasTags = tagFilter.inc.length + tagFilter.exc.length > 0;
     let activeCollection = '';           // открытая коллекция (id; '__uncat' — без категории)
     let isDragging = false;              // оверлей при перетаскивании папок из проводника
     let scanPaths = [];
@@ -195,9 +199,14 @@
         : activeCollection === '__uncat' ? new Set(uncategorized.map(g => g.id))
         : new Set(((collectionsView.find(c => c.id === activeCollection) || {}).items || []).map(g => g.id));
     $: openedCollection = activeCollection && activeCollection !== '__uncat' ? collectionsView.find(c => c.id === activeCollection) : null;
+    function matchTags(gt, tf) {
+        if (tf.exc.some(x => gt.includes(x))) return false;
+        if (!tf.inc.length) return true;
+        return tf.mode === 'any' ? tf.inc.some(x => gt.includes(x)) : tf.inc.every(x => gt.includes(x));
+    }
     $: filteredGames = sortGames(visibleGames.filter(g => {
         if (collectionIds && !collectionIds.has(g.id)) return false;
-        if (activeTag && !(g.tags || []).includes(activeTag)) return false;
+        if (hasTags && !matchTags(g.tags || [], tagFilter)) return false;
         if (activeFilter === 'favorites') return g.favorite;
         if (activeFilter === 'updates') return g.update_available;
         if (activeFilter === 'nocover') return !g.cover_path;
@@ -211,7 +220,7 @@
     $: noCoverCount = visibleGames.filter(g => !g.cover_path).length;
     // Умные списки: плашка с объяснением и общим действием ($langStore — пересчёт при смене языка)
     $: noCoverWithLink = visibleGames.filter(g => !g.cover_path && primaryUrl(g));
-    $: smartBanner = ($langStore, searchQuery.trim() || activeTag ? null
+    $: smartBanner = ($langStore, searchQuery.trim() || hasTags ? null
         : activeFilter === 'updates' ? {
             tone: 'update', title: tr('smart.updates_title', { n: updatesGames.length }), text: tr('smart.updates_text'),
             action: checkingUpdates ? tr('menu.checking') : tr('menu.check_updates'), busy: checkingUpdates, onAction: handleCheckAllUpdates }
@@ -230,7 +239,7 @@
     $: favoriteGames = visibleGames.filter(g => g.favorite);
     $: heroGame = recentlyPlayed[0] || recentlyAdded[0] || null;
     // Домашний вид: без поиска, фильтра и выбранного тега
-    $: isHome = searchQuery.trim() === '' && activeFilter === 'all' && !activeTag && !activeCollection;
+    $: isHome = searchQuery.trim() === '' && activeFilter === 'all' && !hasTags && !activeCollection;
     // Полки — только на «Все игры» без фильтров и если выбран этот вид
     $: showShelves = isHome && $homeView === 'shelves';
     // Счётчики для чипсов — в пределах открытой коллекции
@@ -249,7 +258,7 @@
         activeCollection === '__uncat' ? tr('nav.uncategorized')
         : openedCollection ? openedCollection.name
         : searchQuery.trim() ? tr('view.search')
-        : activeTag ? tr('view.tag', { tag: activeTag })
+        : hasTags ? (tagFilter.inc.length === 1 && !tagFilter.exc.length ? tr('view.tag', { tag: tagFilter.inc[0] }) : tr('view.tags'))
         : activeFilter === 'favorites' ? tr('shelf.favorites')
         : activeFilter === 'updates' ? tr('nav.updates')
         : activeFilter === 'nocover' ? tr('nav.no_cover')
@@ -342,8 +351,8 @@
     $: renderedShelves = renderShelves(shelves, shelfData, $showHero ? heroGame : null);
     function shelfMenuItems(shelf) {
         return [
-            { label: tr('ctx.configure_sections'), icon: '✎', action: () => layoutEditing = true },
-            { label: tr('ctx.remove_section'), icon: '🗑', danger: true, action: () => shelves = shelves.filter(s => s.id !== shelf.id) },
+            { label: tr('ctx.configure_sections'), icon: 'layers', action: () => layoutEditing = true },
+            { label: tr('ctx.remove_section'), icon: 'trash', danger: true, action: () => shelves = shelves.filter(s => s.id !== shelf.id) },
         ];
     }
 
@@ -479,7 +488,7 @@
     let mainEl;
     let showToTop = false;
     let libScroll = 0;                  // где были в библиотеке, когда открыли игру
-    function onMainScroll() { showToTop = !!mainEl && mainEl.scrollTop > mainEl.clientHeight * 1.2; }
+    function onMainScroll() { showToTop = !!mainEl && mainEl.scrollTop > mainEl.clientHeight * 0.6; }
     function scrollTop(smooth) { if (mainEl) mainEl.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' }); }
     // Сменили вид: новый список — сверху; тот же вид (повторный щелчок) — плавно наверх
     async function afterViewChange(same) { libScroll = 0; await tick(); scrollTop(same); }
@@ -501,11 +510,11 @@
     }
     // Пункт боковой панели (все игры, избранное, умные списки): сбрасывает коллекцию и тег
     function applyFilter(filter) {
-        const same = !selectedGame && activeFilter === filter && !activeCollection && !activeTag;
+        const same = !selectedGame && activeFilter === filter && !activeCollection && !hasTags;
         clearSelection();
         afterViewChange(same);
         activeFilter = filter;
-        activeTag = '';
+        tagFilter = emptyTags();
         activeCollection = '';
         closeGame();
     }
@@ -516,7 +525,7 @@
         afterViewChange(same);
         activeCollection = key;
         activeFilter = 'all';
-        activeTag = '';
+        tagFilter = emptyTags();
         closeGame();
     }
     // Чипсы над сеткой: фильтр внутри текущей коллекции
@@ -530,7 +539,7 @@
     // Ввод в поиске (верхняя панель): ищем по всей библиотеке, а не внутри открытой коллекции
     function onSearchInput() {
         if (selectedGame) closeGame();
-        if (searchQuery.trim()) { activeCollection = ''; activeFilter = 'all'; activeTag = ''; }
+        if (searchQuery.trim()) { activeCollection = ''; activeFilter = 'all'; tagFilter = emptyTags(); }
         handleSearch();
     }
     // «Теги ▾»: теги текущего вида (коллекции/фильтра) по частоте
@@ -539,9 +548,9 @@
         for (const g of scopeGames) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
         return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(tag => ({ tag, n: counts[tag] }));
     })();
-    function pickTag(tag) { clearSelection(); activeTag = tag; afterViewChange(false); }
+    function setTags(tf) { clearSelection(); tagFilter = tf; afterViewChange(false); }
     function applyTag(tag) {
-        activeTag = activeTag === tag ? '' : tag;
+        tagFilter = { inc: [tag], exc: [], mode: 'all' };
         activeFilter = 'all';
         activeCollection = '';
         searchQuery = '';
@@ -634,34 +643,34 @@
         const picked = visibleGames.filter(g => $selection.has(g.id));
         const allFav = picked.length > 0 && picked.every(g => g.favorite);
         return [
-            { label: tr('bulk.add_to'), icon: '＋', submenu: visibleCollections.map(c => ({ label: c.name, action: () => bulkAddToCollection(c.id, ids) })) },
-            { label: allFav ? tr('ctx.fav_remove') : tr('bulk.fav'), icon: allFav ? '🤍' : '❤️', action: () => bulkFavorite(ids, !allFav, loadGames) },
-            { label: tr('bulk.detect'), icon: '🔎', action: () => bulkDetectLaunch(ids, loadGames) },
-            { label: tr('bulk.check'), icon: '⬆', action: () => bulkCheckUpdates(picked, loadGames) },
-            { label: tr('bulk.reparse'), icon: '↻', action: () => bulkReparse(picked, loadGames) },
+            { label: tr('bulk.add_to'), icon: 'plus', submenu: visibleCollections.map(c => ({ label: c.name, action: () => bulkAddToCollection(c.id, ids) })) },
+            { label: allFav ? tr('ctx.fav_remove') : tr('bulk.fav'), icon: allFav ? 'heart-off' : 'heart', tone: allFav ? '' : 'pink', action: () => bulkFavorite(ids, !allFav, loadGames) },
+            { label: tr('bulk.detect'), icon: 'search', action: () => bulkDetectLaunch(ids, loadGames) },
+            { label: tr('bulk.check'), icon: 'update', tone: 'amber', action: () => bulkCheckUpdates(picked, loadGames) },
+            { label: tr('bulk.reparse'), icon: 'refresh', action: () => bulkReparse(picked, loadGames) },
             { sep: true },
-            { label: tr('sel.clear'), icon: '✕', action: clearSelection },
-            { label: tr('ignore.action'), icon: '🚫', action: () => bulkIgnore(ids, loadGames) },
-            { label: tr('bulk.remove_n', { n: ids.length }), icon: '🗑', danger: true, action: () => bulkRemove(ids, loadGames) },
+            { label: tr('sel.clear'), icon: 'x', action: clearSelection },
+            { label: tr('ignore.action'), icon: 'ban', action: () => bulkIgnore(ids, loadGames) },
+            { label: tr('bulk.remove_n', { n: ids.length }), icon: 'trash', danger: true, action: () => bulkRemove(ids, loadGames) },
         ];
     }
     function gameMenuItems(game) {
         if ($selection.size > 1 && $selection.has(game.id)) return bulkMenuItems();
         const items = [];
-        if (game.folder_missing) items.push({ label: tr('missing.pick_long'), icon: '⚠', action: () => relinkManually(game) });
-        else if (game.exec_path) items.push({ label: tr('ctx.play'), icon: '▶', action: () => playGame(game) });
-        else items.push({ label: tr('ctx.set_exe'), icon: '▶', action: () => selectGame(game) });
-        items.push({ label: game.favorite ? tr('ctx.fav_remove') : tr('ctx.fav_add'), icon: game.favorite ? '🤍' : '❤️', action: () => toggleFavorite(game) });
+        if (game.folder_missing) items.push({ label: tr('missing.pick_long'), icon: 'alert', tone: 'amber', action: () => relinkManually(game) });
+        else if (game.exec_path) items.push({ label: tr('ctx.play'), icon: 'play', action: () => playGame(game) });
+        else items.push({ label: tr('ctx.set_exe'), icon: 'play', action: () => selectGame(game) });
+        items.push({ label: game.favorite ? tr('ctx.fav_remove') : tr('ctx.fav_add'), icon: game.favorite ? 'heart-off' : 'heart', tone: game.favorite ? '' : 'pink', action: () => toggleFavorite(game) });
         items.push({
-            label: tr('ctx.add_to'), icon: '＋',
+            label: tr('ctx.add_to'), icon: 'plus',
             submenu: visibleCollections.map(c => ({ label: c.name, checked: (c.game_ids || []).includes(game.id), action: () => toggleGameInCollection(c.id, game) }))
                 .concat([{ label: tr('ctx.new_collection'), action: openCreateCollection }]),
         });
         items.push({ sep: true });
-        items.push({ label: tr('ctx.open_folder'), icon: '📁', action: () => OpenFolder(game.folder_path) });
-        items.push({ label: tr('ctx.edit'), icon: '✎', action: () => { selectGame(game); startEdit(); } });
-        items.push({ label: tr('ignore.action'), icon: '🚫', action: () => ignoreGame(game) });
-        items.push({ label: tr('ctx.remove_game'), icon: '🗑', danger: true, action: () => removeGame(game) });
+        items.push({ label: tr('ctx.open_folder'), icon: 'folder', action: () => OpenFolder(game.folder_path) });
+        items.push({ label: tr('ctx.edit'), icon: 'edit', action: () => { selectGame(game); startEdit(); } });
+        items.push({ label: tr('ignore.action'), icon: 'ban', action: () => ignoreGame(game) });
+        items.push({ label: tr('ctx.remove_game'), icon: 'trash', danger: true, action: () => removeGame(game) });
         return items;
     }
     const gameCtx = (g, e) => { openCtx(e, gameMenuItems(g)); ctxGameId.set(g.id); };
@@ -705,7 +714,7 @@
     let navStack = [];
     let navPos = -1;
     let navApplying = false;
-    $: navKey = JSON.stringify({ g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: activeTag });
+    $: navKey = JSON.stringify({ g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: tagFilter });
     $: recordNav(navKey);
     function recordNav(key) {
         if (navApplying || navStack[navPos] === key) return;
@@ -719,7 +728,7 @@
         navPos = i;
         const st = JSON.parse(navStack[i]);
         clearSelection();
-        activeFilter = st.f; activeCollection = st.c; activeTag = st.t;
+        activeFilter = st.f; activeCollection = st.c; tagFilter = st.t || emptyTags();
         const g = st.g ? games.find(x => x.id === st.g) : null;
         if (g) selectGame(g); else closeGame();
         await tick();
@@ -900,7 +909,7 @@
     <div class="flex flex-1 overflow-hidden min-h-0 relative">
         {#if isDragging}
             <div class="absolute inset-0 bg-indigo-900/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center border-4 border-dashed border-indigo-400 m-4 rounded-2xl pointer-events-none transition-all">
-                <div class="text-7xl mb-6">📥</div>
+                <Icon name="inbox" size={64} class="mb-6 text-indigo-200"/>
                 <h2 class="text-4xl font-bold text-white mb-2 tracking-wider">{$t("drop.title")}</h2>
                 <p class="text-indigo-200 text-lg">{$t("drop.sub")}</p>
             </div>
@@ -971,8 +980,6 @@
                             ✕ {$t("lib.reset")}
                         </button>
                     {/if}
-                    <div class="flex-1"></div>
-                    {#if !showShelves}<ViewControls bind:sortBy/>{/if}
                 </div>
 
                 {#if smartBanner}
@@ -990,9 +997,10 @@
                                 </button>
                             {/each}
                             <span class="w-px h-5 bg-white/10 mx-1"></span>
-                            <TagFilter tags={scopeTags} active={activeTag} onPick={pickTag}/>
+                            <TagFilter tags={scopeTags} value={tagFilter} onChange={setTags}/>
                         {/if}
                         <div class="flex-1"></div>
+                        {#if !showShelves}<ViewControls bind:sortBy/>{/if}
                         <ViewOptions {isHome} onEditSections={() => layoutEditing = true}/>
                     </div>
                 {/if}

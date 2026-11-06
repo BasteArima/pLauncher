@@ -3,6 +3,7 @@
     // (сетка/полки, форма и размер карточек, режим выделения, разделы полок).
     import { t } from '../i18n.js';
     import { clickOutside } from '../lib/util.js';
+    import Icon from './Icon.svelte';
     import { cardSize, setCardSize, CARD_MIN, CARD_MAX, CARD_DEFAULT, selecting, toggleSelectMode, cardShape, homeView } from '../lib/view.js';
 
     export let isHome = false;              // «Все игры»: можно переключить на полки
@@ -30,7 +31,7 @@
                         <button on:click={() => homeView.set('shelves')} class={segBtn($homeView === 'shelves')}>{$t('view.shelves')}</button>
                     </div>
                     {#if $homeView === 'shelves'}
-                        <button on:click={() => { open = false; onEditSections(); }} class="mt-2 text-xs text-indigo-300 hover:text-indigo-100">✎ {$t('lib.edit_sections')}</button>
+                        <button on:click={() => { open = false; onEditSections(); }} class="mt-2 inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-indigo-100"><Icon name="layers" size={13}/>{$t('lib.edit_sections')}</button>
                     {/if}
                 </div>
             {/if}

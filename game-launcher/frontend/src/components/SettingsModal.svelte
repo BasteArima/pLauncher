@@ -2,6 +2,7 @@
     // Окно настроек с вкладками. Содержимое вкладок — в components/settings/.
     import { t } from '../i18n.js';
     import { lsGet, lsSet } from '../lib/util.js';
+    import Icon from './Icon.svelte';
     import { updateInfo } from '../lib/update.js';
     import GeneralTab from './settings/GeneralTab.svelte';
     import LibraryTab from './settings/LibraryTab.svelte';
@@ -23,10 +24,10 @@
     export let onLockNow = () => {};
 
     const TABS = [
-        { id: 'general', icon: '⚙️', label: 'settings.tab_general' },
-        { id: 'library', icon: '📚', label: 'settings.tab_library' },
-        { id: 'privacy', icon: '🔒', label: 'settings.tab_privacy' },
-        { id: 'data', icon: '💾', label: 'settings.tab_data' },
+        { id: 'general', icon: 'settings', label: 'settings.tab_general' },
+        { id: 'library', icon: 'library', label: 'settings.tab_library' },
+        { id: 'privacy', icon: 'lock', label: 'settings.tab_privacy' },
+        { id: 'data', icon: 'database', label: 'settings.tab_data' },
     ];
     let tab = lsGet('plauncher_settings_tab', 'general');
     if (!TABS.some(x => x.id === tab)) tab = 'general';
@@ -40,7 +41,7 @@
             {#each TABS as x}
                 <button on:click={() => tab = x.id}
                         class="w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm transition-colors {tab === x.id ? 'bg-indigo-500/20 text-white font-semibold ring-1 ring-inset ring-indigo-400/30' : 'text-slate-300 hover:bg-white/5 hover:text-white'}">
-                    <span class="w-5 text-center">{x.icon}</span> {$t(x.label)}
+                    <Icon name={x.icon} size={16} class="w-5 opacity-80"/> {$t(x.label)}
                     {#if x.id === 'general' && $updateInfo && $updateInfo.available}
                         <span class="ml-auto w-2 h-2 rounded-full bg-emerald-400"></span>
                     {/if}

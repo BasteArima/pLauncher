@@ -4,6 +4,7 @@
     import { mediaSrc, lsJSON, lsSet } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { selection, selecting, toggleSelected } from '../lib/view.js';
+    import Icon from './Icon.svelte';
 
     export let width = 256;
     export let groups = [];                 // [{key, name, items, col}] — коллекции + «Без категории»
@@ -46,16 +47,16 @@
 
     function collectionMenu(col) {
         return [
-            { label: tr('ctx.rename'), icon: '✎', action: () => onEditCollection(col) },
-            ...(col.type === 'dynamic' ? [{ label: tr('ctx.change_filters'), icon: '⚡', action: () => onEditCollection(col) }] : []),
+            { label: tr('ctx.rename'), icon: 'edit', action: () => onEditCollection(col) },
+            ...(col.type === 'dynamic' ? [{ label: tr('ctx.change_filters'), icon: 'bolt', action: () => onEditCollection(col) }] : []),
             { label: collapsed[col.id] ? tr('ctx.expand') : tr('ctx.collapse'), action: () => toggleGroup(col.id) },
             { sep: true },
             { label: tr('ctx.expand_all'), action: expandAll },
             { label: tr('ctx.collapse_all'), action: collapseAll },
             { sep: true },
-            { label: col.hidden ? tr('ctx.unhide_collection') : tr('ctx.hide_collection'), icon: '🔒', action: () => onToggleHiddenCol(col) },
+            { label: col.hidden ? tr('ctx.unhide_collection') : tr('ctx.hide_collection'), icon: 'lock', action: () => onToggleHiddenCol(col) },
             { sep: true },
-            { label: tr('ctx.delete_collection'), icon: '🗑', danger: true, action: () => onDeleteCollection(col) },
+            { label: tr('ctx.delete_collection'), icon: 'trash', danger: true, action: () => onDeleteCollection(col) },
         ];
     }
 
@@ -158,12 +159,12 @@
                         </button>
                         <button on:click={() => onOpenCollection(group.key)} class="flex items-center gap-1.5 min-w-0 flex-1 h-full text-left text-[13px] hover:text-white">
                             <span class="truncate {activeCollection === group.key ? 'font-medium' : ''}">{group.name}</span>
-                            {#if group.col && group.col.hidden}<span class="text-amber-300 text-[10px]" title={$t('privacy.hidden_col')}>🔒</span>{/if}
-                            {#if group.col && group.col.type === 'dynamic'}<span class="text-indigo-400 text-[10px]" title={$t("nav.dynamic")}>⚡</span>{/if}
+                            {#if group.col && group.col.hidden}<span class="text-amber-300" title={$t('privacy.hidden_col')}><Icon name="lock" size={12}/></span>{/if}
+                            {#if group.col && group.col.type === 'dynamic'}<span class="text-indigo-400" title={$t("nav.dynamic")}><Icon name="bolt" size={12}/></span>{/if}
                         </button>
                         {#if group.col}
                             <button on:click|stopPropagation={() => onEditCollection(group.col)} title={$t("nav.edit_collection")} aria-label={$t("nav.edit_collection")}
-                                    class="w-6 h-6 rounded text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</button>
+                                    class="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="edit" size={13}/></button>
                         {/if}
                         <span class="text-xs text-slate-500 pl-1 pr-2.5">{group.items.length}</span>
                     </div>
@@ -184,7 +185,7 @@
                                             {/if}
                                         </span>
                                         <span class="truncate {g.folder_missing ? 'opacity-60' : ''}">{g.title}</span>
-                                        {#if g.folder_missing}<span class="ml-auto text-amber-400 text-xs shrink-0" title={$t('missing.card_hint')}>⚠</span>{/if}
+                                        {#if g.folder_missing}<span class="ml-auto text-amber-400 shrink-0" title={$t('missing.card_hint')}><Icon name="alert" size={13}/></span>{/if}
                                     </button>
                                     {#if canPlay(g) && !$selecting}
                                         <!-- Запуск прямо из дерева, без захода на страницу игры -->

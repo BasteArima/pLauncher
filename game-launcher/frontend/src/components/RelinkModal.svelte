@@ -5,6 +5,7 @@
     import { t, tr } from '../i18n.js';
     import { showToast as notify } from '../lib/ui.js';
     import { mediaSrc } from '../lib/util.js';
+    import Icon from './Icon.svelte';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { FindMissingGames, RelinkGame, RelinkAllFound, SelectRelinkFolder, RemoveGame } from '../../wailsjs/go/main/App.js';
 
@@ -87,7 +88,7 @@
         {:else}
             <div class="flex items-center gap-3 mb-3">
                 <span class="text-xs text-slate-500">{$t('missing.summary', { n: items.length, found: foundCount })}</span>
-                <button on:click={refresh} disabled={busy} class="ml-auto text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors disabled:opacity-50">↻ {$t('missing.rescan')}</button>
+                <button on:click={refresh} disabled={busy} class="ml-auto text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors disabled:opacity-50"><Icon name="refresh" size={13} class="mr-1 align-[-2px]"/>{$t('missing.rescan')}</button>
                 {#if foundCount}
                     <button on:click={relinkAll} disabled={busy}
                             class="text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50">
@@ -124,7 +125,7 @@
                                         class="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">{$t('missing.relink')}</button>
                             {/if}
                             <button on:click={() => pickFolder(m)} disabled={busy}
-                                    class="text-xs font-semibold text-slate-200 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors disabled:opacity-50">📁 {$t('missing.pick')}</button>
+                                    class="text-xs font-semibold text-slate-200 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors disabled:opacity-50"><Icon name="folder" size={13} class="mr-1 align-[-2px]"/>{$t('missing.pick')}</button>
                             <button on:click={() => remove(m)} disabled={busy}
                                     class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 {confirmDeleteId === m.id ? 'bg-red-600 hover:bg-red-500 text-white' : 'text-rose-300 hover:bg-rose-500/20'}">
                                 {confirmDeleteId === m.id ? $t('missing.confirm_remove') : $t('btn.remove')}

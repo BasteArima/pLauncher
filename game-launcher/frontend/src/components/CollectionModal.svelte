@@ -2,6 +2,7 @@
     // Создание/редактирование коллекции: ручная (список игр) или динамическая (по тегам).
     import { t, tr } from '../i18n.js';
     import { showToast } from '../lib/ui.js';
+    import Icon from './Icon.svelte';
 
     export let collection = null;                        // null — новая коллекция
     export let allTags = [];
@@ -69,7 +70,7 @@
         <label class="flex items-start gap-3 mb-5 p-3 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer">
             <input type="checkbox" bind:checked={hidden} class="mt-0.5 accent-indigo-500 w-4 h-4"/>
             <span>
-                <span class="block text-sm font-bold text-white">🔒 {$t("col.hidden")}</span>
+                <span class="flex items-center gap-1.5 text-sm font-bold text-white"><Icon name="lock" size={14} class="text-slate-400"/>{$t("col.hidden")}</span>
                 <span class="block text-xs text-slate-400">{$t("col.hidden_hint")}</span>
             </span>
         </label>

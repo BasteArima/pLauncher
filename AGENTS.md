@@ -70,6 +70,10 @@ The app is fully working. Done so far:
   stats, status, rating, update block «Open page» / «I've updated the game» = re-parse from the update source, sites) +
   collections + details. Scrolling: the library position is remembered when a game opens and restored on close; a new view
   starts at the top, clicking the current view again scrolls smoothly up; a «Back to top» button appears past 1.2 screens.
+  **Icons:** no emoji in the UI — line icons from `lib/icons.js` via `components/Icon.svelte` (`<Icon name="trash"/>`);
+  context-menu items take `icon: '<name>'` and optional `tone: 'pink' | 'amber'` (danger items are rose). Colour only
+  for important actions (favorite, updates, delete). **Tag filter** (`TagFilter.svelte`): `tagFilter = {inc, exc, mode}`
+  in App — several tags with «all of them» / «any of them», excluded tags (− button), chips with × and «Clear all».
   Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.
   Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;

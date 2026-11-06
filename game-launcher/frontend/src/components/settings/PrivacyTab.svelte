@@ -6,6 +6,7 @@
     import { blurMode, pinError } from '../../lib/privacy.js';
     import { GetPrivacy, SavePrivacy, SetPin } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
+    import Icon from '../Icon.svelte';
     import HotkeyInput from '../HotkeyInput.svelte';
     import { btn, input, choice } from './styles.js';
 
@@ -64,7 +65,7 @@
 <Section title={$t('privacy.pin')} hint={$t('privacy.pin_hint')}>
     <div class="flex items-center gap-2 mb-2">
         <span class="text-sm flex-1 {privacy.has_pin ? 'text-emerald-300' : 'text-slate-400'}">
-            {privacy.has_pin ? '🔒 ' + $t('privacy.pin_on') : $t('privacy.pin_off')}
+            {#if privacy.has_pin}<Icon name="lock" size={14} class="mr-1 align-[-2px]"/>{$t('privacy.pin_on')}{:else}{$t('privacy.pin_off')}{/if}
         </span>
         {#if privacy.has_pin}
             <button on:click={onLockNow} class={btn}>{$t('privacy.lock_now')}</button>

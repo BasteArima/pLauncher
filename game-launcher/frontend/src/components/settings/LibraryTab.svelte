@@ -6,6 +6,7 @@
     import { SelectFolder, AddScanPath, RemoveScanPath, GetScanPaths, AddSingleGameManual, RemoveMissingGames, DetectLaunchFiles, RefreshSizes,
         GetIgnoredPaths, AddIgnoredPath, RemoveIgnoredPath } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
+    import Icon from '../Icon.svelte';
     import { btn } from './styles.js';
 
     export let scanPaths = [];
@@ -109,7 +110,7 @@
     <div class="flex flex-col gap-2 mb-2 max-h-56 overflow-y-auto">
         {#each ignored as p}
             <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                <span class="text-amber-300/80 shrink-0">🚫</span>
+                <Icon name="ban" size={15} class="text-slate-500"/>
                 <span class="flex-1 text-sm text-slate-300 font-mono break-all">{p}</span>
                 <button on:click={() => removeIgnored(p)} class="shrink-0 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md border border-white/10" title={$t('ignore.unignore_hint')}>{$t('ignore.unignore')}</button>
             </div>
@@ -123,8 +124,8 @@
 
 <Section title={$t('settings.maintenance')}>
     <div class="grid grid-cols-2 gap-2 mb-1">
-        <button on:click={detectLaunch} class={btn}>🔎 {$t('settings.detect_launch')}</button>
-        <button on:click={refreshSizes} class={btn}>💾 {$t('settings.refresh_sizes')}</button>
+        <button on:click={detectLaunch} class="{btn} inline-flex items-center justify-center gap-2"><Icon name="search" size={15} class="text-slate-400"/>{$t('settings.detect_launch')}</button>
+        <button on:click={refreshSizes} class="{btn} inline-flex items-center justify-center gap-2"><Icon name="hdd" size={15} class="text-slate-400"/>{$t('settings.refresh_sizes')}</button>
     </div>
     <p class="text-xs text-slate-500 mb-4">{$t('settings.detect_launch_hint')}</p>
     <button on:click={onRelink} class="w-full bg-indigo-900/30 hover:bg-indigo-800/50 text-indigo-200 hover:text-white font-semibold py-2.5 rounded-lg border border-indigo-700/40 transition-colors">

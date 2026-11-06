@@ -38,11 +38,11 @@ export function inputCtxItems(el) {
     const hasSel = el.selectionStart != null && el.selectionStart !== el.selectionEnd;
     const items = [];
     if (hasSel) {
-        items.push({ label: tr('ctx.cut'), icon: '✂', action: () => cut(el) });
-        items.push({ label: tr('ctx.copy'), icon: '⧉', action: () => copy(el) });
+        items.push({ label: tr('ctx.cut'), icon: 'cut', action: () => cut(el) });
+        items.push({ label: tr('ctx.copy'), icon: 'copy', action: () => copy(el) });
     }
-    items.push({ label: tr('ctx.paste'), icon: '📋', action: () => paste(el) });
+    items.push({ label: tr('ctx.paste'), icon: 'paste', action: () => paste(el) });
     items.push({ sep: true });
-    items.push({ label: tr('ctx.select_all'), action: () => { el.focus(); el.select(); } });
+    items.push({ label: tr('ctx.select_all'), icon: 'select-all', action: () => { el.focus(); el.select(); } });
     return items;
 }
