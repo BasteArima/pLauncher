@@ -1,7 +1,7 @@
 # Spec: multiple launch files
 
-Status: **step 0 — specification only** (2026-11-07). The owner has decided the core behavior below.
-Implementation has not started; remaining choices and recommendations are listed under Open questions.
+Status: **step 1 — backend in progress** (2026-11-07). Owner decisions are recorded below.
+Step 2 (interface) is not part of this delivery.
 Design reference: [A2 · Game page](../design/game-page.png), interpreted using
 [the design README](../design/README.md): the small dropdown beside Play and the Launch files list in Details.
 
@@ -15,10 +15,10 @@ game page, without counting time spent in a guide or settings utility as playtim
 
 - One primary file, marked with a star, remains in `Game.ExecPath` / `exec_path`. Existing libraries and
   single-file games continue to work without conversion by the user.
-- Up to approximately eight additional files, each with a path and an optional editable label. Paths use
+- Up to eight additional files, each with a path and an optional editable label. Paths use
   the same representation as `exec_path`; do not move them into the data folder or introduce a new URI scheme.
-- Play opens the primary file. A separate dropdown beside Play lists all files, with the primary starred.
-  Without additional files, this dropdown is absent.
+- Play opens the primary file. An always-visible dropdown beside Play combines launch files and the existing game actions.
+  Its file section appears only when more than one file is saved; the primary is starred.
 - Only the primary file is eligible for playtime/session recording. Additional executables and documents
   open without recording, using the existing direct-execution versus OS-association rules.
 - The editor manages the list: make primary, edit label, remove, Add… and Find in folder with checkboxes.
@@ -32,12 +32,14 @@ game page, without counting time spent in a guide or settings utility as playtim
 
 ### Game page: Play and dropdown
 
-- Keep the filled Play button in the right-hand play card. Immediately beside it, show a compact chevron
-  button when at least one additional file is saved, as in the mockup. It is a distinct target: Play never
-  opens a chooser and the chevron never launches a file by itself.
-- The dropdown shows the primary first, then the saved additional-file order. Each row shows its effective
-  label, falling back to the filename; retain the filename/path as secondary text or a tooltip so identically
-  labelled utilities remain distinguishable. The primary has a star and an accessible Primary label.
+- Keep the filled Play button in the right-hand play card. Controls are **Play / chevron / favourite**, as
+  in the mockup, with no separate ellipsis button. The chevron is always visible and never launches a file
+  by itself; Play continues to open the primary directly.
+- One menu combines both uses: when more than one file is saved, the top section lists the primary first
+  (starred), then extras in saved order, followed by a separator. Below are all the current ellipsis-menu
+  actions (Edit, Ignore, Remove, etc.). With zero/one file, omit the file section and its separator.
+- File rows show their effective label, falling back to the filename; keep filename/path secondary text or
+  a tooltip to distinguish identical labels. The star has an accessible Primary label.
 - Choosing the primary uses exactly the same launch path and tracking policy as Play. Choosing any additional
   file opens it without recording, including a second game executable. There is no per-file tracking toggle.
 - Card Play, sidebar Play, the game menu's Play and Ctrl+Enter continue to target the primary. Additional
@@ -45,8 +47,7 @@ game page, without counting time spent in a guide or settings utility as playtim
 - Use the existing custom-menu conventions: anchored placement that stays inside the window, focusable
   entries, keyboard activation and Esc/outside-click dismissal. Closing the menu must not also leave the
   game page. Respect the `e.defaultPrevented` and top-overlay precedence contracts.
-- Preserve access to the existing game-actions menu (Edit, Remove, etc.). Its placement alongside the new
-  dropdown needs the choice in Q2; the launch menu must not silently replace those actions.
+- Remove the old game-page ellipsis button. Card right-click menus and other existing menus stay unchanged.
 - Metadata preview remains read-only: no new launch controls there. Changing games or locking/panic-hiding
   closes transient menus and discards pending discovery responses.
 
@@ -67,16 +68,17 @@ game page, without counting time spent in a guide or settings utility as playtim
 - Replace the current single launch-path field with a compact list within `GameEditor`. Each row has the
   filename/path, an optional label input, a star control to make it primary, and Remove. Show the primary
   clearly without relying solely on color. Use icons from `lib/icons.js` through `Icon.svelte`, not emoji.
-- Making a row primary updates the draft's `exec_path`. Proposed behavior: swap it with the previous primary,
-  keeping the old primary as an extra and preserving both labels (Q3). This does not launch either file.
-- Remove removes only the library reference. It never deletes a file from disk. Primary removal and the
-  no-primary state are specified as proposed choices in Q3, not an implicit automatic promotion.
+- Making a row primary updates the draft's `exec_path`. Swap it with the previous primary,
+  keeping the old primary in the promoted row's extra slot and preserving both labels. This does not launch either file.
+- Remove removes only the library reference. It never deletes a file from disk. Removing the primary leaves
+  `exec_path` empty; Play prompts for a primary, with no automatic promotion. The first file added to a game
+  without a primary becomes primary.
 - Add… opens a native file dialog starting in the game's folder, with supported launch formats and
   HTML/PDF/TXT documents included. Keep an All files option, as today. Cancellation is a no-op. Handling
   a missing starting folder follows the existing dialog fallback, without changing the game's folder.
 - Find in folder opens an in-editor candidate picker: checkbox, effective label, filename and relative path.
   It has loading, empty, error/retry and selected-count states, plus Add selected and Cancel. Already-listed
-  paths are marked and cannot be added twice. Proposed: new candidates start unchecked.
+  paths are marked and cannot be added twice. New candidates start unchecked.
 - Neither scanning candidates nor changing checkbox selection persists anything. Add selected appends to
   the editor draft; Save/Ctrl+S commits the complete list with the rest of the game. Esc/cancel uses the
   existing dirty-state confirmation and restores paths, primary choice, labels and order together.
@@ -104,7 +106,7 @@ game page, without counting time spent in a guide or settings utility as playtim
 
 ### Storage and compatibility
 
-Proposed storage (names may be refined during the backend step; the primary-path contract may not):
+Storage (the primary-path contract is unchanged):
 
 ```go
 type LaunchFile struct {
@@ -117,15 +119,15 @@ ExecLabel   string       `json:"exec_label"`
 LaunchFiles []LaunchFile `json:"launch_files"` // additional files only, in display order
 ```
 
-- Store `launch_files` as a JSON array in a new `games` TEXT column and `exec_label` as TEXT if primary labels
-  are supported as proposed in Q4. Add columns via `ALTER TABLE`; read with `COALESCE`. Legacy empty/NULL
+- Store `launch_files` as a JSON array in a new `games` TEXT column and `exec_label` as TEXT. Add columns via `ALTER TABLE`; read with `COALESCE`. Legacy empty/NULL
   values mean no extras and no custom primary label. Do not duplicate the primary path in the array.
 - Use one normalized path identity for deduplication, membership checks and promotion. Preserve the selected
   path string for storage/launch. Respect platform path semantics and existing `scanner.NormalizePath`
   conventions; no basename-only matching and no file-content deduplication.
 - `UpdateGame` validates and saves primary, labels and extras together. Allow missing paths to remain saved:
   a temporarily disconnected drive must not destroy the list. Reject blank extra paths, duplicates and
-  over-capacity drafts with localized errors. Missing flags are computed, never persisted in this JSON.
+  over-capacity additions with localized errors. Existing merge overflow remains editable/removable;
+  while over capacity, new paths cannot be added. Missing flags are computed, never persisted in this JSON.
 - Scan/drop, `DetectLaunchFiles` and metadata updates preserve extras and explicit labels. Main-file detection
   continues to fill only an empty `exec_path`, never promotes a guide/config candidate or overwrites a chosen
   main file. If a discovered primary already exists among extras, consolidate it without duplicating the path.
@@ -137,9 +139,9 @@ LaunchFiles []LaunchFile `json:"launch_files"` // additional files only, in disp
 - Match the basename without extension, case-insensitively, using word boundaries/separators and common
   variants such as `Game_Config`, `settings-x64` and `walkthrough_en`. Avoid substring accidents such as
   labelling `GuidebookishGame.exe` as a walkthrough. Define tested deterministic precedence for mixed names.
-- Proposed representation: store only explicit user text in `label`. When it is empty, infer a stable category
+- Representation: store only explicit user text in `label`. When it is empty, infer a stable category
   (`settings`, `walkthrough`, or none) and translate it in the UI; no category falls back to the filename.
-  This lets automatic labels react to language switches while preserving custom labels verbatim (Q4).
+  This lets automatic labels react to language switches while preserving custom labels verbatim.
 - `setup` is a discovery hint, not an unconditional Settings label: a setup program may be an installer.
   Do not execute candidates to identify their purpose or read PDF/TXT contents for classification.
 
@@ -150,8 +152,9 @@ LaunchFiles []LaunchFile `json:"launch_files"` // additional files only, in disp
 - Include other `.exe` files and the existing supported native/script/game launch formats. Additionally
   include HTML/HTM/PDF/TXT files with names suggesting config/settings/setup/walkthrough/guide; include
   normal HTML game entry points. Return every eligible candidate within the chosen bounds, not just the
-  highest-scoring launcher. Final document matching and depth are proposed in Q5.
-- Inspect only the requested game's folder, with a bounded walk. Do not follow directory symlinks outside
+  highest-scoring launcher. Only hint-matched documents are suggested; ordinary README/manual files are excluded.
+- Inspect only the requested game's folder, in the root plus two subdirectory levels: at most
+  10,000 entries, 200 candidates and five seconds, with an incomplete-result flag. Do not follow directory symlinks outside
   it or recurse inside `.app` bundles. Skip assets/caches/save directories, but allow shallow `docs`, `doc`
   and `manual` folders for guides. Existing game-library scans do not automatically add these entries.
 - Keep uninstallers and crash reporters out of suggestions. A setup-named candidate is never auto-launched
@@ -180,7 +183,7 @@ Suggested App contracts, with exact DTO names to settle in implementation:
 - Primary direct launches keep existing durable monitoring, thresholds, recovery and once-only totals.
   Primary association-based launches remain untracked; this feature does not invent sessions for an opener.
   Classify the role at launch time: promoting/demoting a file later cannot retroactively change a running session.
-- Proposed: extras do not update `last_launched_at`, Continue playing or running-game/update blockers (Q6).
+- Extras do not update `last_launched_at`, Continue playing or running-game/update blockers.
   They must never change `time_played`, session counts, longest-session values or statistics activity.
 - New operations tolerate an unconfigured app and locked state without exposing file paths or launching.
   Recheck lock state before returning discovery data; the frontend invalidates late replies on lock/navigation.
@@ -192,12 +195,12 @@ Suggested App contracts, with exact DTO names to settle in implementation:
 
 - Rebase each in-folder entry by its relative path under the old root, preserving labels and saved order.
   Extras outside that root retain their existing absolute path, as external primary paths do today.
-- Proposed for an absent rebased extra: retain the expected new path and mark it missing; never run the
-  best-executable fallback for that entry. Retain the existing primary fallback unless Q7 changes it.
+- For an absent rebased extra: retain the expected new path and mark it missing; never run the
+  best-executable fallback for that entry. Retain the existing primary best-executable fallback.
   Deduplicate paths after rebasing; do not silently overwrite explicit labels.
 - Duplicate-record merging must include these fields in `SaveRelink`'s transaction with sessions, totals and
-  collection membership. Specify conflict/capacity handling before implementing it (Q7); never drop excess
-  entries merely to satisfy the normal editor limit.
+  collection membership. Keep the survivor primary/custom labels; append unique duplicate extras and its distinct former primary.
+  Preserve overflow beyond eight extras; additions remain blocked until back within capacity.
 - `VACUUM INTO` snapshots include the new DB columns automatically. Import migrates old databases and
   preserves new lists/labels. Keep launch paths as game-file paths, not media paths rewritten to `covers/`.
   Backup contains references, not copies of game executables or guide documents. Moving to another machine
@@ -206,7 +209,7 @@ Suggested App contracts, with exact DTO names to settle in implementation:
 ## Frontend and delivery
 
 - Reuse the current dark surfaces, compact controls and Details typography. Keep the Play chevron distinct
-  from media arrows, game-list arrows and the game-actions menu. Use accessible localized control names.
+  from media and game-list arrows; the chevron also contains the existing game actions. Use accessible localized control names.
 - All UI strings, inferred labels, picker states, capacity messages and error codes go into all 11 locales.
   Explicit user labels are not translated. Svelte 3 expressions must name their language/list dependencies.
 - Extend `build-ui.cjs` with primary-only and multi-file games, a labelled config exe, an HTML/PDF guide,
@@ -214,7 +217,7 @@ Suggested App contracts, with exact DTO names to settle in implementation:
   Mock all new bound methods; do not open real utilities or documents during browser checks.
 - Suggested delivery: step 1 implements storage, launch dispatch/accounting isolation, discovery, relink,
   backup coverage and generated bindings; step 2 implements the editor, dropdown and Details flow with mocks.
-  These are future steps, not authorization to begin them in the specification-only task.
+  Only step 1 is authorized for this delivery; do not implement the step 2 controls yet.
 - On implementation deliveries, update this spec's status, AGENTS.md and CHANGELOG `[Unreleased]`; commit
   without attribution and do not push unless requested. README screenshot refresh stays out of this feature.
 
@@ -247,30 +250,22 @@ Suggested App contracts, with exact DTO names to settle in implementation:
   checks. Record which OS dispatch paths were actually executed. Native dialog/association behavior and
   the built exe on the real library remain explicit manual acceptance items unless actually tested.
 
-## Open questions
+## Decisions
 
-1. **Exact capacity:** make the approximate limit exactly eight additional files (nine including primary)?
-   Recommended: eight, enforced on user additions; legacy/merge overflow must be retained or resolved explicitly.
-2. **Game-actions menu placement:** the mockup has Play / chevron / favourite, while the app currently has
-   Play / ellipsis / favourite. Recommended: use the mockup's three controls and move the ellipsis to the title
-   row. Alternative: retain both small buttons beside Play. Existing actions must stay discoverable.
-3. **Changing/removing the primary:** recommended promotion swaps the old primary into the promoted row's
-   extra slot. Removing the primary leaves `exec_path` empty and retains extras, with Play prompting to choose
-   a primary; no automatic promotion. Should adding the first file to an empty game make it primary, or should
-   the user always use the star explicitly? Recommended: first added file becomes primary.
-4. **Label semantics:** should the primary also have an editable label? Recommended: yes, stored separately
-   as `exec_label`, moving with its path on promotion. Is clearing a label allowed to restore automatic naming,
-   or must users be able to suppress the inferred label and show only a filename? Recommended: empty restores
-   the localized default; a custom label remains literal across language changes.
-5. **Discovery bounds and matching:** recommended root plus two subdirectory levels, including shallow docs,
-   and only hint-matched PDF/TXT/guide HTML rather than every document. Should generic README/manual files be
-   included too? Recommended initial bounds: 10,000 visited entries, 200 candidates, five seconds, with an
-   incomplete-results notice. Setup-named executables are included as requested; their purpose is not inferred
-   by running them.
-6. **Recent activity for extras:** recommended no `last_launched_at`/Continue playing changes and no new
-   running-game blocker for utilities. Primary association-based launches keep today's last-launch behavior.
-   Only primary files recording time/sessions is already decided; this question concerns ancillary state.
-7. **Relink conflicts:** recommended retain the survivor's primary/custom labels, append unique duplicate
-   extras (and its distinct former primary), and retain overflow until the user trims the list; block only new
-   additions while over capacity. Keep missing extras at their rebased path without best-exe substitution.
-   Should a missing primary retain its expected path too, or keep today's best-executable fallback?
+Confirmed by the owner on 2026-11-07; no open implementation questions remain.
+
+1. Exactly eight additional files. Validate additions; retain overflow produced by relink merges.
+2. Game-page controls are Play / chevron / favourite. The chevron is always visible: files first only when
+   there is more than one, separator, then every existing ellipsis-menu action. Remove the separate ellipsis.
+   Right-click on cards and other menus remain unchanged.
+3. Star promotion swaps paths and labels with the previous primary. Removing the primary leaves it empty,
+   with no automatic promotion. The first added file when there is no primary becomes primary.
+4. `exec_label` belongs to the primary path and follows it during swaps. Empty labels use localized inference;
+   explicit labels remain literal across language changes.
+5. Discovery covers root plus two levels, with limits of 10,000 entries, 200 candidates and five seconds.
+   Report incomplete results. Ordinary README/manual documents are excluded; document hints are
+   config/settings/setup/walkthrough/guide. Never run a candidate to infer its purpose.
+6. Extras do not update last launch, Continue playing, session/playtime totals or restart blockers.
+7. Relink keeps the survivor primary/custom labels and appends unique duplicate entries, retaining overflow.
+   The primary keeps the current best-executable fallback; extras retain their expected rebased paths when
+   missing, without fallback to another executable.
