@@ -7,8 +7,18 @@ export function mediaSrc(p) {
 }
 
 // CSS object-fit/object-position обложки игры
+// Кадрирование обложки в карточках: режим (cover/contain/fill), точка фокуса и приближение.
+// Зум — scale с центром в точке фокуса, так что увеличивается именно выбранная часть картинки.
 export function coverStyle(g) {
-    return `object-fit:${(g && g.cover_fit) || 'cover'};object-position:${(g && g.cover_pos) || '50% 20%'}`;
+    const pos = (g && g.cover_pos) || '50% 20%';
+    const fit = (g && g.cover_fit) || 'cover';
+    const zoom = coverZoom(g);
+    return `object-fit:${fit};object-position:${pos}` + (zoom > 1 && fit !== 'fill' ? `;transform:scale(${zoom});transform-origin:${pos}` : '');
+}
+export const COVER_ZOOM_MAX = 3;
+export function coverZoom(g) {
+    const z = +(g && g.cover_zoom) || 1;
+    return Math.max(1, Math.min(COVER_ZOOM_MAX, z));
 }
 
 export function coverPosXY(g) {

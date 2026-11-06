@@ -74,6 +74,13 @@ The app is fully working. Done so far:
   context-menu items take `icon: '<name>'` and optional `tone: 'pink' | 'amber'` (danger items are rose). Colour only
   for important actions (favorite, updates, delete). **Tag filter** (`TagFilter.svelte`): `tagFilter = {inc, exc, mode}`
   in App — several tags with «all of them» / «any of them», excluded tags (− button), chips with × and «Clear all».
+  **Edit mode** (`GameEditor`, mockup A4) = the game page with editable fields: sticky bar (dirty state, Esc = cancel with
+  confirm, Ctrl+S = save), cover kept apart from screenshots in the strip, screenshots reorder by HTML5 drag, «Use as cover»,
+  image files dropped onto the window while editing become screenshots (`handleNativeDrop`). Cover block: live wide/tall card
+  previews (drag = pan, wheel = zoom) + Horizontal/Vertical/Zoom sliders. `Game.CoverZoom` (DB `cover_zoom`, 0/1 = none, max 3)
+  is applied by `coverStyle()` in `lib/util.js` as `transform: scale()` with `transform-origin` = the cover position.
+  **Continue playing** (`recentlyPlayed`) skips finished/dropped games and ones hidden via the menu item «Remove from Continue
+  playing» (localStorage `plauncher_continue_hidden`: id → last_launched_at at hide time; launching again brings it back).
   Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.
   Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;

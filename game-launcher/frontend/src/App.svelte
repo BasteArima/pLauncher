@@ -29,11 +29,12 @@
         AddSingleGameManual,
         SelectFolder,
         AddScanPath,
+        CopyScreenshotToData,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
     import { showToast, askConfirm, isConfirmOpen } from './lib/ui.js';
-    import { sortGames, lsGet, lsSet } from './lib/util.js';
+    import { sortGames, lsGet, lsSet, lsJSON } from './lib/util.js';
     import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
@@ -75,6 +76,7 @@
     let checkingUpdates = false;
     let selectedGame = null;
     let isEditing = false;
+    $: editDirty = isEditing && !!selectedGame && JSON.stringify(selectedGame) !== originalGameSnapshot;
     let originalGameSnapshot = '';       // слепок игры для «есть ли несохранённые изменения»
     let searchQuery = '';
     let activeFilter = 'all';
@@ -234,8 +236,18 @@
             tone: 'danger', title: tr('smart.missing_title', { n: missingGames.length }), text: tr('smart.missing_text'),
             action: tr('smart.missing_action'), onAction: () => showRelink = true }
         : null);
+    // Убранные из «Продолжить»: id → время последнего запуска на момент скрытия.
+    // Запустил игру снова — время запуска стало новее, и она возвращается сама.
+    let continueHidden = lsJSON('plauncher_continue_hidden', {});
+    const inContinue = (g, hidden) => (g.last_launched_at || 0) > 0 && !['finished', 'dropped'].includes(g.status)
+        && !(hidden[g.id] && hidden[g.id] >= (g.last_launched_at || 0));
+    function hideFromContinue(g) {
+        continueHidden = { ...continueHidden, [g.id]: g.last_launched_at || 0 };
+        lsSet('plauncher_continue_hidden', JSON.stringify(continueHidden));
+        showToast(tr('continue.hidden', { title: g.title }), 'success');
+    }
     $: recentlyPlayed = visibleGames
-        .filter(g => (g.last_launched_at || 0) > 0)
+        .filter(g => inContinue(g, continueHidden))
         .sort((a, b) => (b.last_launched_at || 0) - (a.last_launched_at || 0));
     $: recentlyAdded = [...visibleGames].sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
     $: favoriteGames = visibleGames.filter(g => g.favorite);
@@ -659,6 +671,7 @@
         if (game.folder_missing) items.push({ label: tr('missing.pick_long'), icon: 'alert', tone: 'amber', action: () => relinkManually(game) });
         else if (game.exec_path) items.push({ label: tr('ctx.play'), icon: 'play', action: () => playGame(game) });
         else items.push({ label: tr('ctx.set_exe'), icon: 'play', action: () => selectGame(game) });
+        if (inContinue(game, continueHidden)) items.push({ label: tr('continue.hide'), icon: 'x', action: () => hideFromContinue(game) });
         items.push({ label: game.favorite ? tr('ctx.fav_remove') : tr('ctx.fav_add'), icon: game.favorite ? 'heart-off' : 'heart', tone: game.favorite ? '' : 'pink', action: () => toggleFavorite(game) });
         items.push({
             label: tr('ctx.add_to'), icon: 'plus',
@@ -705,9 +718,18 @@
     }
     function onDragOver(e) { if (isFileDrag(e)) { e.preventDefault(); isDragging = true; } }
     function onDragLeave(e) { if (isFileDrag(e)) { e.preventDefault(); isDragging = false; } }
+    const IMAGE_RE = /\.(png|jpe?g|webp|gif|avif|bmp)$/i;
     async function handleNativeDrop(paths) {
         isDragging = false;
         if (!paths || paths.length === 0) return;
+        if (isEditing && selectedGame && paths.every(p => IMAGE_RE.test(p))) {
+            try {
+                const added = [];
+                for (const p of paths) added.push(await CopyScreenshotToData(selectedGame.id, p));
+                selectedGame.images = [...(selectedGame.images || []), ...added];
+            } catch (err) { showToast(tr('toast.screens_fail', { err }), 'error'); }
+            return;
+        }
         try {
             const added = await AddGamesFromDrop(paths);
             await loadGames();
@@ -779,13 +801,14 @@
             else if (collectionModal) collectionModal = null;
             else if (showRelink) showRelink = false;
             else if (showSettings) showSettings = false;
-            else if (isEditing) isEditing = false;
+            else if (isEditing) cancelEdit();
             else if ($selecting) clearSelection();
             else if (inInput) e.target.blur();
             else if (selectedGame) closeGame();
             return;
         }
         if (needsSetup) return;
+        if (isEditing && ctrl && e.code === 'KeyS') { e.preventDefault(); saveEdit(); return; }
         if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !modalOpen) {
             e.preventDefault();
             goNav(e.key === 'ArrowLeft' ? -1 : 1);
@@ -917,8 +940,8 @@
         {#if isDragging}
             <div class="absolute inset-0 bg-indigo-900/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center border-4 border-dashed border-indigo-400 m-4 rounded-2xl pointer-events-none transition-all">
                 <Icon name="inbox" size={64} class="mb-6 text-indigo-200"/>
-                <h2 class="text-4xl font-bold text-white mb-2 tracking-wider">{$t("drop.title")}</h2>
-                <p class="text-indigo-200 text-lg">{$t("drop.sub")}</p>
+                <h2 class="text-4xl font-bold text-white mb-2 tracking-wider">{isEditing ? $t('drop.images_title') : $t("drop.title")}</h2>
+                <p class="text-indigo-200 text-lg">{isEditing ? $t('drop.images_sub') : $t("drop.sub")}</p>
             </div>
         {/if}
 
@@ -954,13 +977,13 @@
         <main bind:this={mainEl} on:scroll={onMainScroll} class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
-                    <button on:click={closeGame} title="Esc"
+                    <button on:click={closeGame} title="Esc" class:hidden={isEditing}
                             class="mb-5 h-9 px-3 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
                         {$t("detail.back")}
                     </button>
 
                     {#if isEditing}
-                        <GameEditor bind:game={selectedGame} {supportedSources} onSave={saveEdit} onCancel={cancelEdit}/>
+                        <GameEditor bind:game={selectedGame} {supportedSources} dirty={editDirty} onSave={saveEdit} onCancel={cancelEdit}/>
                     {:else}
                         <GameDetail game={selectedGame} {supportedSources}
                                     inCollections={collectionsView.filter(c => c.items.some(x => x.id === selectedGame.id)).map(c => ({ id: c.id, name: c.name, dynamic: c.type === 'dynamic' }))}
