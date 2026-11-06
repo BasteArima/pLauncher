@@ -6,6 +6,8 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Backend for finding game info by folder name across F95zone, Steam and VNDB, with ranked results, preview
+  and apply methods (interface pending). Added VNDB URL parsing and remote-image metadata previews.
 - Play status for every game (playing, want to play, finished, dropped), a 5-star rating and personal notes, where
   `||text||` stays hidden as a spoiler until clicked. Status chips above the grid filter by status.
 - Filter by several tags at once: all of them or any of them, and exclude tags you don't want to see.

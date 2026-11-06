@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -62,9 +61,14 @@ func f95FullImage(imgURL string) string {
 }
 
 type f95LatestRow struct {
-	ThreadID int      `json:"thread_id"`
-	Cover    string   `json:"cover"`
-	Screens  []string `json:"screens"`
+	Title     string   `json:"title"`
+	Creator   string   `json:"creator"`
+	Version   string   `json:"version"`
+	Date      string   `json:"date"`
+	Timestamp int64    `json:"ts"`
+	ThreadID  int      `json:"thread_id"`
+	Cover     string   `json:"cover"`
+	Screens   []string `json:"screens"`
 }
 
 // f95LatestSearch — один запрос к JSON: строки выдачи по слову из названия.
@@ -72,30 +76,19 @@ func f95LatestSearch(ctx context.Context, client *http.Client, term string) ([]f
 	q := url.Values{"cmd": {"list"}, "cat": {"games"}, "page": {"1"}, "rows": {"90"}, "sort": {"date"}, "search": {term}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f95LatestURL+"?"+q.Encode(), nil)
 	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("latest updates: %s", resp.Status)
+		return nil, requestErr("F95zone", err)
 	}
 	var body struct {
-		Msg json.RawMessage `json:"msg"` // при ошибке здесь строка, а не объект
+		Msg json.RawMessage `json:"msg"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 16<<20)).Decode(&body); err != nil {
+	if err := requestJSON(client, req, "F95zone", &body); err != nil {
 		return nil, err
 	}
 	var msg struct {
 		Data []f95LatestRow `json:"data"`
 	}
 	if err := json.Unmarshal(body.Msg, &msg); err != nil {
-		return nil, fmt.Errorf("latest updates: %s", body.Msg)
+		return nil, readErr(fmt.Errorf("invalid latest updates response"))
 	}
 	return msg.Data, nil
 }

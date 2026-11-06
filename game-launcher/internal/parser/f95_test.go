@@ -87,13 +87,13 @@ func TestF95GuestPageUsesLatestJSON(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Режим «только метаданные» (проверка обновлений) в JSON не ходит
+	// Предпросмотр получает удалённые ссылки через JSON, но не скачивает картинки.
 	searches = nil
 	g, err = p.Parse(context.Background(), pageURL, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(searches) != 0 || g.Version != "v0.90" {
+	if !reflect.DeepEqual(searches, []string{"Chainsaw", "Living"}) || g.Version != "v0.90" || g.CoverPath != srv.URL+"/img/cover.png" || len(g.Images) != 2 {
 		t.Errorf("метаданные: поиски %v, версия %q", searches, g.Version)
 	}
 }

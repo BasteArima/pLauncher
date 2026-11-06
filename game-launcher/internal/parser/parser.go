@@ -68,12 +68,19 @@ func SupportedSources() []Source {
 		{Name: "Erotorrent", Domain: "erotorrent.org"},
 		{Name: "Island of Pleasure", Domain: "island-of-pleasure.site"},
 		{Name: "Steam", Domain: "store.steampowered.com"},
+		{Name: "VNDB", Domain: "vndb.org"},
 	}
 }
 
 // SourceName возвращает имя площадки по URL (как в SupportedSources) или "".
 func SourceName(targetURL string) string {
 	for _, s := range SupportedSources() {
+		if s.Name == "VNDB" {
+			if u, err := url.Parse(targetURL); err == nil && strings.EqualFold(u.Hostname(), s.Domain) {
+				return s.Name
+			}
+			continue
+		}
 		if strings.Contains(targetURL, s.Domain) {
 			return s.Name
 		}
@@ -95,6 +102,9 @@ type SiteParser interface {
 // GetParser фабрика, которая выдает нужный парсер в зависимости от URL
 func GetParser(targetURL string, proxyURL string) (SiteParser, error) {
 	client := newHTTPClient(proxyURL)
+	if u, err := url.Parse(targetURL); err == nil && strings.EqualFold(u.Hostname(), "vndb.org") {
+		return &VNDBParser{client: client}, nil
+	}
 
 	if strings.Contains(targetURL, "f95zone") {
 		return &F95Parser{client: client}, nil
@@ -238,8 +248,13 @@ const maxScreenshots = 15
 // пути в game. Обложка и скриншоты получают разные префиксы имён, чтобы не затирать
 // друг друга (раньше cover и первый скрин оба сохранялись как 0.jpg).
 func downloadInto(ctx context.Context, client *http.Client, game *models.Game, coverURL string, screenshotURLs []string, saveDir, referer string) {
-	// Пустой saveDir = режим «только метаданные» (проверка обновлений): картинки не качаем.
+	// Пустой saveDir = предпросмотр/проверка обновлений: возвращаем ссылки без записи на диск.
+	if len(screenshotURLs) > maxScreenshots {
+		screenshotURLs = screenshotURLs[:maxScreenshots]
+	}
 	if saveDir == "" {
+		game.CoverPath = coverURL
+		game.Images = append([]string{}, screenshotURLs...)
 		return
 	}
 	if coverURL != "" {

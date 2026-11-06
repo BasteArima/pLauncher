@@ -377,22 +377,16 @@ func (a *App) FindExecutables(folderPath string) ([]string, error) {
 
 // UpdateGameMetadata скачивает данные по ссылке и обновляет существующую игру
 func (a *App) UpdateGameMetadata(gameID string, url string) error {
-	// 1. Ищем существующую игру (для простоты достаем все и фильтруем)
-	games, err := a.repo.GetAllGames(a.ctx)
+	if a.repo == nil || a.isLocked() {
+		return nil
+	}
+	return a.updateGameMetadata(gameID, url, false)
+}
+
+func (a *App) updateGameMetadata(gameID, url string, folderVersion bool) error {
+	targetGame, err := a.gameByID(gameID)
 	if err != nil {
 		return err
-	}
-
-	var targetGame *models.Game
-	for _, g := range games {
-		if g.ID == gameID {
-			targetGame = g
-			break
-		}
-	}
-
-	if targetGame == nil {
-		return fmt.Errorf("game with ID %s not found in database", gameID)
 	}
 
 	// 2. Инициализируем парсер
@@ -404,16 +398,21 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 	// 3. Скачиваем данные в подпапку обложек внутри папки данных
 	saveDir := filepath.Join(a.dataDir, "covers", targetGame.ID)
 	parsedData, err := p.Parse(a.ctx, url, saveDir)
-	if err != nil {
-		return err
+	// Не публикуем и не сохраняем результат, если приложение заблокировали во время запроса.
+	if a.isLocked() {
+		return nil
 	}
-
+	if err != nil {
+		return gameInfoParseErr(err)
+	}
 	// 4. Обновляем поля игры новыми данными
 	if parsedData.Title != "" {
 		targetGame.Title = parsedData.Title
 	}
 	if parsedData.Version != "" {
 		targetGame.Version = parsedData.Version
+	} else if folderVersion && targetGame.Version == "" {
+		targetGame.Version = folderSearchName(targetGame.FolderPath).Version
 	}
 	if parsedData.Description != "" {
 		targetGame.Description = parsedData.Description
@@ -448,7 +447,10 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 	targetGame.UpdateSource = ""
 
 	// 6. Сохраняем обновленную игру обратно в БД
-	return a.repo.SaveGame(a.ctx, targetGame)
+	if err := a.repo.SaveGame(a.ctx, targetGame); err != nil {
+		return apperr.New("app.library_save", nil, "couldn't save game info: %w", err)
+	}
+	return nil
 }
 
 // upsertSource добавляет/обновляет ссылку игры на площадку и базовую версию.
@@ -514,6 +516,7 @@ func (a *App) checkSourceAt(g *models.Game, idx int) (bool, error) {
 	}
 	g.LastCheckedAt = time.Now().Unix()
 
+	// Preview возвращает удалённые картинки; при проверке используем исключительно версию.
 	newVer := strings.TrimSpace(parsed.Version)
 	if newVer == "" {
 		return false, nil // версию не удалось определить (напр. Steam) — не трогаем
@@ -541,14 +544,14 @@ func (a *App) checkSourceAt(g *models.Game, idx int) (bool, error) {
 func (a *App) gameByID(id string) (*models.Game, error) {
 	games, err := a.repo.GetAllGames(a.ctx)
 	if err != nil {
-		return nil, err
+		return nil, apperr.New("app.library_read", nil, "couldn't read the game library: %w", err)
 	}
 	for _, g := range games {
 		if g.ID == id {
 			return g, nil
 		}
 	}
-	return nil, fmt.Errorf("game with ID %s not found in database", id)
+	return nil, apperr.New("app.game_not_found", nil, "game not found in the library")
 }
 
 // CheckGameUpdates проверяет основную площадку игры и возвращает обновлённую запись.

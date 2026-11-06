@@ -18,6 +18,10 @@ export function AddSingleGameManual() {
   return window['go']['main']['App']['AddSingleGameManual']();
 }
 
+export function ApplyGameInfo(arg1, arg2) {
+  return window['go']['main']['App']['ApplyGameInfo'](arg1, arg2);
+}
+
 export function ApplyLauncherUpdate(arg1) {
   return window['go']['main']['App']['ApplyLauncherUpdate'](arg1);
 }
@@ -182,6 +186,10 @@ export function OpenURL(arg1) {
   return window['go']['main']['App']['OpenURL'](arg1);
 }
 
+export function PreviewGameInfo(arg1) {
+  return window['go']['main']['App']['PreviewGameInfo'](arg1);
+}
+
 export function RecalcGameSize(arg1) {
   return window['go']['main']['App']['RecalcGameSize'](arg1);
 }
@@ -238,6 +246,10 @@ export function ScanLocalFolder(arg1) {
   return window['go']['main']['App']['ScanLocalFolder'](arg1);
 }
 
+export function SearchGameInfo(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SearchGameInfo'](arg1, arg2, arg3);
+}
+
 export function SearchGames(arg1) {
   return window['go']['main']['App']['SearchGames'](arg1);
 }
@@ -280,6 +292,10 @@ export function SetPin(arg1, arg2) {
 
 export function StartLauncherDownload() {
   return window['go']['main']['App']['StartLauncherDownload']();
+}
+
+export function SuggestSearchName(arg1) {
+  return window['go']['main']['App']['SuggestSearchName'](arg1);
 }
 
 export function Unlock(arg1) {

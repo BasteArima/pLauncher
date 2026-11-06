@@ -12,6 +12,8 @@ export function AddScanPath(arg1:string):Promise<void>;
 
 export function AddSingleGameManual():Promise<void>;
 
+export function ApplyGameInfo(arg1:string,arg2:string):Promise<void>;
+
 export function ApplyLauncherUpdate(arg1:boolean):Promise<void>;
 
 export function CancelLauncherDownload():Promise<void>;
@@ -94,6 +96,8 @@ export function OpenLauncherReleasePage():Promise<void>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
+export function PreviewGameInfo(arg1:string):Promise<models.Game>;
+
 export function RecalcGameSize(arg1:string):Promise<number>;
 
 export function RefreshSizes():Promise<void>;
@@ -122,6 +126,8 @@ export function ScanAllFolders():Promise<number>;
 
 export function ScanLocalFolder(arg1:string):Promise<number>;
 
+export function SearchGameInfo(arg1:string,arg2:Array<string>,arg3:string):Promise<parser.SearchResult>;
+
 export function SearchGames(arg1:string):Promise<Array<models.Game>>;
 
 export function SelectBackupFile():Promise<string>;
@@ -143,6 +149,8 @@ export function SetFavorites(arg1:Array<string>,arg2:boolean):Promise<number>;
 export function SetPin(arg1:string,arg2:string):Promise<void>;
 
 export function StartLauncherDownload():Promise<void>;
+
+export function SuggestSearchName(arg1:string):Promise<main.NameSuggestion>;
 
 export function Unlock(arg1:string):Promise<void>;
 

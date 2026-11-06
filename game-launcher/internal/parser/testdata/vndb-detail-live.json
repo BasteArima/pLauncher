@@ -1,0 +1,1017 @@
+{
+  "more": false,
+  "results": [
+    {
+      "description": "Hisao Nakai is a normal high school student, currently in his final year of high school. One day Hisao finds an anonymous letter  in his math textbook, directing him to meet the sender at a given location. The sender turns out to be his crush, however, as she confesses to him, he suddenly collapses. He awakes in a hospital bed, and is told by the doctors that the reason he collapsed is due to arrhythmia, a rare heart condition that causes his heartbeat to sometimes become irregular. Due to this, his parents have enrolled him in Yamaku, a school for (physically) disabled students.",
+      "developers": [
+        {
+          "id": "p454",
+          "name": "Four Leaf Studios"
+        }
+      ],
+      "id": "v945",
+      "image": {
+        "url": "https://t.vndb.org/cv/88/88188.jpg"
+      },
+      "languages": [
+        "ca",
+        "de",
+        "en",
+        "es",
+        "fr",
+        "hu",
+        "it",
+        "ja",
+        "ko",
+        "pl",
+        "pt-br",
+        "ru",
+        "th",
+        "tr",
+        "zh-Hans",
+        "zh-Hant"
+      ],
+      "released": "2009-04-29",
+      "screenshots": [
+        {
+          "url": "https://t.vndb.org/sf/28/1728.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/29/1729.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/30/1730.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/31/1731.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/60/28560.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/61/28561.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/87/52587.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/89/52589.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/60/134060.jpg"
+        },
+        {
+          "url": "https://t.vndb.org/sf/63/194163.jpg"
+        }
+      ],
+      "tags": [
+        {
+          "category": "ero",
+          "id": "g23",
+          "name": "Sexual Content",
+          "rating": 1.93470144271851,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g522",
+          "name": "Bookworm Heroine",
+          "rating": 2.5,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1320",
+          "name": "Countryside",
+          "rating": 1.67346942424774,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g681",
+          "name": "Energetic Heroine",
+          "rating": 2.7261905670166,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g980",
+          "name": "Death of Protagonist",
+          "rating": 1.0888888835907,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g461",
+          "name": "Heroine with Zettai Ryouiki",
+          "rating": 2.61971831321716,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1380",
+          "name": "Infidelity",
+          "rating": 0.782851815223694,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g176",
+          "name": "Foolish Friend",
+          "rating": 1.89999997615814,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1168",
+          "name": "Half-Japanese Heroine",
+          "rating": 2.74193549156189,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g251",
+          "name": "Homosexual Support Character",
+          "rating": 0.685714304447174,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g173",
+          "name": "Mother Support Character",
+          "rating": 1.5,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g174",
+          "name": "Protagonist's Brother as a Support Character",
+          "rating": 0.25,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g275",
+          "name": "Protagonist's Rival as a Heroine",
+          "rating": 1.73123490810394,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1058",
+          "name": "Protagonist with Ahoge",
+          "rating": 2.21467304229736,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g258",
+          "name": "Shy Heroine",
+          "rating": 2.835294008255,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g197",
+          "name": "Student Council",
+          "rating": 2.59740257263184,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g257",
+          "name": "Timid Heroine",
+          "rating": 2.79999995231628,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g530",
+          "name": "Tomboy Heroine",
+          "rating": 2.28571438789368,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g760",
+          "name": "Summer",
+          "rating": 1.90384614467621,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1382",
+          "name": "Transfer Student Protagonist",
+          "rating": 2.91666674613953,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g220",
+          "name": "Bondage",
+          "rating": 1.05698883533478,
+          "spoiler": 1
+        },
+        {
+          "category": "ero",
+          "id": "g749",
+          "name": "Anal Penetration",
+          "rating": 1.68888890743256,
+          "spoiler": 1
+        },
+        {
+          "category": "ero",
+          "id": "g731",
+          "name": "Condoms",
+          "rating": 1.90040814876556,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g733",
+          "name": "Defloration",
+          "rating": 2.54545450210571,
+          "spoiler": 1
+        },
+        {
+          "category": "ero",
+          "id": "g1190",
+          "name": "Cunnilingus",
+          "rating": 2.02777767181396,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1297",
+          "name": "Doggy Style",
+          "rating": 1.85714280605316,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g1471",
+          "name": "Blind Choices",
+          "rating": 2.48148155212402,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g878",
+          "name": "Missionary Position",
+          "rating": 2.22222232818604,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1313",
+          "name": "Reverse Netorare",
+          "rating": 1.03571426868439,
+          "spoiler": 2
+        },
+        {
+          "category": "ero",
+          "id": "g735",
+          "name": "Sex in Public Places",
+          "rating": 1.06944441795349,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g975",
+          "name": "Short Sexual Scenes",
+          "rating": 2.68612384796143,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g180",
+          "name": "Early Branching Plot",
+          "rating": 2.69230771064758,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g355",
+          "name": "Brief NVL Scenes",
+          "rating": 2.68333339691162,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g606",
+          "name": "Branching Plot",
+          "rating": 2.63636374473572,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1434",
+          "name": "Colored Name-tags",
+          "rating": 2.77358484268188,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g148",
+          "name": "Multiple Endings",
+          "rating": 2.82271933555603,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1251",
+          "name": "More Than Seven Endings",
+          "rating": 2.72972965240479,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g1467",
+          "name": "Meaningless Choices",
+          "rating": 1.20365417003632,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g596",
+          "name": "Nakige",
+          "rating": 2.45310235023499,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1275",
+          "name": "Multiple Opening Movies",
+          "rating": 2.76785707473755,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1446",
+          "name": "Naked Sprites",
+          "rating": 2.17391300201416,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g871",
+          "name": "Track Display",
+          "rating": 2.08333325386047,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g133",
+          "name": "Male Protagonist",
+          "rating": 2.89772725105286,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g151",
+          "name": "School Life Comedy",
+          "rating": 1.88036525249481,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g165",
+          "name": "Drug Use",
+          "rating": 1.14285719394684,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g172",
+          "name": "Father Support Character",
+          "rating": 1.57142853736877,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g215",
+          "name": "Family",
+          "rating": 1.28571426868439,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g236",
+          "name": "Low Sexual Content",
+          "rating": 2.11029100418091,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g248",
+          "name": "Mute Heroine",
+          "rating": 2.81318688392639,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g273",
+          "name": "Sickly Protagonist",
+          "rating": 2.88764047622681,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g299",
+          "name": "School Nurse Support Character",
+          "rating": 2.0246913433075,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g300",
+          "name": "Late Sexual Content",
+          "rating": 2.69491529464722,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g337",
+          "name": "Dramatic Love Triangle",
+          "rating": 1.7068452835083,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g346",
+          "name": "Crippled Heroine",
+          "rating": 2.81849002838135,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g389",
+          "name": "School Dormitory",
+          "rating": 2.79775285720825,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g453",
+          "name": "Slice of Life Drama",
+          "rating": 2.79999995231628,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g454",
+          "name": "Slice of Life",
+          "rating": 2.94029855728149,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g538",
+          "name": "School Festival",
+          "rating": 2.59756088256836,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g552",
+          "name": "Slow-burn Romance",
+          "rating": 2.8461537361145,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g627",
+          "name": "Depression (obsolete)",
+          "rating": 2.22222232818604,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g660",
+          "name": "Painter Heroine",
+          "rating": 2.8222222328186,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g728",
+          "name": "Protagonist with a Face",
+          "rating": 2.69736838340759,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g868",
+          "name": "Playtime Counter",
+          "rating": 2.69565224647522,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g876",
+          "name": "Bad Endings with Story",
+          "rating": 2.81944441795349,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g961",
+          "name": "Heroine with Eye Covering Hairstyle",
+          "rating": 2.8148148059845,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1079",
+          "name": "Heroine with Sport Bloomers",
+          "rating": 2.70588231086731,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1087",
+          "name": "Masturbation",
+          "rating": 1.32696115970612,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1491",
+          "name": "Athlete Heroine",
+          "rating": 2.8461537361145,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1515",
+          "name": "Fingering",
+          "rating": 1.41428565979004,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1555",
+          "name": "Normal Scene Recollection",
+          "rating": 2.41379308700562,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1581",
+          "name": "Cowgirl",
+          "rating": 2.02910041809082,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g1646",
+          "name": "Varied Title Screens",
+          "rating": 2.76923084259033,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1736",
+          "name": "Sitting Sex",
+          "rating": 1.89285719394684,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1762",
+          "name": "Half-orphan Heroine",
+          "rating": 2.5,
+          "spoiler": 2
+        },
+        {
+          "category": "ero",
+          "id": "g1796",
+          "name": "Bathroom Sex",
+          "rating": 1.7379310131073,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g1856",
+          "name": "Ambient Sounds",
+          "rating": 1.85714280605316,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g2186",
+          "name": "Tall Heroine",
+          "rating": 2.29999995231628,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g2228",
+          "name": "Sex at School",
+          "rating": 1.79999995231628,
+          "spoiler": 1
+        },
+        {
+          "category": "ero",
+          "id": "g2353",
+          "name": "Sex Involving Amputees",
+          "rating": 2.7826087474823,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g2394",
+          "name": "Laid-back Heroine",
+          "rating": 2.11111116409302,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g2411",
+          "name": "100% Completion Bonus",
+          "rating": 1.73333334922791,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g2415",
+          "name": "Separate Text Boxes",
+          "rating": 1.36363637447357,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g2512",
+          "name": "Chosen Choices Marking",
+          "rating": 2.66666674613953,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g2708",
+          "name": "In-game Sexual Content Toggle",
+          "rating": 2.79999995231628,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g3148",
+          "name": "Vaginal Masturbation",
+          "rating": 1.79999995231628,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g3151",
+          "name": "Anal Sex",
+          "rating": 1.66666662693024,
+          "spoiler": 1
+        },
+        {
+          "category": "ero",
+          "id": "g3155",
+          "name": "Vaginal Fingering",
+          "rating": 1.5,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g3168",
+          "name": "Avoidable Death of Protagonist (obsolete)",
+          "rating": 1.20000004768372,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g3171",
+          "name": "High School Student Heroine",
+          "rating": 2.85714292526245,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g3172",
+          "name": "Sex with Protagonist Only",
+          "rating": 2.875,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g3174",
+          "name": "Completely Avoidable Protagonist Death",
+          "rating": 2.66666674613953,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g3415",
+          "name": "Heroine with Small Breasts (Non-Loli)",
+          "rating": 2.33333325386047,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g3712",
+          "name": "Running (Sport)",
+          "rating": 2.20000004768372,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g247",
+          "name": "Disabled Heroine",
+          "rating": 2.98000001907349,
+          "spoiler": 0
+        },
+        {
+          "category": "tech",
+          "id": "g433",
+          "name": "Photographic Backgrounds",
+          "rating": 2.82857131958008,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g544",
+          "name": "Student Protagonist",
+          "rating": 2.85542178153992,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g677",
+          "name": "Ponytail Heroine",
+          "rating": 2.58802819252014,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g775",
+          "name": "Orphan Heroine",
+          "rating": 2.04166674613953,
+          "spoiler": 2
+        },
+        {
+          "category": "tech",
+          "id": "g32",
+          "name": "ADV",
+          "rating": 2.85294127464294,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g48",
+          "name": "High School",
+          "rating": 2.86287093162537,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1184",
+          "name": "High School Student Protagonist",
+          "rating": 2.91666674613953,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g222",
+          "name": "Fictional Modern Day Japanese Town",
+          "rating": 2.81707310676575,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g502",
+          "name": "Psychological Trauma",
+          "rating": 2.5,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g497",
+          "name": "Heroine with Psychological Problems",
+          "rating": 2.5,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g143",
+          "name": "Modern Day",
+          "rating": 2,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g3894",
+          "name": "Family Drama",
+          "rating": 1.5,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g2997",
+          "name": "Heisei Era",
+          "rating": 2,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g367",
+          "name": "Crippled Protagonist",
+          "rating": 3,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g710",
+          "name": "Friendship",
+          "rating": 2.33333325386047,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g253",
+          "name": "Psychological Problems",
+          "rating": 2.5,
+          "spoiler": 1
+        },
+        {
+          "category": "cont",
+          "id": "g196",
+          "name": "Sickly Heroine",
+          "rating": 1,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g3099",
+          "name": "Restart from Chapter Index",
+          "rating": 2.5,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1955",
+          "name": "Kissing Scene",
+          "rating": 2.33333325386047,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g534",
+          "name": "Love Overcomes All",
+          "rating": 2.75,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g221",
+          "name": "Modern Day Japan",
+          "rating": 2,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g169",
+          "name": "Relationship Problems",
+          "rating": 2.5,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g2926",
+          "name": "2000s",
+          "rating": 2,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g1930",
+          "name": "LGBTQ Issues",
+          "rating": 0.300000011920929,
+          "spoiler": 2
+        },
+        {
+          "category": "cont",
+          "id": "g4123",
+          "name": "Deaf Heroine",
+          "rating": 2.66666674613953,
+          "spoiler": 0
+        },
+        {
+          "category": "ero",
+          "id": "g1445",
+          "name": "Comedic Sex Scenes",
+          "rating": 1.5,
+          "spoiler": 1
+        },
+        {
+          "category": "tech",
+          "id": "g598",
+          "name": "Episodic Story",
+          "rating": 2.56735587120056,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g867",
+          "name": "Spring",
+          "rating": 2.10999464988708,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g369",
+          "name": "Disabled Protagonist",
+          "rating": 2.64772725105286,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g96",
+          "name": "Romance",
+          "rating": 2.97849464416504,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g920",
+          "name": "Student Council President Heroine",
+          "rating": 2.7428572177887,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g565",
+          "name": "Class President Heroine",
+          "rating": 2.76595735549927,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g566",
+          "name": "School Sports Club Member Heroine",
+          "rating": 2.68354439735413,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g265",
+          "name": "Blind Heroine",
+          "rating": 2.85567021369934,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g895",
+          "name": "Library",
+          "rating": 2.16455698013306,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g270",
+          "name": "Hospital",
+          "rating": 1.66666662693024,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g875",
+          "name": "Twin Tail Heroine",
+          "rating": 2.72857141494751,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g191",
+          "name": "Heroine with Glasses",
+          "rating": 2.64295482635498,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g373",
+          "name": "Student Heroine",
+          "rating": 2.66666674613953,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g455",
+          "name": "Slice of Life Realism",
+          "rating": 1.33333337306976,
+          "spoiler": 0
+        },
+        {
+          "category": "cont",
+          "id": "g147",
+          "name": "Drama",
+          "rating": 3,
+          "spoiler": 0
+        }
+      ],
+      "title": "Katawa Shoujo"
+    }
+  ]
+}

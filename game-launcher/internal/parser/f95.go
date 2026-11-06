@@ -61,8 +61,8 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 	if game.Title == "" {
 		game.Title = rawTitle
 	}
-	game.Version = versionFromTitle(rawTitle)  // "[v0.13]" -> "v0.13"
-	game.Author = authorFromTitle(rawTitle)    // последняя скобка "[HappySteveGames]"
+	game.Version = versionFromTitle(rawTitle) // "[v0.13]" -> "v0.13"
+	game.Author = authorFromTitle(rawTitle)   // последняя скобка "[HappySteveGames]"
 
 	// Движок — из меток-префиксов h1 (VN, Ren'Py, Completed): берём первую,
 	// что распознаётся как движок.
@@ -176,7 +176,7 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 
 	// 4. Гостю вложения первого поста не показывают — берём картинки из публичного JSON.
 	// В режиме «только метаданные» (saveDir пуст) картинки не нужны, лишних запросов не делаем.
-	if saveDir != "" && (coverURL == "" || len(screenshotURLs) == 0) {
+	if coverURL == "" || len(screenshotURLs) == 0 {
 		if id := f95ThreadID(pageURL); id != 0 {
 			cover, screens, lerr := f95LatestImages(ctx, p.client, id, game.Title)
 			if lerr != nil {

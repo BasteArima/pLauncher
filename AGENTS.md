@@ -22,7 +22,7 @@ The content is adult, so **discretion features matter** and covers/screenshots a
 The app is fully working. Done so far:
 - **Scanning**: multi-folder scan (`scan_paths`), each top-level subfolder becomes a game; smart `.exe`
   pick (`FindBestExecutable`); native folder drag&drop; "+ single game".
-- **Parsers**: f95zone, pornolab (win1251), erotorrent, island-of-pleasure, Steam (official API).
+- **Parsers**: f95zone, pornolab (win1251), erotorrent, island-of-pleasure, Steam (official API), VNDB (Kana API).
   Title/version/languages/tags **+ author + engine** from the release title / body fields; cover + up to
   15 screenshots; a "?" popover in the metadata box lists supported sites (`SupportedSources`).
 - **Author & Engine fields** (`Game.Author`/`Engine`): parsed per-site (Steam developers; F95/pornolab/island
@@ -351,3 +351,13 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 Durable project notes live in the agent memory dir
 `~/.claude/projects/<this project>/memory/` (parser-design, data-dir-architecture,
 ui-state-and-collections-plan). The code comments and `extract_test.go` are also good references.
+
+### Find-by-name backend (2026-11-06)
+
+The backend half of `docs/specs/find-by-name.md` is implemented; its UI remains pending. `search.go` exposes
+SuggestSearchName, SearchGameInfo, PreviewGameInfo and ApplyGameInfo. Scanner cleanup does not change scan
+titles. Search runs F95zone/Steam/VNDB concurrently with independent 10-second timeouts and partial failures.
+`Parse(ctx, url, "")` now returns remote media URLs without downloads; update checks must never persist them.
+VNDB links use the Kana API, discard description spoilers and select the top 15 non-spoiler tags.
+Anonymous live Steam storesearch returned Being a DIK seasons and guides; do not assume all adult titles are
+indexed everywhere. Verified F95 fields and live JSON fixtures are documented in the spec and testdata README.

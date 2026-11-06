@@ -1,0 +1,112 @@
+{
+  "more": false,
+  "results": [
+    {
+      "developers": [
+        {
+          "id": "p454",
+          "name": "Four Leaf Studios"
+        }
+      ],
+      "id": "v945",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/88/88188.jpg"
+      },
+      "released": "2009-04-29",
+      "title": "Katawa Shoujo"
+    },
+    {
+      "developers": [
+        {
+          "id": "p20096",
+          "name": "Espiluz"
+        }
+      ],
+      "id": "v47637",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/82/71482.jpg"
+      },
+      "released": null,
+      "title": "Katawa Shoujo 2"
+    },
+    {
+      "developers": [],
+      "id": "v68798",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/34/144934.jpg"
+      },
+      "released": "2026",
+      "title": "Katawa shoujo \"Usui chi\""
+    },
+    {
+      "developers": [
+        {
+          "id": "p19766",
+          "name": "A Cure for Dreams Team"
+        }
+      ],
+      "id": "v47035",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/54/70654.jpg"
+      },
+      "released": "2024-10-06",
+      "title": "A Cure for Dreams"
+    },
+    {
+      "developers": [
+        {
+          "id": "p454",
+          "name": "Four Leaf Studios"
+        }
+      ],
+      "id": "v1516",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv/12/4312.jpg"
+      },
+      "released": "2009-03-06",
+      "title": "pXt"
+    },
+    {
+      "developers": [
+        {
+          "id": "p15456",
+          "name": "Chainsaw Team"
+        }
+      ],
+      "id": "v47036",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/55/70655.jpg"
+      },
+      "released": "2023-08-20",
+      "title": "Letters to Venus"
+    },
+    {
+      "developers": [
+        {
+          "id": "p30220",
+          "name": "KyleDaBoss"
+        }
+      ],
+      "id": "v47038",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/74/99574.jpg"
+      },
+      "released": "2023-03-28",
+      "title": "Learning to Fly"
+    },
+    {
+      "developers": [
+        {
+          "id": "p24",
+          "name": "Key"
+        }
+      ],
+      "id": "v34",
+      "image": {
+        "thumbnail": "https://t.vndb.org/cv.t/96/75896.jpg"
+      },
+      "released": "2004-11-29",
+      "title": "planetarian ~Chiisana Hoshi no Yume~"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "total": 6,
+  "items": [
+    {
+      "type": "app",
+      "name": "Being a DIK - Season 1",
+      "id": 1126320,
+      "price": {
+        "currency": "USD",
+        "initial": 1399,
+        "final": 1399
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1126320/e714c1b5cde88d0113abfe7e1bfff4b3ff282904/capsule_231x87.jpg?t=1788193057",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    },
+    {
+      "type": "app",
+      "name": "Being a DIK - Season 3",
+      "id": 1807120,
+      "price": {
+        "currency": "USD",
+        "initial": 1999,
+        "final": 1999
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1807120/1b3cbbce3ecf3f6234dc77e7bf9a050c822028c8/capsule_231x87.jpg?t=1788256738",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    },
+    {
+      "type": "app",
+      "name": "Being a DIK - Season 2",
+      "id": 1215820,
+      "price": {
+        "currency": "USD",
+        "initial": 1999,
+        "final": 1999
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1215820/21a82fb657a8f5ba49c7e90be6238bf2fab9b752/capsule_231x87.jpg?t=1790020669",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    },
+    {
+      "type": "app",
+      "name": "Being a DIK: Season 2 - The complete official guide",
+      "id": 1631620,
+      "price": {
+        "currency": "USD",
+        "initial": 499,
+        "final": 499
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1631620/159fb5ec25980cae51538a4683cc5262d93a2380/capsule_231x87.jpg?t=1731771477",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    },
+    {
+      "type": "app",
+      "name": "Being a DIK:  Season 1 - The complete official guide",
+      "id": 1223490,
+      "price": {
+        "currency": "USD",
+        "initial": 499,
+        "final": 499
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1223490/243f904e194c9f4bb89315d06bf52f83ac1d301f/capsule_231x87.jpg?t=1723892173",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    },
+    {
+      "type": "app",
+      "name": "Being a DIK: Season 3 - The complete official guide",
+      "id": 2220920,
+      "price": {
+        "currency": "USD",
+        "initial": 499,
+        "final": 499
+      },
+      "tiny_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2220920/f767e3fe7195d7fd37b669415d58d4d403f7407a/capsule_231x87.jpg?t=1788256751",
+      "metascore": "",
+      "platforms": {
+        "windows": true,
+        "mac": false,
+        "linux": true
+      },
+      "streamingvideo": false
+    }
+  ]
+}
