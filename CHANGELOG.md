@@ -6,6 +6,9 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Play-session recording survives launcher closure, keeps 30-second recovery checkpoints and preserves
+  existing total playtime. Sessions follow game deletion, relink merges and backups. Added privacy-aware
+  statistics queries; the Sessions block and Statistics interface will follow in a separate step.
 - Find game info by name across F95zone, Steam and VNDB: folder-name suggestions, source toggles, ranked
   results and a read-only preview before saving. Search and paste-link tabs share the metadata panel;
   dismissing the large prompt keeps the compact panel available. Preview images respect privacy blur.

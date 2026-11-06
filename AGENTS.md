@@ -321,9 +321,9 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 
 1. ✅ **DONE — Find game info by name** — search Steam / F95zone / VNDB by the folder name, pick a result, preview, save.
    Full spec: [`docs/specs/find-by-name.md`](docs/specs/find-by-name.md). Adds a VNDB parser.
-2. **Play sessions + Stats tab** — store each launch (start, duration) in a new table where playtime is counted now;
-   game page block «Play sessions» (8-week chart, count, longest); a Stats view (hours, statuses, engines, disk
-   size, weekly activity). Sessions start accumulating only after release, so ship them early.
+2. **Play sessions + Stats tab — backend done, interface next.** Durable session recording and scoped
+   statistics methods are implemented. Next: game-page Sessions block and the Statistics view.
+   Full spec: [`docs/specs/play-sessions-stats.md`](docs/specs/play-sessions-stats.md).
 3. **Multiple launch files** (#7 above): main file ★ + extra ones (config, walkthrough) in a menu next to Play;
    picked in edit mode.
 4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
@@ -374,3 +374,39 @@ prominent panels become compact and remain reachable. Do not unmount FindByName 
 Headless regression: `docs/tools/screenshots/test-find.cjs` against the `?shot=find` mock on :5393 and dedicated
 Edge CDP on :9334. See its README for setup. The mock has two candidates per source, one failed source by
 default, remote preview URLs and actual in-memory apply behavior. Real-library validation remains manual.
+
+### Play sessions backend (2026-11-06)
+
+`internal/launcher/monitor.go` owns direct launches and `cmd.Wait`, in the same executable's internal
+`--play-session-monitor <dataDir> <sessionID>` mode before Wails/updater initialization. OS-associated files
+stay untracked. The UI can exit; the monitor persists 30-second checkpoints and commits the final seconds.
+A dead monitor is recovered only to its last durable checkpoint, marked interrupted. Threshold: >= 60 s.
+Finalization and the integer-minute increment are one idempotent DB transaction. `SaveGame` no longer updates
+`time_played` or `last_launched_at` for existing games: use tracking operations, never an editor's old copy.
+
+`play_sessions` / `pending_sessions` have foreign keys with cascade deletion, enabled on every connection.
+Relink uses `SaveRelink` to move completed/pending sessions, sum the latest totals, move collection membership
+and delete the duplicate atomically. Backup snapshots include both tables; imported pending rows are finalized
+at snapshot checkpoints, never reattached to a process. Session history is never backfilled from legacy totals.
+
+`internal/sessionlock` uses OS-owned lifetime locks, not PID/heartbeat guesses. Locks live outside the movable
+library under the user's cache directory (`pLauncher/session-locks/<path hash>`); never unlink lock files while
+processes might hold them. Launch/monitor startup and import/data moves/update installation share a lifecycle
+gate. Active monitors block these operations even if their game has been deleted; normal UI close stays allowed.
+Recovery runs on startup and in the UI's two-second session watcher; it continues while locked, without events.
+
+App methods: `GetGameSessions(gameID, visibleGameIDs, timeZone)`, `GetLibraryStats(visibleGameIDs, period,
+timeZone)` and `GetSessionRevision()`. Periods: `week`, `month`, `all`; zones are IANA names, with bundled tzdata.
+Pass IDs from `visibleGames`, never the whole or currently filtered library. Empty scope means no games.
+Locked/unconfigured calls return null; late locked responses are discarded. Frontend will invalidate its own
+responses on reveal/hide/navigation. Stats use Monday weeks, calendar months and 52 rolling weekly buckets;
+intervals crossing boundaries are split in local time, including DST. All-time totals use stored minutes.
+`GameSessions.tracking_supported` exposes direct-process tracking capability. `sessions-updated` and
+`games-updated` are payload-free revision notifications; `session-recording-error` / GetSessionRevision errors
+use apperr and all 11 locales. Step 2 must handle those events, including error display, without leaking data.
+
+Windows process tests use real detached helper processes and an accelerated duration clock. Optional
+`TestBuiltMonitorEntry` in internal/launcher accepts `PLAUNCHER_BUILT_EXE` and verifies the packaged binary's
+windowless monitor entry with a short helper launch. Vet/test/build and that smoke check passed. Linux/Darwin
+monitor packages compiled but were not executed. No actual user games or library were launched; UI work and
+interactive real-game verification are still pending.

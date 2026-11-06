@@ -24,6 +24,10 @@ type GameRepository interface {
 	SetSetting(ctx context.Context, key, value string) error
 	SearchGames(ctx context.Context, searchQuery string) ([]*models.Game, error)
 	SetGameSize(ctx context.Context, id string, size, checkedAt int64) error
+	MarkLaunched(context.Context, string, int64) error
+	SaveRelink(context.Context, *models.Game, string) error
+	ReadSessionSnapshot(context.Context, []string) (*SessionSnapshot, error)
+	SessionRevision(context.Context) (int64, string, error)
 }
 
 // SQLiteRepo - реализация GameRepository для SQLite
@@ -41,7 +45,7 @@ func NewSQLiteRepo(dbPath string) (*SQLiteRepo, error) {
 	// Открываем подключение
 	// busy_timeout: фоновые задачи (подсчёт размеров папок) пишут в БД параллельно с UI;
 	// без таймаута конкурирующая запись сразу падает с SQLITE_BUSY, а так — ждёт до 5 с.
-	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
 	if err != nil {
 		return nil, fmt.Errorf("database open error: %w", err)
 	}
@@ -55,6 +59,7 @@ func NewSQLiteRepo(dbPath string) (*SQLiteRepo, error) {
 
 	// Инициализируем схему (таблицы)
 	if err := repo.initSchema(); err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -128,7 +133,7 @@ func (r *SQLiteRepo) initSchema() error {
 	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_pos_tall TEXT DEFAULT '';`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN cover_zoom_tall REAL DEFAULT 0;`)
 
-	return nil
+	return r.initSessions()
 }
 
 // scanGames читает строки результата в слайс игр (общая логика для Get/Search).
@@ -169,6 +174,14 @@ const gameColumns = `id, title, description, version, languages, cover_path, ima
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
+	return saveGame(ctx, r.db, g)
+}
+
+type gameWriter interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func saveGame(ctx context.Context, writer gameWriter, g *models.Game) error {
 	// SQLite не умеет хранить массивы (слайсы), поэтому сериализуем их в JSON.
 	// Это стандартный подход, который не нагружает сборщик мусора (GC).
 	langsJSON, _ := json.Marshal(g.Languages)
@@ -198,8 +211,6 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		exec_path=excluded.exec_path,
 		folder_path=excluded.folder_path,
 		favorite=excluded.favorite,
-		time_played=excluded.time_played,
-		last_launched_at=excluded.last_launched_at,
 		cover_fit=excluded.cover_fit,
 		cover_pos=excluded.cover_pos,
 		author=excluded.author,
@@ -221,7 +232,8 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	// size_bytes/size_checked_at тоже: их пишет только SetGameSize (фоновый подсчёт), чтобы
 	// сохранение игры из UI со старым размером не затирало свежий.
 
-	_, err := r.db.ExecContext(ctx, query,
+	// Playtime and last launch are owned by session tracking, never by stale UI saves.
+	_, err := writer.ExecContext(ctx, query,
 		g.ID, g.Title, g.Description, g.Version, string(langsJSON),
 		g.CoverPath, string(imagesJSON), string(tagsJSON), g.ExecPath, g.FolderPath, favorite, g.TimePlayed, g.AddedAt, g.LastLaunchedAt, g.CoverFit, g.CoverPos,
 		g.Author, g.Engine,

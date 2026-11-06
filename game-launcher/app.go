@@ -23,15 +23,17 @@ import (
 
 // App — это ядро нашего приложения, связывающее все модули
 type App struct {
-	ctx      context.Context
-	mu       sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
-	repo     db.GameRepository
-	scanner  *scanner.Scanner
-	launcher *launcher.Controller
-	dataDir  string // абсолютный путь к папке с данными (БД + обложки)
-	priv     privacyState
-	live     bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
-	upd      updateState
+	ctx          context.Context
+	sessionsMu   sync.Mutex // serializes launch and data replacement
+	sessionsStop context.CancelFunc
+	mu           sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
+	repo         db.GameRepository
+	scanner      *scanner.Scanner
+	launcher     *launcher.Controller
+	dataDir      string // абсолютный путь к папке с данными (БД + обложки)
+	priv         privacyState
+	live         bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
+	upd          updateState
 }
 
 // NewApp создает новое приложение
@@ -55,6 +57,9 @@ func (a *App) startup(ctx context.Context) {
 		} else {
 			if a.loadPrivacy().HasPin {
 				a.priv.locked = true // с PIN-кодом лаунчер стартует заблокированным
+			}
+			if err := a.recoverSessions(); err != nil {
+				fmt.Printf("Session recovery: %v\n", err)
 			}
 			a.refreshSizesAsync(false) // досчитать размеры новых/устаревших игр
 		}
@@ -117,10 +122,17 @@ func (a *App) shutdown(ctx context.Context) {
 // domReady вызывается, когда интерфейс загрузился.
 func (a *App) domReady(ctx context.Context) {
 	confirmUpdateStarted()
+	a.watchSessions()
 }
 
 // closeServices снимает глобальную горячую клавишу и закрывает БД.
 func (a *App) closeServices() {
+	a.mu.Lock()
+	if a.sessionsStop != nil {
+		a.sessionsStop()
+		a.sessionsStop = nil
+	}
+	a.mu.Unlock()
 	a.priv.hotkeys.Unregister()
 	if a.repo != nil {
 		// Приводим интерфейс к конкретному типу для вызова специфичного метода Close
@@ -182,6 +194,11 @@ func (a *App) GetDocumentsDataDir() string { return documentsDataDir() }
 // ConfigureDataDir вызывается при первом запуске: создаёт папку, открывает БД,
 // сохраняет путь в конфиг.
 func (a *App) ConfigureDataDir(path string) error {
+	release, err := a.guardSessionData(path)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if strings.TrimSpace(path) == "" {
 		return fmt.Errorf("path cannot be empty")
 	}
@@ -193,6 +210,11 @@ func (a *App) ConfigureDataDir(path string) error {
 
 // ChangeDataDir переносит данные в новую папку и переключается на неё.
 func (a *App) ChangeDataDir(newPath string) error {
+	release, err := a.guardSessionData(newPath)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if strings.TrimSpace(newPath) == "" {
 		return fmt.Errorf("path cannot be empty")
 	}
@@ -319,43 +341,13 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 
 // Launch запускает игру
 func (a *App) Launch(gameID string, exePath string, folderPath string) error {
+	if a.repo == nil || a.isLocked() {
+		return nil
+	}
 	if folderMissing(folderPath) {
 		return apperr.New("app.folder_missing", apperr.P{"path": folderPath}, "game folder not found: %s", folderPath)
 	}
-	// Сохраняем время запуска
-	if games, err := a.repo.GetAllGames(a.ctx); err == nil {
-		for _, g := range games {
-			if g.ID == gameID {
-				g.LastLaunchedAt = time.Now().Unix()
-				a.repo.SaveGame(a.ctx, g)
-				break
-			}
-		}
-	}
-	// onExit вызовется при завершении процесса игры — допишем время в БД
-	return a.launcher.LaunchGame(exePath, folderPath, func(minutes int) {
-		a.addPlaytime(gameID, minutes)
-	})
-}
-
-// addPlaytime прибавляет минуты к времени в игре и уведомляет UI событием.
-func (a *App) addPlaytime(gameID string, minutes int) {
-	if a.repo == nil || minutes <= 0 {
-		return
-	}
-	games, err := a.repo.GetAllGames(a.ctx)
-	if err != nil {
-		return
-	}
-	for _, g := range games {
-		if g.ID == gameID {
-			g.TimePlayed += minutes
-			if err := a.repo.SaveGame(a.ctx, g); err == nil {
-				runtime.EventsEmit(a.ctx, "games-updated")
-			}
-			return
-		}
-	}
+	return a.launchTracked(gameID, exePath, folderPath)
 }
 
 // OpenFolder просто открывает папку с игрой в проводнике

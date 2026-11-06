@@ -630,5 +630,10 @@
   "drop.images_title": "Bilder hier ablegen",
   "drop.images_sub": "Sie werden zu den Screenshots hinzugefügt",
   "continue.hide": "Aus «Weiterspielen» entfernen",
-  "continue.hidden": "{title} erscheint erst nach dem nächsten Start wieder unter «Weiterspielen»"
+  "continue.hidden": "{title} erscheint erst nach dem nächsten Start wieder unter «Weiterspielen»",
+  "err.sessions.storage": "Spielsitzungen konnten nicht gelesen oder gespeichert werden.",
+  "err.sessions.busy": "Warte, bis laufende Spiele und die Sitzungsaufzeichnung beendet sind, bevor du Daten änderst oder ein Update installierst.",
+  "err.sessions.launch": "Das Spiel konnte nicht gestartet werden.",
+  "err.sessions.timezone": "Wähle eine gültige IANA-Zeitzone.",
+  "err.sessions.period": "Wähle einen gültigen Statistikzeitraum."
 }

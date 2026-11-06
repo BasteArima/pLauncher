@@ -630,5 +630,10 @@
   "drop.images_title": "Déposez les images ici",
   "drop.images_sub": "Elles seront ajoutées aux captures",
   "continue.hide": "Retirer de « Continuer »",
-  "continue.hidden": "{title} n'apparaîtra plus dans « Continuer » jusqu'au prochain lancement"
+  "continue.hidden": "{title} n'apparaîtra plus dans « Continuer » jusqu'au prochain lancement",
+  "err.sessions.storage": "Impossible de lire ou d’enregistrer les sessions de jeu.",
+  "err.sessions.busy": "Attendez la fin des jeux et de l’enregistrement des sessions avant de modifier les données ou d’installer une mise à jour.",
+  "err.sessions.launch": "Impossible de lancer le jeu.",
+  "err.sessions.timezone": "Sélectionnez un fuseau horaire IANA valide.",
+  "err.sessions.period": "Sélectionnez une période de statistiques valide."
 }

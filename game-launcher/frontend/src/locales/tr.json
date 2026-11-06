@@ -630,5 +630,10 @@
   "drop.images_title": "Görselleri buraya bırak",
   "drop.images_sub": "Ekran görüntülerine eklenecek",
   "continue.hide": "«Devam et» listesinden kaldır",
-  "continue.hidden": "{title} yeniden başlatılana kadar «Devam et» listesinde görünmeyecek"
+  "continue.hidden": "{title} yeniden başlatılana kadar «Devam et» listesinde görünmeyecek",
+  "err.sessions.storage": "Oyun oturumları okunamadı veya kaydedilemedi.",
+  "err.sessions.busy": "Verileri değiştirmeden veya güncelleme yüklemeden önce oyunların ve oturum kaydının bitmesini bekleyin.",
+  "err.sessions.launch": "Oyun başlatılamadı.",
+  "err.sessions.timezone": "Geçerli bir IANA saat dilimi seçin.",
+  "err.sessions.period": "Geçerli bir istatistik dönemi seçin."
 }

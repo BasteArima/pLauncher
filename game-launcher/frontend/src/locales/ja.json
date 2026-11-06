@@ -630,5 +630,10 @@
   "drop.images_title": "ここに画像をドロップ",
   "drop.images_sub": "スクリーンショットに追加されます",
   "continue.hide": "「続きから遊ぶ」から外す",
-  "continue.hidden": "「{title}」は次に起動するまで「続きから遊ぶ」に表示されません"
+  "continue.hidden": "「{title}」は次に起動するまで「続きから遊ぶ」に表示されません",
+  "err.sessions.storage": "プレイセッションを読み込みまたは保存できませんでした。",
+  "err.sessions.busy": "データの変更や更新のインストールを行う前に、ゲームとセッションの記録が終了するまでお待ちください。",
+  "err.sessions.launch": "ゲームを起動できませんでした。",
+  "err.sessions.timezone": "有効な IANA タイムゾーンを選択してください。",
+  "err.sessions.period": "有効な統計期間を選択してください。"
 }

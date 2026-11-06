@@ -228,10 +228,7 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 	}
 
 	if dup != nil {
-		g.TimePlayed += dup.TimePlayed
-		if dup.LastLaunchedAt > g.LastLaunchedAt {
-			g.LastLaunchedAt = dup.LastLaunchedAt
-		}
+		// Tracking totals and history are merged transactionally by SaveRelink below.
 		g.Favorite = g.Favorite || dup.Favorite
 		if g.Status == "" {
 			g.Status = dup.Status
@@ -247,16 +244,12 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 		}
 	}
 
-	if err := a.repo.SaveGame(a.ctx, g); err != nil {
-		return nil, err
-	}
+	duplicateID := ""
 	if dup != nil {
-		if err := a.replaceInCollections(dup.ID, g.ID); err != nil {
-			fmt.Printf("RelinkGame: коллекции не обновлены: %v\n", err)
-		}
-		if err := a.repo.DeleteGame(a.ctx, dup.ID); err != nil {
-			fmt.Printf("RelinkGame: дубликат %s не удалён: %v\n", dup.ID, err)
-		}
+		duplicateID = dup.ID
+	}
+	if err := a.repo.SaveRelink(a.ctx, g, duplicateID); err != nil {
+		return nil, sessionErr(err)
 	}
 	// Папка другая — размер пересчитаем в фоне
 	if a.repo.SetGameSize(a.ctx, g.ID, 0, 0) == nil {

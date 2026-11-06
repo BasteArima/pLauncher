@@ -7,23 +7,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync/atomic"
-	"time"
 )
 
 // Controller отвечает за взаимодействие с файловой системой ОС и процессами
-type Controller struct {
-	running atomic.Int32 // сколько игр запущено напрямую и ещё работают
-}
+type Controller struct{}
 
 // NewController создает новый экземпляр контроллера
 func NewController() *Controller {
 	return &Controller{}
 }
-
-// Running — сколько запущенных лаунчером игр ещё работает. Игры, открытые через
-// ассоциацию ОС, не считаются: их процесс отсоединён.
-func (c *Controller) Running() int { return int(c.running.Load()) }
 
 // OpenFolder открывает переданный путь в системном файловом менеджере.
 // Поддерживает Windows, macOS и Linux.
@@ -50,33 +42,9 @@ func (c *Controller) OpenFolder(folderPath string) error {
 	return nil
 }
 
-// LaunchGame запускает исполняемый файл игры.
-// Если задан onExit, в фоне (через cmd.Wait — без поллинга, нулевая нагрузка)
-// дожидается завершения процесса и сообщает время сессии в минутах.
-func (c *Controller) LaunchGame(exePath, folderPath string, onExit func(minutes int)) error {
-	ext := strings.ToLower(filepath.Ext(exePath))
-
-	// Прямой запуск нативных исполняемых: так ОС отдаёт хэндл процесса,
-	// и cmd.Wait позволяет считать время игры без поллинга.
-	if isDirectExecutable(exePath, ext) {
-		cmd := exec.Command(exePath)
-		// Рабочей директорией должна быть папка игры, иначе Unity/RenPy не найдут ассеты.
-		cmd.Dir = folderPath
-		if err := cmd.Start(); err != nil {
-			return fmt.Errorf("couldn't launch %s: %w", exePath, err)
-		}
-		c.running.Add(1)
-		go func() {
-			start := time.Now()
-			cmd.Wait() // блокируется на хэндле процесса, ОС будит при выходе
-			c.running.Add(-1)
-			if onExit != nil {
-				onExit(int(time.Since(start).Minutes()))
-			}
-		}()
-		return nil
-	}
-
+// LaunchAssociated opens an untracked file through the OS association. Direct
+// executables are launched by the durable monitor in monitor.go.
+func (c *Controller) LaunchAssociated(exePath, folderPath string) error {
 	// Остальные форматы (html/swf/jar/qsp/rags/lnk/bat…, на macOS — .app) открываем
 	// ассоциированным приложением. Процесс отсоединяется, поэтому время игры для них
 	// не учитывается (last_launched_at всё равно проставляется на стороне app.go).

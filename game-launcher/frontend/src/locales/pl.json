@@ -630,5 +630,10 @@
   "drop.images_title": "Upuść obrazy tutaj",
   "drop.images_sub": "Zostaną dodane do zrzutów ekranu",
   "continue.hide": "Usuń z «Kontynuuj»",
-  "continue.hidden": "{title} nie pojawi się w «Kontynuuj», dopóki znów jej nie uruchomisz"
+  "continue.hidden": "{title} nie pojawi się w «Kontynuuj», dopóki znów jej nie uruchomisz",
+  "err.sessions.storage": "Nie udało się odczytać lub zapisać sesji gry.",
+  "err.sessions.busy": "Przed zmianą danych lub instalacją aktualizacji poczekaj na zakończenie gier i zapisywania sesji.",
+  "err.sessions.launch": "Nie udało się uruchomić gry.",
+  "err.sessions.timezone": "Wybierz prawidłową strefę czasową IANA.",
+  "err.sessions.period": "Wybierz prawidłowy okres statystyk."
 }

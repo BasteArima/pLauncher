@@ -199,6 +199,24 @@ export namespace models {
 	        this.hidden = source["hidden"];
 	    }
 	}
+	export class DiskStats {
+	    bytes: number;
+	    measured: number;
+	    unknown: number;
+	    missing: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DiskStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.bytes = source["bytes"];
+	        this.measured = source["measured"];
+	        this.unknown = source["unknown"];
+	        this.missing = source["missing"];
+	    }
+	}
 	export class GameSource {
 	    source: string;
 	    url: string;
@@ -309,6 +327,165 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class PlaySession {
+	    id: string;
+	    game_id: string;
+	    started_at: number;
+	    duration_seconds: number;
+	    interrupted: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlaySession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.game_id = source["game_id"];
+	        this.started_at = source["started_at"];
+	        this.duration_seconds = source["duration_seconds"];
+	        this.interrupted = source["interrupted"];
+	    }
+	}
+	export class WeekActivity {
+	    start: number;
+	    end: number;
+	    seconds: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new WeekActivity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.start = source["start"];
+	        this.end = source["end"];
+	        this.seconds = source["seconds"];
+	    }
+	}
+	export class GameSessions {
+	    tracking_supported: boolean;
+	    count: number;
+	    longest_seconds: number;
+	    history_since: number;
+	    weeks: WeekActivity[];
+	    latest: PlaySession[];
+	
+	    static createFrom(source: any = {}) {
+	        return new GameSessions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tracking_supported = source["tracking_supported"];
+	        this.count = source["count"];
+	        this.longest_seconds = source["longest_seconds"];
+	        this.history_since = source["history_since"];
+	        this.weeks = this.convertValues(source["weeks"], WeekActivity);
+	        this.latest = this.convertValues(source["latest"], PlaySession);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class GameTime {
+	    game_id: string;
+	    seconds: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GameTime(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.game_id = source["game_id"];
+	        this.seconds = source["seconds"];
+	    }
+	}
+	export class NamedCount {
+	    name: string;
+	    count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new NamedCount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.count = source["count"];
+	    }
+	}
+	export class LibraryStats {
+	    all_time_seconds: number;
+	    month_seconds: number;
+	    week_seconds: number;
+	    history_since: number;
+	    weeks: WeekActivity[];
+	    top_games: GameTime[];
+	    statuses: NamedCount[];
+	    engines: NamedCount[];
+	    disk: DiskStats;
+	    updates: number;
+	    no_cover: number;
+	    no_source: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new LibraryStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.all_time_seconds = source["all_time_seconds"];
+	        this.month_seconds = source["month_seconds"];
+	        this.week_seconds = source["week_seconds"];
+	        this.history_since = source["history_since"];
+	        this.weeks = this.convertValues(source["weeks"], WeekActivity);
+	        this.top_games = this.convertValues(source["top_games"], GameTime);
+	        this.statuses = this.convertValues(source["statuses"], NamedCount);
+	        this.engines = this.convertValues(source["engines"], NamedCount);
+	        this.disk = this.convertValues(source["disk"], DiskStats);
+	        this.updates = source["updates"];
+	        this.no_cover = source["no_cover"];
+	        this.no_source = source["no_source"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
 
 }
 

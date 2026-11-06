@@ -106,6 +106,10 @@ export function GetDocumentsDataDir() {
   return window['go']['main']['App']['GetDocumentsDataDir']();
 }
 
+export function GetGameSessions(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetGameSessions'](arg1, arg2, arg3);
+}
+
 export function GetGames() {
   return window['go']['main']['App']['GetGames']();
 }
@@ -126,6 +130,10 @@ export function GetLauncherStartInfo() {
   return window['go']['main']['App']['GetLauncherStartInfo']();
 }
 
+export function GetLibraryStats(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetLibraryStats'](arg1, arg2, arg3);
+}
+
 export function GetPortableDataDir() {
   return window['go']['main']['App']['GetPortableDataDir']();
 }
@@ -136,6 +144,10 @@ export function GetPrivacy() {
 
 export function GetScanPaths() {
   return window['go']['main']['App']['GetScanPaths']();
+}
+
+export function GetSessionRevision() {
+  return window['go']['main']['App']['GetSessionRevision']();
 }
 
 export function GetSupportedSources() {

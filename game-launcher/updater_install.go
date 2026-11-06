@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"game-launcher/internal/sessionlock"
 	"hash"
 	"io"
 	"net/http"
@@ -330,8 +331,11 @@ func verifySHA256(ctx context.Context, sum, shaURL string) error {
 // GetLauncherRestartBlocker — почему перезапускаться сейчас нежелательно: "game" (идёт игра,
 // оборвётся подсчёт времени), "hidden" (окно спрятано кнопкой паники) или "".
 func (a *App) GetLauncherRestartBlocker() string {
-	if a.launcher != nil && a.launcher.Running() > 0 {
-		return "game"
+	if a.dataDir != "" {
+		active, err := sessionlock.Active(a.dataDir)
+		if active || err != nil {
+			return "game"
+		}
 	}
 	a.priv.mu.Lock()
 	hidden := a.priv.panicHidden
@@ -345,6 +349,16 @@ func (a *App) GetLauncherRestartBlocker() string {
 // ApplyLauncherUpdate ставит скачанную версию и перезапускает лаунчер. discreet — обложки
 // сейчас скрыты: новая версия запустится с ними же скрытыми.
 func (a *App) ApplyLauncherUpdate(discreet bool) error {
+	release, err := a.guardSessionData()
+	if err != nil {
+		return err
+	}
+	transferred := false
+	defer func() {
+		if !transferred {
+			release()
+		}
+	}()
 	a.upd.mu.Lock()
 	ready := a.upd.dl.State == "ready"
 	version := a.upd.dl.Version
@@ -373,7 +387,9 @@ func (a *App) ApplyLauncherUpdate(discreet bool) error {
 	a.upd.applying = true
 	a.upd.mu.Unlock()
 
+	transferred = true
 	go func() {
+		defer release()
 		// Освобождаем всё, что нужно новой версии: БД и глобальную горячую клавишу
 		if a.live {
 			runtime.WindowHide(a.ctx)
@@ -502,6 +518,17 @@ func verifyPending(exe, sidecar, version string) error {
 // applyPendingAtStartup ставит версию, скачанную в прошлый запуск («При следующем запуске»).
 // Вызывается из main до открытия окна. true — новая версия запущена, этому процессу пора выйти.
 func applyPendingAtStartup(dataDir string) bool {
+	if dataDir != "" {
+		l, err := sessionlock.Try(dataDir, "gate")
+		if err != nil {
+			return false
+		}
+		defer l.Close()
+		active, err := sessionlock.Active(dataDir)
+		if active || err != nil {
+			return false
+		}
+	}
 	exe, err := currentExe()
 	if err != nil {
 		return false

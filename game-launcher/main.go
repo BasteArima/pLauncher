@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"game-launcher/internal/launcher"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,12 @@ var exampleLocale []byte
 var appVersion = "dev"
 
 func main() {
+	if len(os.Args) == 4 && os.Args[1] == launcher.MonitorFlag {
+		if err := launcher.RunMonitor(os.Args[2], os.Args[3], os.Stdout); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
 	for _, arg := range os.Args[1:] {
 		switch arg {
 		case afterUpdateFlag:

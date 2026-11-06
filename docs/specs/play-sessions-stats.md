@@ -1,8 +1,8 @@
 # Spec: play sessions and statistics
 
-Status: **draft; awaiting owner decisions** (2026-11-06). Specification only; no implementation yet.
-The owner's requirements are retained below; implementation details and marked **proposed** choices are
-recommendations for review. Resolve the numbered Open questions before starting either delivery step.
+Status: **step 1 implemented; interface pending** (2026-11-06). Backend implementation uses the recommended
+monitor, calendar and completed-session choices below, following the request to implement step 1.
+The Statistics entry location remains a frontend decision (Q2); no Statistics UI is included in this delivery.
 
 ## Why
 
@@ -222,7 +222,7 @@ Proposed JS-bound contracts (exact Go DTO names may be refined in step 1):
 
 ### Step 1: backend only
 
-After owner decisions: migration, pending/completed sessions, seconds-based launcher lifecycle, chosen closure
+Migration, pending/completed sessions, seconds-based launcher lifecycle, chosen closure
 strategy, atomic time accounting, cleanup/relink/backup integration, scoped aggregate queries and App methods.
 Add backend tests, localized errors and regenerate bindings with `build.ps1`. No Statistics or Sessions UI yet.
 Recording becomes available in this delivery; existing totals and library behavior must keep working.
@@ -234,7 +234,10 @@ localization and accessibility. Add screenshot mocks and headless Edge flow chec
 CHANGELOG `[Unreleased]` and this spec's status after each delivery, recording actual validation and limitations.
 Commit each finished step separately without attribution; do not push unless requested.
 
-## Open questions (owner choices)
+## Design choices and remaining frontend question
+
+Step 1 uses the recommended choices in Q1, Q3 and Q4. Q2 remains open for the interface delivery.
+Alternatives are retained here as context; they are not implemented.
 
 1. **How should closing the launcher behave?** Recommended: detached monitor, with checkpoint recovery after
    crashes and guards on import/data moves/update installation while playing. Alternative: keep the launcher
@@ -287,3 +290,57 @@ Commit each finished step separately without attribution; do not push unless req
   if thumbnails are used, and refresh after a completed session. No external requests or chart libraries.
 - Repeat vet/test/build, inspect English/Russian screenshots and update delivery notes. The owner separately
   tests the built application with real games; mock results must not be described as real-process validation.
+
+## Backend delivery (2026-11-06)
+
+Implemented detached monitors, OS lifetime locks, 30-second checkpoints, interrupted recovery and atomic
+once-only finalization. The internal monitor mode runs before the UI single-instance and updater code;
+normal UI close does not terminate it. Game deletion cancels recording but leaves the running game alone.
+Recovery occurs at startup and while the UI remains open, including behind the PIN lock. Error events and
+read methods remain silent while locked. Association-based launches stay untracked.
+
+A gate serializes monitor startup with import, data-directory changes and update installation. It is also
+checked at startup before installing a queued update. Locks are outside the data directory, so holding the
+gate does not prevent moving that directory on Windows. Lock identity uses a canonical path hash and a unique
+session token, not PID reuse or heartbeat age. Deleted running games still block data/executable replacement
+until their monitor exits. Export remains a point-in-time snapshot; imported pending rows become interrupted
+sessions at their saved checkpoints (or completed sessions if completion was already durably recorded).
+
+`SaveGame` preserves tracking-owned fields on updates. Dedicated operations set launch time and increment
+playtime. Relink moves history, pending ownership, collection membership and current totals transactionally;
+all removal paths cascade through both session tables. Legacy time stays in minutes and is never synthesized
+into session history. A metadata migration records when session recording became available.
+
+Bound methods: GetGameSessions, GetLibraryStats and GetSessionRevision. Explicit visible-ID scopes use one
+JSON SQL parameter, so duplicates and very large libraries cannot double totals or exceed parameter limits.
+Statistics are read from a consistent database snapshot. Returned duration fields use seconds; periods are
+`week`, `month`, `all`; timezone names are validated against bundled IANA data. Eight/52 weekly buckets use
+Monday boundaries and split intervals at local calendar boundaries. Empty scopes have zero activity.
+The full engine count list is returned; grouping the first five and Other is a frontend presentation task.
+GameSessions also returns `tracking_supported` for the untracked-file explanation.
+
+Payload-free `sessions-updated` / `games-updated` notifications refresh clients after an external monitor
+finishes; `session-recording-error` and GetSessionRevision surface persistent write failures using apperr.
+The new error codes are translated in all 11 built-in locales. The frontend event handlers, charts and
+navigation are explicitly left for step 2.
+
+Validation: `go vet ./...`, `go test ./...` and `game-launcher/build.ps1` passed on Windows. The build
+regenerated Wails bindings and produced the executable; existing Svelte accessibility/unused-export and
+bundle-size warnings remain. Source diff checks pass; Wails-generated models retain the generator's normal
+blank-line whitespace and were not hand-edited.
+
+Tests cover threshold boundaries (0/59/60/61/90 s), repeated/concurrent finalization, stale saves, checkpoint
+and final-write retries, transaction rollback, deletion paths, active relink, backup restoration and legacy
+migration. Aggregate tests cover large/duplicate/empty scopes, old totals, rankings, latest five sessions,
+unknown metadata/sizes, calendar/year/DST crossings, locked/unconfigured methods and lock during a response.
+
+Real Windows helper-process tests exercise parent exit -> monitor continues -> reopen while playing -> game
+exit -> one session/one increment, nonzero game exit, monitor termination and checkpoint recovery. Qualifying
+durations use an injected accelerated clock. An additional opt-in `TestBuiltMonitorEntry` ran against the
+packaged `build/bin/pLauncher.exe` (`PLAUNCHER_BUILT_EXE`): the early windowless monitor entry and startup
+handshake worked, and a short helper launch was discarded with the real clock. Tests use temporary libraries;
+none touch the owner's library or launch actual games.
+
+The launcher/monitor test package also compiled for Linux/amd64 and Darwin/amd64; these were compile-only
+checks, not executions or full Wails builds. Actual process detachment on Linux/macOS, real user games,
+power-loss behavior and interactive UI remain untested. The Sessions/Statistics frontend is step 2.

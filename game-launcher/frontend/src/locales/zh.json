@@ -630,5 +630,10 @@
   "drop.images_title": "将图片拖到这里",
   "drop.images_sub": "它们会被添加到截图中",
   "continue.hide": "从“继续游玩”中移除",
-  "continue.hidden": "再次启动前，《{title}》不会出现在“继续游玩”中"
+  "continue.hidden": "再次启动前，《{title}》不会出现在“继续游玩”中",
+  "err.sessions.storage": "无法读取或保存游戏会话。",
+  "err.sessions.busy": "请等待游戏结束并完成会话记录后，再更改数据或安装更新。",
+  "err.sessions.launch": "无法启动游戏。",
+  "err.sessions.timezone": "请选择有效的 IANA 时区。",
+  "err.sessions.period": "请选择有效的统计周期。"
 }

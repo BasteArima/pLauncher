@@ -152,6 +152,11 @@ func (a *App) SelectBackupFile() (string, error) {
 // Порядок: распаковка во временную папку → проверка БД → подмена файлов
 // (прежние откладываются и возвращаются при сбое) → переоткрытие БД.
 func (a *App) ImportLibrary(zipPath string) (int, error) {
+	release, err := a.guardSessionData()
+	if err != nil {
+		return 0, err
+	}
+	defer release()
 	if a.dataDir == "" {
 		return 0, errNoDataDir()
 	}
@@ -251,6 +256,9 @@ func prepareImportedDB(path string) (int, error) {
 	}
 	defer repo.Close()
 	ctx := context.Background()
+	if err := repo.RecoverImportedSessions(ctx); err != nil {
+		return 0, err
+	}
 	games, err := repo.GetAllGames(ctx)
 	if err != nil {
 		return 0, err

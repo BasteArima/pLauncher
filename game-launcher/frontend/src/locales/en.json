@@ -630,5 +630,10 @@
   "drop.images_title": "Drop images here",
   "drop.images_sub": "They will be added to the screenshots",
   "continue.hide": "Remove from Continue playing",
-  "continue.hidden": "{title} won't show in Continue playing until you launch it again"
+  "continue.hidden": "{title} won't show in Continue playing until you launch it again",
+  "err.sessions.storage": "Could not read or save play sessions.",
+  "err.sessions.busy": "Wait for running games and session recording to finish before changing data or installing an update.",
+  "err.sessions.launch": "Could not launch the game.",
+  "err.sessions.timezone": "Select a valid IANA time zone.",
+  "err.sessions.period": "Select a valid statistics period."
 }

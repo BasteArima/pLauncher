@@ -56,6 +56,8 @@ export function GetDefaultDataDir():Promise<string>;
 
 export function GetDocumentsDataDir():Promise<string>;
 
+export function GetGameSessions(arg1:string,arg2:Array<string>,arg3:string):Promise<models.GameSessions>;
+
 export function GetGames():Promise<Array<models.Game>>;
 
 export function GetIgnoredPaths():Promise<Array<string>>;
@@ -66,11 +68,15 @@ export function GetLauncherRestartBlocker():Promise<string>;
 
 export function GetLauncherStartInfo():Promise<main.LauncherStartInfo>;
 
+export function GetLibraryStats(arg1:Array<string>,arg2:string,arg3:string):Promise<models.LibraryStats>;
+
 export function GetPortableDataDir():Promise<string>;
 
 export function GetPrivacy():Promise<main.PrivacySettings>;
 
 export function GetScanPaths():Promise<Array<string>>;
+
+export function GetSessionRevision():Promise<any>;
 
 export function GetSupportedSources():Promise<Array<parser.Source>>;
 
