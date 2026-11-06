@@ -66,11 +66,7 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 
 	// Движок — из меток-префиксов h1 (VN, Ren'Py, Completed): берём первую,
 	// что распознаётся как движок.
-	var labelTokens []string
-	titleSel.Find(".labelLink").Each(func(i int, s *goquery.Selection) {
-		labelTokens = append(labelTokens, cleanText(s.Text()))
-	})
-	game.Engine = engineFromTokens(labelTokens)
+	game.Engine = f95DocumentEngine(doc)
 
 	// 2. УМНЫЙ парсинг описания через регулярное выражение
 	// Ищем текст внутри главного поста
@@ -208,4 +204,13 @@ func cleanText(s string) string {
 func stripHTMLTags(s string) string {
 	re := regexp.MustCompile(`<[^>]*>`)
 	return re.ReplaceAllString(s, "")
+}
+
+// Read only the thread title labels, never engine names mentioned in replies.
+func f95DocumentEngine(doc *goquery.Document) string {
+	var labels []string
+	doc.Find("h1.p-title-value").First().Find(".labelLink").Each(func(_ int, s *goquery.Selection) {
+		labels = append(labels, cleanText(s.Text()))
+	})
+	return engineFromTokens(labels)
 }

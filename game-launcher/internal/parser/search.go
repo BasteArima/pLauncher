@@ -17,15 +17,18 @@ import (
 )
 
 type SearchHit struct {
-	Source  string  `json:"source"`
-	URL     string  `json:"url"`
-	Title   string  `json:"title"`
-	Author  string  `json:"author"`
-	Version string  `json:"version"`
-	Year    string  `json:"year"`
-	Thumb   string  `json:"thumb"`
-	Score   float64 `json:"score"`
-	Best    bool    `json:"best"`
+	// Optional source metadata. UpdatedAt is UTC RFC3339, never a release date.
+	Engine    string  `json:"engine"`
+	UpdatedAt string  `json:"updated_at"`
+	Source    string  `json:"source"`
+	URL       string  `json:"url"`
+	Title     string  `json:"title"`
+	Author    string  `json:"author"`
+	Version   string  `json:"version"`
+	Year      string  `json:"year"`
+	Thumb     string  `json:"thumb"`
+	Score     float64 `json:"score"`
+	Best      bool    `json:"best"`
 }
 type SearchFailure struct {
 	Source string `json:"source"`

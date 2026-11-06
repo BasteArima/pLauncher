@@ -29,6 +29,14 @@ func TestSearchSourceFixtures(t *testing.T) {
 		if r.Header.Get("User-Agent") == "" {
 			t.Error("missing user agent")
 		}
+		if strings.HasPrefix(r.URL.Path, "/threads/") {
+			if r.URL.Path == "/threads/319338/" {
+				fmt.Fprint(w, "<h1 class='p-title-value'>No engine label</h1>")
+			} else {
+				fmt.Fprint(w, f95GuestPage)
+			}
+			return
+		}
 		switch r.URL.Path {
 		case "/f95":
 			if r.URL.Query().Get("search") != "Summertime" {
@@ -58,9 +66,10 @@ func TestSearchSourceFixtures(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	oldF, oldS, oldV := f95LatestURL, steamSearchURL, vndbAPIURL
+	oldF, oldS, oldV, oldThread := f95LatestURL, steamSearchURL, vndbAPIURL, f95SearchThreadURL
 	f95LatestURL, steamSearchURL, vndbAPIURL = srv.URL+"/f95", srv.URL+"/steam", srv.URL+"/vndb"
-	t.Cleanup(func() { f95LatestURL, steamSearchURL, vndbAPIURL = oldF, oldS, oldV })
+	f95SearchThreadURL = srv.URL + "/threads/"
+	t.Cleanup(func() { f95LatestURL, steamSearchURL, vndbAPIURL, f95SearchThreadURL = oldF, oldS, oldV, oldThread })
 	for _, tt := range []struct {
 		source, query, title, author, version, year, url string
 		count                                            int
@@ -81,6 +90,24 @@ func TestSearchSourceFixtures(t *testing.T) {
 			}
 			if tt.source == "F95zone" && !strings.Contains(h.Thumb, "attachments.f95zone.to") {
 				t.Fatal(h.Thumb)
+			}
+			if tt.source == "F95zone" {
+				if h.UpdatedAt != time.Unix(1792383520, 0).UTC().Format(time.RFC3339) || h.Engine != "" || hits[1].Engine != "Ren'Py" {
+					t.Fatalf("source metadata: %+v", hits)
+				}
+			} else if h.Engine != "" || h.UpdatedAt != "" {
+				t.Fatalf("invented update/engine metadata: %+v", h)
+			}
+			encoded, err := json.Marshal(h)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wire map[string]any
+			if err := json.Unmarshal(encoded, &wire); err != nil {
+				t.Fatal(err)
+			}
+			if wire["engine"] != h.Engine || wire["updated_at"] != h.UpdatedAt {
+				t.Fatalf("wire contract: %s", encoded)
 			}
 			if tt.source == "VNDB" && hits[1].Year != "" {
 				t.Fatal("null release date became a year")
@@ -241,5 +268,66 @@ func TestSearchSourceErrorsAndF95Fallback(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+	}
+}
+
+func TestF95OptionalSearchMetadata(t *testing.T) {
+	for _, tt := range []struct {
+		name, fields, page, engine string
+		status                     int
+		slow                       bool
+	}{
+		{name: "metadata", fields: `"prefixes":[7],"ts":1792383520`, page: f95GuestPage, engine: "Ren'Py", status: 200},
+		{name: "missing", fields: `"prefixes":null,"ts":null,"date":"3 weeks"`, status: 200},
+		{name: "negative timestamp", fields: `"ts":-1`, status: 200},
+		{name: "blocked thread", fields: `"prefixes":[7],"ts":1792383520`, status: 403},
+		{name: "unknown labels", fields: `"prefixes":[999],"ts":1792383520`, page: `<h1 class="p-title-value"><a class="labelLink">Completed</a></h1><article><a class="labelLink">Unity</a></article>`, status: 200},
+		{name: "slow thread", fields: `"prefixes":[7],"ts":1792383520`, slow: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var threadCalls atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/latest" {
+					fmt.Fprintf(w, `{"msg":{"data":[{"thread_id":1,"title":"Moon","version":"0.3",%s}]}}`, tt.fields)
+					return
+				}
+				if r.URL.Path != "/threads/1/" {
+					t.Errorf("unexpected request: %s", r.URL)
+					http.NotFound(w, r)
+					return
+				}
+				threadCalls.Add(1)
+				if tt.slow {
+					<-r.Context().Done()
+					return
+				}
+				w.WriteHeader(tt.status)
+				fmt.Fprint(w, tt.page)
+			}))
+			defer srv.Close()
+			oldLatest, oldThread := f95LatestURL, f95SearchThreadURL
+			f95LatestURL, f95SearchThreadURL = srv.URL+"/latest", srv.URL+"/threads/"
+			defer func() { f95LatestURL, f95SearchThreadURL = oldLatest, oldThread }()
+			ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+			defer cancel()
+			hits, err := searchF95(ctx, srv.Client(), "Moon")
+			if err != nil || len(hits) != 1 {
+				t.Fatalf("optional metadata discarded result: %+v %v", hits, err)
+			}
+			h := hits[0]
+			if h.Engine != tt.engine || h.Title != "Moon" || h.Version != "0.3" {
+				t.Fatalf("%+v", h)
+			}
+			expectedDate := ""
+			if strings.Contains(tt.fields, "1792383520") {
+				expectedDate = time.Unix(1792383520, 0).UTC().Format(time.RFC3339)
+			}
+			if h.UpdatedAt != expectedDate {
+				t.Fatalf("date %q, want %q", h.UpdatedAt, expectedDate)
+			}
+			if !strings.Contains(tt.fields, "[7]") && !strings.Contains(tt.fields, "[999]") && threadCalls.Load() != 0 {
+				t.Fatal("requested thread without prefixes")
+			}
+		})
 	}
 }

@@ -215,3 +215,19 @@ No real game library or live Wails window was used; external API behavior was ch
 Final validation: go vet ./..., go test ./..., and game-launcher/build.ps1 passed on Windows.
 The final build passed all 34 headless UI assertions. Vite still reports existing accessibility and
 bundle-size warnings in the application; there were no browser runtime exceptions in the tested flow.
+
+## Search result source metadata (2026-11-07)
+
+`SearchHit.engine` and `SearchHit.updated_at` are strings; unknown values are empty.
+`updated_at` is UTC RFC3339 and means the source's update time, not the release date.
+F95 Latest Updates supplies it as Unix `ts`. The relative `date` text is not parsed.
+For rows with prefix IDs, search reads the thread's title labels using the same engine
+recognizer as preview parsing. IDs are not hard-coded as engine names. Enrichment
+is optional: at most four concurrent HTML requests, sharing a three-second budget
+within the existing source timeout, and a 4 MiB response limit. Blocked, missing or
+slow thread metadata leaves the engine empty and preserves the search hit and date.
+No images or library data are written by these requests.
+
+Steam storesearch and the selected VNDB `/vn` fields provide neither engine nor update
+time, so those sources keep both values empty. In particular, VNDB `released` is not
+presented as an update date. Mock responses use the same source-specific contract.

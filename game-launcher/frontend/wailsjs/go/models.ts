@@ -506,6 +506,8 @@ export namespace parser {
 	    }
 	}
 	export class SearchHit {
+	    engine: string;
+	    updated_at: string;
 	    source: string;
 	    url: string;
 	    title: string;
@@ -522,6 +524,8 @@ export namespace parser {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
+	        this.updated_at = source["updated_at"];
 	        this.source = source["source"];
 	        this.url = source["url"];
 	        this.title = source["title"];

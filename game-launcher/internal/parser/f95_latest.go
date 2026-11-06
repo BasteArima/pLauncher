@@ -61,6 +61,7 @@ func f95FullImage(imgURL string) string {
 }
 
 type f95LatestRow struct {
+	Prefixes  []int    `json:"prefixes"`
 	Title     string   `json:"title"`
 	Creator   string   `json:"creator"`
 	Version   string   `json:"version"`
