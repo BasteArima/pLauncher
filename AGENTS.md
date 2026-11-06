@@ -63,6 +63,13 @@ The app is fully working. Done so far:
   `activeCollection`; `'__uncat'` = uncategorized), Smart lists (only when non-empty). Cards: no update badge/ring on the
   cover (⬆ version in the caption), hover = soft top/bottom gradients + glass (blurred) buttons sliding in; `ctxGameId`
   keeps a card in hover state while its ⋯ menu is open (`group-[.is-active]:` variants). Game page media has ‹ › arrows.
+  **Personal fields** `Game.Status` ("" | playing | want | finished | dropped; list + colors in `lib/status.js`),
+  `Rating` (0–5), `Notes` (`||spoiler||` segments are hidden until revealed): DB columns `status/rating/notes`, read with
+  COALESCE; relink merge keeps them; saved via `UpdateGame`. Status chips over the grid use `activeFilter = 'status:<id>'`.
+  Game page = two independent columns (no gaps): left media/about/notes/metadata, right play card (Play, ⋯ = game menu, ♡,
+  stats, status, rating, update block «Open page» / «I've updated the game» = re-parse from the update source, sites) +
+  collections + details. Scrolling: the library position is remembered when a game opens and restored on close; a new view
+  starts at the top, clicking the current view again scrolls smoothly up; a «Back to top» button appears past 1.2 screens.
   Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.
   Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;

@@ -31,6 +31,11 @@ type Game struct {
 	AddedAt        int64    `json:"added_at"`         // UNIX-время добавления
 	LastLaunchedAt int64    `json:"last_launched_at"` // UNIX-время последнего запуска
 
+	// Личное: статус прохождения, оценка и заметки игрока
+	Status string `json:"status"` // "" (не начата) | playing | want | finished | dropped
+	Rating int    `json:"rating"` // 0 — без оценки, 1..5 звёзд
+	Notes  string `json:"notes"`  // заметки игрока (спойлеры прячутся в интерфейсе)
+
 	// Источники и проверка обновлений
 	Sources         []GameSource `json:"sources"`          // ссылки по площадкам {площадка→url}
 	PrimarySource   string       `json:"primary_source"`   // площадка для авто-проверки обновлений

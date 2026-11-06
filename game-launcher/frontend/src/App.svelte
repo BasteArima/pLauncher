@@ -50,6 +50,7 @@
     import ViewControls from './components/ViewControls.svelte';
     import ViewOptions from './components/ViewOptions.svelte';
     import TagFilter from './components/TagFilter.svelte';
+    import { STATUSES } from './lib/status.js';
     import SelectionBar from './components/SelectionBar.svelte';
     import HotkeysHelp from './components/HotkeysHelp.svelte';
     import ShelfEditor from './components/ShelfEditor.svelte';
@@ -201,6 +202,7 @@
         if (activeFilter === 'updates') return g.update_available;
         if (activeFilter === 'nocover') return !g.cover_path;
         if (activeFilter === 'missing') return g.folder_missing;
+        if (activeFilter.startsWith('status:')) return (g.status || '') === activeFilter.slice(7);
         return true;
     }), sortBy);
     $: allGamesSorted = sortGames(visibleGames, sortBy);
@@ -235,6 +237,9 @@
     $: scopeGames = collectionIds ? visibleGames.filter(g => collectionIds.has(g.id)) : visibleGames;
     $: chips = ($langStore, [
         { id: 'all', label: tr('chip.all'), n: scopeGames.length },
+        // Статусы — только те, что встречаются в текущем виде
+        ...STATUSES.map(st => ({ id: 'status:' + st.id, label: tr('status.' + st.id), n: scopeGames.filter(g => g.status === st.id).length, dot: st.dot }))
+            .filter(c => c.n > 0),
         { id: 'favorites', label: tr('nav.favorites'), n: scopeGames.filter(g => g.favorite).length },
         ...(scopeGames.some(g => g.update_available) ? [{ id: 'updates', label: tr('nav.updates'), n: scopeGames.filter(g => g.update_available).length }] : []),
     ]);
@@ -249,6 +254,7 @@
         : activeFilter === 'updates' ? tr('nav.updates')
         : activeFilter === 'nocover' ? tr('nav.no_cover')
         : activeFilter === 'missing' ? tr('missing.nav')
+        : activeFilter.startsWith('status:') ? tr('status.' + activeFilter.slice(7))
         : tr('nav.all_games'));
 
     // Уникальные теги по всей библиотеке, по частоте
@@ -469,19 +475,35 @@
         showToast(tr('bulk.removed_from', { name: col.name }), 'success');
     }
 
+    // --- Прокрутка основной колонки ---
+    let mainEl;
+    let showToTop = false;
+    let libScroll = 0;                  // где были в библиотеке, когда открыли игру
+    function onMainScroll() { showToTop = !!mainEl && mainEl.scrollTop > mainEl.clientHeight * 1.2; }
+    function scrollTop(smooth) { if (mainEl) mainEl.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' }); }
+    // Сменили вид: новый список — сверху; тот же вид (повторный щелчок) — плавно наверх
+    async function afterViewChange(same) { libScroll = 0; await tick(); scrollTop(same); }
+
     // --- Действия с играми ---
-    function selectGame(game) {
+    async function selectGame(game) {
+        if (!selectedGame && mainEl) libScroll = mainEl.scrollTop;
+        const other = !selectedGame || selectedGame.id !== game.id;
         selectedGame = game;
         isEditing = false;
         originalGameSnapshot = JSON.stringify(game);
+        if (other) { await tick(); scrollTop(false); }
     }
-    function closeGame() {
+    async function closeGame() {
+        const wasOpen = !!selectedGame;
         selectedGame = null;
         isEditing = false;
+        if (wasOpen) { await tick(); if (mainEl) mainEl.scrollTop = libScroll; onMainScroll(); }
     }
     // Пункт боковой панели (все игры, избранное, умные списки): сбрасывает коллекцию и тег
     function applyFilter(filter) {
+        const same = !selectedGame && activeFilter === filter && !activeCollection && !activeTag;
         clearSelection();
+        afterViewChange(same);
         activeFilter = filter;
         activeTag = '';
         activeCollection = '';
@@ -489,14 +511,16 @@
     }
     // Открыть коллекцию сеткой (щелчок по её названию в панели)
     function openCollection(key) {
+        const same = !selectedGame && activeCollection === key;
         clearSelection();
+        afterViewChange(same);
         activeCollection = key;
         activeFilter = 'all';
         activeTag = '';
         closeGame();
     }
     // Чипсы над сеткой: фильтр внутри текущей коллекции
-    function applyChip(id) { clearSelection(); activeFilter = id; }
+    function applyChip(id) { clearSelection(); activeFilter = id; afterViewChange(false); }
     // Сброс всего: поиск, фильтр, тег, коллекция
     function resetView() {
         searchQuery = '';
@@ -515,7 +539,7 @@
         for (const g of scopeGames) for (const tag of (g.tags || [])) counts[tag] = (counts[tag] || 0) + 1;
         return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(tag => ({ tag, n: counts[tag] }));
     })();
-    function pickTag(tag) { clearSelection(); activeTag = tag; }
+    function pickTag(tag) { clearSelection(); activeTag = tag; afterViewChange(false); }
     function applyTag(tag) {
         activeTag = activeTag === tag ? '' : tag;
         activeFilter = 'all';
@@ -911,7 +935,7 @@
         <div on:mousedown={startSidebarResize} title={$t("app.resize")}
              class="w-1 shrink-0 self-stretch z-20 cursor-col-resize bg-white/5 hover:bg-indigo-400/50 transition-colors {resizingSidebar ? 'bg-indigo-400/60' : ''}"></div>
 
-        <main class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
+        <main bind:this={mainEl} on:scroll={onMainScroll} class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
                     <button on:click={closeGame} title="Esc"
@@ -924,8 +948,7 @@
                     {:else}
                         <GameDetail game={selectedGame} {supportedSources} {manualCollections}
                                     onEdit={startEdit}
-                                    onRemove={() => removeGame(selectedGame)}
-                                    onIgnore={() => ignoreGame(selectedGame)}
+                                    onMenu={(e) => openCtx(e, gameMenuItems(selectedGame))}
                                     onToggleFav={toggleFavorite}
                                     onRelink={relinkManually}
                                     onRelinkAll={() => showRelink = true}
@@ -963,7 +986,7 @@
                             {#each chips as c (c.id)}
                                 <button on:click={() => applyChip(c.id)}
                                         class="h-8 px-3.5 rounded-full text-[13px] border transition-colors {activeFilter === c.id ? 'border-indigo-500 bg-indigo-900 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'}">
-                                    {c.label} <span class="opacity-70 ml-0.5">{c.n}</span>
+                                    {#if c.dot}<span class="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle {c.dot}"></span>{/if}{c.label} <span class="opacity-70 ml-0.5">{c.n}</span>
                                 </button>
                             {/each}
                             <span class="w-px h-5 bg-white/10 mx-1"></span>
@@ -1067,6 +1090,14 @@
             {/if}
             {#if showHotkeys}
                 <HotkeysHelp panicLabel={privacy && privacy.panic_enabled ? privacy.panic_label : ''} onClose={() => showHotkeys = false}/>
+            {/if}
+
+            {#if showToTop}
+                <!-- Быстро наверх, когда библиотека прокручена далеко -->
+                <button on:click={() => scrollTop(true)} title={$t('lib.to_top')} aria-label={$t('lib.to_top')}
+                        class="fixed right-7 z-30 w-11 h-11 rounded-full flex items-center justify-center text-white bg-slate-800/90 hover:bg-slate-700 ring-1 ring-white/15 shadow-xl animate-fade-in transition-colors {$selecting && !selectedGame ? 'bottom-28' : 'bottom-7'}">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+                </button>
             {/if}
 
             <ConfirmDialog/>

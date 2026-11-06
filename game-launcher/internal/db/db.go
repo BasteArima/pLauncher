@@ -121,6 +121,9 @@ func (r *SQLiteRepo) initSchema() error {
 	r.db.Exec(`ALTER TABLE games ADD COLUMN last_checked_at INTEGER DEFAULT 0;`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN size_bytes INTEGER DEFAULT 0;`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN size_checked_at INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN status TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN rating INTEGER DEFAULT 0;`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN notes TEXT DEFAULT '';`)
 
 	return nil
 }
@@ -140,6 +143,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 			&g.Author, &g.Engine,
 			&sourcesJSON, &g.PrimarySource, &updateAvailable, &g.UpdateVersion, &g.UpdateSource, &g.LastCheckedAt,
 			&g.SizeBytes, &g.SizeCheckedAt,
+			&g.Status, &g.Rating, &g.Notes,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("row read error: %w", err)
@@ -158,7 +162,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 }
 
 // gameColumns — единый список колонок для SELECT (порядок важен для scanGames).
-const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at`
+const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, COALESCE(status, ''), COALESCE(rating, 0), COALESCE(notes, '')`
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
@@ -178,8 +182,8 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 	}
 
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, status, rating, notes)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -202,7 +206,10 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		update_available=excluded.update_available,
 		update_version=excluded.update_version,
 		update_source=excluded.update_source,
-		last_checked_at=excluded.last_checked_at;
+		last_checked_at=excluded.last_checked_at,
+		status=excluded.status,
+		rating=excluded.rating,
+		notes=excluded.notes;
 	`
 	// Обрати внимание: added_at не обновляется при конфликте, чтобы сохранить дату первого добавления!
 	// size_bytes/size_checked_at тоже: их пишет только SetGameSize (фоновый подсчёт), чтобы
@@ -214,6 +221,7 @@ func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
 		g.Author, g.Engine,
 		string(sourcesJSON), g.PrimarySource, updateAvailable, g.UpdateVersion, g.UpdateSource, g.LastCheckedAt,
 		g.SizeBytes, g.SizeCheckedAt,
+		g.Status, g.Rating, g.Notes,
 	)
 
 	if err != nil {

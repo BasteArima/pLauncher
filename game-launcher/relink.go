@@ -233,6 +233,15 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 			g.LastLaunchedAt = dup.LastLaunchedAt
 		}
 		g.Favorite = g.Favorite || dup.Favorite
+		if g.Status == "" {
+			g.Status = dup.Status
+		}
+		if g.Rating == 0 {
+			g.Rating = dup.Rating
+		}
+		if g.Notes == "" {
+			g.Notes = dup.Notes
+		}
 		if g.ExecPath == "" {
 			g.ExecPath = dup.ExecPath
 		}

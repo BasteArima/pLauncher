@@ -27,6 +27,9 @@ const data = games.map((g, i) => {
     sources, primary_source: sources[0].source,
     update_available: !!g.update, update_version: g.update || '', update_source: g.update ? sources[0].source : '',
     last_checked_at: now - 3600, folder_missing: false, size_bytes: Math.round(g.size), size_checked_at: now,
+    // Статусы и оценки — чтобы на скриншотах были видны чипсы статусов и звёзды
+    status: ['playing', 'playing', 'finished', 'want', '', 'playing', 'finished', 'want', '', 'dropped', 'finished', ''][i % 12],
+    rating: [5, 4, 5, 0, 0, 4, 3, 0, 0, 2, 4, 0][i % 12], notes: '',
   };
 });
 const collections = [
@@ -46,6 +49,7 @@ const mock = `(function () {
     GetSupportedSources: () => [{ name: 'F95zone', domain: 'f95zone.to' }, { name: 'Pornolab', domain: 'pornolab.net' }, { name: 'Steam', domain: 'store.steampowered.com' }],
     GetCustomLocales: () => ({}), GetAppVersion: () => '1.0.0', GetDataDir: () => 'D:/pLauncher-data', GetPrivacy: () => priv, NotifyWindowShown: () => null,
     GetIgnoredPaths: () => ['D:/Games/_videos'], CheckLauncherUpdate: () => ({ available: false, current: '1.0.0', latest: '1.0.0' }),
+    UpdateGame: (g) => { const i = games.findIndex(x => x.id === g.id); if (i >= 0) games[i] = g; return null; },
   };
   const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve(impl[name] ? JSON.parse(JSON.stringify(impl[name](...args) ?? null)) : null) });
   window.go = { main: { App } };

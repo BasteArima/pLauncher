@@ -2,6 +2,7 @@
     import { t } from '../i18n.js';
     import { mediaSrc, coverStyle } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
+    import { statusInfo } from '../lib/status.js';
     import { selection, selecting, toggleSelected, selectRange, cardShape, ctxGameId } from '../lib/view.js';
     export let game;
     export let onOpen = () => {};
@@ -51,6 +52,7 @@
         onContext(game, e);
     }
     $: canPlay = onPlay && game.exec_path && !game.folder_missing;
+    $: st = statusInfo(game.status);
     // Меню ⋯ этой карточки открыто — держим её в состоянии наведения
     $: active = $ctxGameId === game.id;
     // Как в Epic: кнопки быстро выезжают — верхние сверху, нижняя снизу; .is-active держит их видимыми
@@ -138,6 +140,11 @@
     <div class="pt-2.5 px-0.5 min-w-0">
         <h3 class="text-sm font-medium text-slate-100 truncate {game.folder_missing ? 'opacity-60' : ''}">{game.title}</h3>
         <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 min-w-0">
+            {#if st}
+                <span class="shrink-0 w-1.5 h-1.5 rounded-full {st.dot}"></span>
+                <span class="shrink-0 {st.text}">{$t('status.short_' + st.id)}</span>
+                <span class="shrink-0 text-slate-600">·</span>
+            {/if}
             {#if game.update_available}
                 <span class="shrink-0 text-amber-300" title={$t('detail.update_to', { v: game.update_version })}>⬆ {game.update_version}</span>
                 <span class="shrink-0 text-slate-600">·</span>

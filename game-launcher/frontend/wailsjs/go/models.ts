@@ -220,6 +220,9 @@ export namespace models {
 	    time_played: number;
 	    added_at: number;
 	    last_launched_at: number;
+	    status: string;
+	    rating: number;
+	    notes: string;
 	    sources: GameSource[];
 	    primary_source: string;
 	    update_available: boolean;
@@ -254,6 +257,9 @@ export namespace models {
 	        this.time_played = source["time_played"];
 	        this.added_at = source["added_at"];
 	        this.last_launched_at = source["last_launched_at"];
+	        this.status = source["status"];
+	        this.rating = source["rating"];
+	        this.notes = source["notes"];
 	        this.sources = this.convertValues(source["sources"], GameSource);
 	        this.primary_source = source["primary_source"];
 	        this.update_available = source["update_available"];
