@@ -111,6 +111,7 @@
   "detail.no_description": "Sin descripción.",
   "detail.screenshots": "Capturas",
   "detail.collections": "Colecciones",
+  "detail.add_to_collection": "Añadir",
   "detail.new_collection": "+ Nueva colección",
   "detail.collections_hint": "Las colecciones manuales aparecen aquí. Las dinámicas se llenan por etiquetas.",
   "detail.copy_title": "Copiar título",

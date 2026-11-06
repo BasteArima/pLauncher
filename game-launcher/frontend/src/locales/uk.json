@@ -111,6 +111,7 @@
   "detail.no_description": "Опис відсутній.",
   "detail.screenshots": "Скриншоти",
   "detail.collections": "Колекції",
+  "detail.add_to_collection": "Додати",
   "detail.new_collection": "+ Нова колекція",
   "detail.collections_hint": "Звичайні (ручні) колекції з’являться тут. Динамічні наповнюються за тегами автоматично.",
   "detail.copy_title": "Скопіювати назву",

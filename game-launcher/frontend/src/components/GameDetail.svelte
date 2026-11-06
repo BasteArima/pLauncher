@@ -13,14 +13,14 @@
 
     export let game;
     export let supportedSources = [];
-    export let manualCollections = [];
+    export let inCollections = [];                       // [{id, name, dynamic}] — коллекции, где есть игра
+    export let onOpenCollection = (id) => {};
+    export let onCollectionsMenu = (e) => {};            // «+»: меню с галочками ручных коллекций
     export let onEdit = () => {};
     export let onToggleFav = (g) => {};
     export let onMenu = (e) => {};                       // ⋯: то же меню, что по правому щелчку
     export let onRelink = (g) => {};                     // указать новую папку вручную
     export let onRelinkAll = () => {};                   // окно перепривязки
-    export let onToggleCollection = (colId, g) => {};
-    export let onCreateCollection = () => {};
     export let onApplyTag = (tag) => {};
     export let onOpenImage = (index) => {};
     export let onReload = async () => {};
@@ -40,10 +40,8 @@
     $: current = media[mediaIndex];
     // Листать картинки прямо на странице, как в Steam (по кругу)
     function stepMedia(dir) { if (media.length > 1) mediaIndex = (mediaIndex + dir + media.length) % media.length; }
-    function openCurrent() {
-        if (current && current.shot !== undefined) onOpenImage(current.shot);
-        else if ((game.images || []).length) onOpenImage(0);
-    }
+    // Крупная картинка — в просмотр (индекс в общей ленте: обложка + скриншоты)
+    function openCurrent() { if (current) onOpenImage(mediaIndex); }
 
     let sizing = false;
     async function recalcSize() {
@@ -351,22 +349,6 @@
         </section>
 
         <section class="{card} p-5">
-            <h3 class={sectionTitle}>{$t('detail.collections')}</h3>
-            <div class="flex flex-wrap gap-2 items-center">
-                {#each manualCollections as c}
-                    {@const inside = (c.game_ids || []).includes(game.id)}
-                    <button on:click={() => onToggleCollection(c.id, game)}
-                            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors {inside ? 'bg-indigo-900 text-indigo-100 ring-1 ring-indigo-500/60' : 'bg-slate-950/60 text-slate-400 hover:text-white'}">
-                        <span>{inside ? '✓' : '＋'}</span> {c.name}
-                    </button>
-                {/each}
-                <button on:click={onCreateCollection} class="px-2.5 py-1 rounded-lg text-xs border border-dashed border-white/20 text-slate-400 hover:text-indigo-200 hover:border-indigo-400 transition-colors">
-                    {$t('detail.new_collection')}
-                </button>
-            </div>
-        </section>
-
-        <section class="{card} p-5">
             <h3 class={sectionTitle}>{$t('detail.details')}</h3>
             <div class="grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-sm">
                 <span class={detailLabel}>{$t('detail.version')}</span>
@@ -380,6 +362,14 @@
                 {#if addedOn}
                     <span class={detailLabel}>{$t('detail.added')}</span><span class="text-slate-100">{addedOn}</span>
                 {/if}
+                <span class="{detailLabel} pt-0.5">{$t('detail.collections')}</span>
+                <span class="flex flex-wrap gap-1.5">
+                    {#each inCollections as c (c.id)}
+                        <button on:click={() => onOpenCollection(c.id)} title={c.dynamic ? $t('nav.dynamic') : ''}
+                                class="px-2 py-0.5 rounded-md text-xs bg-slate-950/60 text-slate-200 hover:text-white hover:bg-slate-800">{c.name}</button>
+                    {/each}
+                    <button on:click|stopPropagation={onCollectionsMenu} class="px-2 py-0.5 rounded-md text-xs border border-dashed border-white/15 text-slate-500 hover:text-slate-200">+ {$t('detail.add_to_collection')}</button>
+                </span>
                 <span class={detailLabel}>{$t('detail.folder')}</span>
                 <button on:click={openFolder} class="text-left font-mono text-xs text-indigo-300 hover:text-indigo-100 break-all" title={$t('ctx.open_folder')}>{game.folder_path}</button>
                 <span class={detailLabel}>{$t('detail.launch_file')}</span>

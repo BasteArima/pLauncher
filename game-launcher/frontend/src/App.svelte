@@ -109,6 +109,8 @@
     let showRelink = false;
     let collectionModal = null;          // null — закрыто; {collection: null|col}
     let lightboxIndex = null;            // null — закрыто
+    // Картинки страницы игры: обложка первой, затем скриншоты (тот же порядок, что в ленте)
+    $: gallery = selectedGame ? [...(selectedGame.cover_path ? [selectedGame.cover_path] : []), ...(selectedGame.images || [])] : [];
     let ctx = null;                      // {x, y, items} — контекстное меню
 
     // --- Приватность: PIN-блокировка, паника, скрытые коллекции ---
@@ -628,14 +630,12 @@
     }
 
     // --- Контекстные меню ---
+    // Контекстное меню: от курсора (правый щелчок) или от угла кнопки (⋯ — щелчок по кнопке).
+    // Влезает ли меню, решает ContextMenu: при нехватке места оно открывается зеркально.
     function openCtx(e, items) {
         e.preventDefault(); e.stopPropagation();
-        const W = 232;
-        ctx = {
-            x: Math.min(e.clientX, window.innerWidth - W - 8),
-            y: Math.min(e.clientY, window.innerHeight - 340),
-            items,
-        };
+        const anchor = e.type === 'click' && e.currentTarget && e.currentTarget.getBoundingClientRect ? e.currentTarget.getBoundingClientRect() : null;
+        ctx = { x: e.clientX, y: e.clientY, anchor, items };
     }
     // ПКМ по одной из нескольких выделенных карточек — меню массовых действий
     function bulkMenuItems() {
@@ -672,6 +672,14 @@
         items.push({ label: tr('ignore.action'), icon: 'ban', action: () => ignoreGame(game) });
         items.push({ label: tr('ctx.remove_game'), icon: 'trash', danger: true, action: () => removeGame(game) });
         return items;
+    }
+    // «+ В коллекцию» на странице игры: ручные коллекции с галочками и «Новая коллекция»
+    function collectionsMenuItems(game) {
+        return [
+            ...manualCollections.map(c => ({ label: c.name, checked: (c.game_ids || []).includes(game.id), action: () => toggleGameInCollection(c.id, game) })),
+            ...(manualCollections.length ? [{ sep: true }] : []),
+            { label: tr('ctx.new_collection'), icon: 'plus', action: openCreateCollection },
+        ];
     }
     const gameCtx = (g, e) => { openCtx(e, gameMenuItems(g)); ctxGameId.set(g.id); };
     $: if (!ctx) ctxGameId.set('');
@@ -955,14 +963,15 @@
                     {#if isEditing}
                         <GameEditor bind:game={selectedGame} {supportedSources} onSave={saveEdit} onCancel={cancelEdit}/>
                     {:else}
-                        <GameDetail game={selectedGame} {supportedSources} {manualCollections}
+                        <GameDetail game={selectedGame} {supportedSources}
+                                    inCollections={collectionsView.filter(c => c.items.some(x => x.id === selectedGame.id)).map(c => ({ id: c.id, name: c.name, dynamic: c.type === 'dynamic' }))}
+                                    onOpenCollection={openCollection}
+                                    onCollectionsMenu={(e) => openCtx(e, collectionsMenuItems(selectedGame))}
                                     onEdit={startEdit}
                                     onMenu={(e) => openCtx(e, gameMenuItems(selectedGame))}
                                     onToggleFav={toggleFavorite}
                                     onRelink={relinkManually}
                                     onRelinkAll={() => showRelink = true}
-                                    onToggleCollection={toggleGameInCollection}
-                                    onCreateCollection={openCreateCollection}
                                     onApplyTag={applyTag}
                                     onOpenImage={(i) => lightboxIndex = i}
                                     onReload={loadGames}/>
@@ -1050,8 +1059,8 @@
                 {/if}
             {/if}
 
-            {#if lightboxIndex !== null && selectedGame && selectedGame.images && selectedGame.images.length}
-                <Lightbox images={selectedGame.images} bind:index={lightboxIndex} onClose={() => lightboxIndex = null}/>
+            {#if lightboxIndex !== null && gallery.length}
+                <Lightbox images={gallery} bind:index={lightboxIndex} onClose={() => lightboxIndex = null}/>
             {/if}
 
             {#if needsSetup}
@@ -1111,8 +1120,8 @@
             <ConfirmDialog/>
             <Toast/>
 
-            {#if ctx}
-                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>
+            {#if ctx}{#key ctx}
+                <ContextMenu x={ctx.x} y={ctx.y} anchor={ctx.anchor || null} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>{/key}
             {/if}
         </main>
     </div>

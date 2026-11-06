@@ -6,8 +6,10 @@
     import { isIcon } from '../lib/icons.js';
     const TONE = { pink: 'text-pink-400', amber: 'text-amber-300' };
     const iconCls = (it) => it.danger ? '' : (TONE[it.tone] || 'text-slate-400');
+    import { onMount } from 'svelte';
     export let x = 0;
     export let y = 0;
+    export let anchor = null;               // прямоугольник кнопки (⋯): меню открывается от её угла
     export let items = [];
     export let width = 232;
     export let onClose = () => {};
@@ -17,6 +19,24 @@
     // не размывает то, что за границами родителя, и стекло выглядело бы иначе.
     let sub = null;                         // {idx, items, x, y}
     let closeTimer;
+
+    // Сначала меряем меню (невидимым), потом ставим: от кнопки — под ней, левым краем к её левому
+    // краю; не влезает вправо — правым краем к правому краю кнопки (зеркально), не влезает вниз — над ней.
+    // От курсора — так же: не влезает вправо/вниз — открывается влево/вверх от курсора.
+    let el;
+    let pos = null;
+    onMount(() => {
+        const w = el.offsetWidth, h = el.offsetHeight, W = window.innerWidth, H = window.innerHeight, gap = 6;
+        let left, top;
+        if (anchor) {
+            left = anchor.left + w > W - 8 ? anchor.right - w : anchor.left;
+            top = anchor.bottom + gap + h > H - 8 ? anchor.top - gap - h : anchor.bottom + gap;
+        } else {
+            left = x + w > W - 8 ? x - w : x;
+            top = y + h > H - 8 ? y - h : y;
+        }
+        pos = { left: Math.max(8, Math.min(left, W - w - 8)), top: Math.max(8, Math.min(top, H - h - 8)) };
+    });
 
     function run(action) { action(); onClose(); }
     function openSub(e, idx, subItems) {
@@ -34,7 +54,8 @@
 </script>
 
 <div class="fixed inset-0 z-[99]" on:click={onClose} on:contextmenu|preventDefault={onClose}></div>
-<div class="fixed z-[100] glass-strong rounded-xl shadow-2xl py-1.5 text-sm animate-fade-in overflow-y-auto overscroll-contain" style="left:{x}px; top:{Math.max(8, y)}px; width:{width}px; max-height:calc(100vh - {Math.max(8, y)}px - 8px)">
+<div bind:this={el} class="fixed z-[100] glass-strong rounded-xl shadow-2xl py-1.5 text-sm overflow-y-auto overscroll-contain {pos ? 'animate-fade-in' : 'invisible'}"
+     style="left:{pos ? pos.left : 0}px; top:{pos ? pos.top : 0}px; width:{width}px; max-height:calc(100vh - 16px)">
     {#each items as it, i}
         {#if it.sep}
             <div class="h-px bg-white/10 my-1.5 mx-2"></div>
@@ -49,7 +70,8 @@
         {:else}
             <button on:click={() => run(it.action)} on:mouseenter={closeSub}
                     class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors {it.danger ? 'text-rose-300 hover:bg-rose-500/20' : 'text-slate-200 hover:bg-white/10'}">
-                {#if isIcon(it.icon)}<Icon name={it.icon} class="w-4 {iconCls(it)}"/>{:else if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
+                {#if it.checked !== undefined}<Icon name={it.checked ? 'check' : ''} class="w-4 text-emerald-400"/>{#if !it.checked}<span class="w-4"></span>{/if}
+                {:else if isIcon(it.icon)}<Icon name={it.icon} class="w-4 {iconCls(it)}"/>{:else if it.icon}<span class="w-4 text-center text-xs">{it.icon}</span>{/if}
                 <span class="flex-1">{it.label}</span>
                 {#if it.hint}<span class="text-[11px] text-slate-500 shrink-0">{it.hint}</span>{/if}
             </button>

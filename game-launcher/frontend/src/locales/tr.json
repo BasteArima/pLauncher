@@ -111,6 +111,7 @@
   "detail.no_description": "Açıklama yok.",
   "detail.screenshots": "Ekran görüntüleri",
   "detail.collections": "Koleksiyonlar",
+  "detail.add_to_collection": "Ekle",
   "detail.new_collection": "+ Yeni koleksiyon",
   "detail.collections_hint": "Manuel koleksiyonlar burada görünür. Dinamik olanlar etiketlere göre otomatik dolar.",
   "detail.copy_title": "Adı kopyala",

@@ -111,6 +111,7 @@
   "detail.no_description": "Описание отсутствует.",
   "detail.screenshots": "Скриншоты",
   "detail.collections": "Коллекции",
+  "detail.add_to_collection": "Добавить",
   "detail.new_collection": "+ Новая коллекция",
   "detail.collections_hint": "Обычные (ручные) коллекции появятся здесь. Динамические наполняются по тегам автоматически.",
   "detail.copy_title": "Скопировать название",

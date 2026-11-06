@@ -111,6 +111,7 @@
   "detail.no_description": "Brak opisu.",
   "detail.screenshots": "Zrzuty ekranu",
   "detail.collections": "Kolekcje",
+  "detail.add_to_collection": "Dodaj",
   "detail.new_collection": "+ Nowa kolekcja",
   "detail.collections_hint": "Tutaj pojawiają się kolekcje ręczne. Dynamiczne wypełniają się automatycznie według tagów.",
   "detail.copy_title": "Kopiuj tytuł",

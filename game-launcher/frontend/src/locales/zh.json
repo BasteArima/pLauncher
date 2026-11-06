@@ -111,6 +111,7 @@
   "detail.no_description": "暂无简介。",
   "detail.screenshots": "截图",
   "detail.collections": "合集",
+  "detail.add_to_collection": "添加",
   "detail.new_collection": "+ 新建合集",
   "detail.collections_hint": "手动合集会显示在这里。动态合集会按标签自动填充。",
   "detail.copy_title": "复制名称",
