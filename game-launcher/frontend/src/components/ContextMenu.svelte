@@ -9,7 +9,6 @@
     import { onMount } from 'svelte';
     export let x = 0;
     export let y = 0;
-    export let anchor = null;               // прямоугольник кнопки (⋯): меню открывается от её угла
     export let items = [];
     export let width = 232;
     export let onClose = () => {};
@@ -20,21 +19,14 @@
     let sub = null;                         // {idx, items, x, y}
     let closeTimer;
 
-    // Сначала меряем меню (невидимым), потом ставим: от кнопки — под ней, левым краем к её левому
-    // краю; не влезает вправо — правым краем к правому краю кнопки (зеркально), не влезает вниз — над ней.
-    // От курсора — так же: не влезает вправо/вниз — открывается влево/вверх от курсора.
+    // Сначала меряем меню (невидимым), потом ставим углом в точку щелчка: не влезает вправо —
+    // открывается влево от неё, не влезает вниз — вверх (зеркально, как в Epic).
     let el;
     let pos = null;
     onMount(() => {
-        const w = el.offsetWidth, h = el.offsetHeight, W = window.innerWidth, H = window.innerHeight, gap = 6;
-        let left, top;
-        if (anchor) {
-            left = anchor.left + w > W - 8 ? anchor.right - w : anchor.left;
-            top = anchor.bottom + gap + h > H - 8 ? anchor.top - gap - h : anchor.bottom + gap;
-        } else {
-            left = x + w > W - 8 ? x - w : x;
-            top = y + h > H - 8 ? y - h : y;
-        }
+        const w = el.offsetWidth, h = el.offsetHeight, W = window.innerWidth, H = window.innerHeight;
+        const left = x + w > W - 8 ? x - w : x;
+        const top = y + h > H - 8 ? y - h : y;
         pos = { left: Math.max(8, Math.min(left, W - w - 8)), top: Math.max(8, Math.min(top, H - h - 8)) };
     });
 

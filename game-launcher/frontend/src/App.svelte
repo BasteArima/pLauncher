@@ -630,12 +630,11 @@
     }
 
     // --- Контекстные меню ---
-    // Контекстное меню: от курсора (правый щелчок) или от угла кнопки (⋯ — щелчок по кнопке).
-    // Влезает ли меню, решает ContextMenu: при нехватке места оно открывается зеркально.
+    // Контекстное меню открывается от точки щелчка (и для ⋯ тоже — как в Epic: меню ложится поверх
+    // кнопки «Играть»). Не влезает вправо/вниз — ContextMenu открывает его зеркально, влево/вверх.
     function openCtx(e, items) {
         e.preventDefault(); e.stopPropagation();
-        const anchor = e.type === 'click' && e.currentTarget && e.currentTarget.getBoundingClientRect ? e.currentTarget.getBoundingClientRect() : null;
-        ctx = { x: e.clientX, y: e.clientY, anchor, items };
+        ctx = { x: e.clientX, y: e.clientY, items };
     }
     // ПКМ по одной из нескольких выделенных карточек — меню массовых действий
     function bulkMenuItems() {
@@ -1121,7 +1120,7 @@
             <Toast/>
 
             {#if ctx}{#key ctx}
-                <ContextMenu x={ctx.x} y={ctx.y} anchor={ctx.anchor || null} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>{/key}
+                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>{/key}
             {/if}
         </main>
     </div>
