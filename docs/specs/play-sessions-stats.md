@@ -1,8 +1,8 @@
 # Spec: play sessions and statistics
 
-Status: **step 1 implemented; interface pending** (2026-11-06). Backend implementation uses the recommended
-monitor, calendar and completed-session choices below, following the request to implement step 1.
-The Statistics entry location remains a frontend decision (Q2); no Statistics UI is included in this delivery.
+Status: **steps 1 and 2 implemented** (2026-11-06). Uses the recommended detached monitor, local calendar,
+completed-session history and permanent sidebar entry. Backend checks and headless Edge UI checks pass;
+real-library acceptance on the built application remains manual. See delivery notes below.
 
 ## Why
 
@@ -234,10 +234,10 @@ localization and accessibility. Add screenshot mocks and headless Edge flow chec
 CHANGELOG `[Unreleased]` and this spec's status after each delivery, recording actual validation and limitations.
 Commit each finished step separately without attribution; do not push unless requested.
 
-## Design choices and remaining frontend question
+## Design choices
 
-Step 1 uses the recommended choices in Q1, Q3 and Q4. Q2 remains open for the interface delivery.
-Alternatives are retained here as context; they are not implemented.
+Both requested steps are implemented using the recommended choices in Q1–Q4, including the sidebar entry
+for Q2. No implementation-blocking questions remain. Alternatives below are retained as design context.
 
 1. **How should closing the launcher behave?** Recommended: detached monitor, with checkpoint recovery after
    crashes and guards on import/data moves/update installation while playing. Alternative: keep the launcher
@@ -343,4 +343,42 @@ none touch the owner's library or launch actual games.
 
 The launcher/monitor test package also compiled for Linux/amd64 and Darwin/amd64; these were compile-only
 checks, not executions or full Wails builds. Actual process detachment on Linux/macOS, real user games,
-power-loss behavior and interactive UI remain untested. The Sessions/Statistics frontend is step 2.
+power-loss behavior and the native interactive UI remain untested. The frontend delivery is recorded below.
+
+
+## Frontend delivery (2026-11-06)
+
+Implemented `GameSessions`, `Statistics` and shared `WeeklyBars` with CSS bars and no chart dependency.
+The game page shows eight weeks, all-history count/longest and latest five local dates/durations, interrupted
+markers and empty/untracked/legacy-history explanations. Preview/editor omit this block. Statistics is a
+permanent sidebar destination, with all three hour totals, 52 weeks, a period-selectable top ten, status
+counts, five engines plus expandable Other, cached disk summary and library-information counts.
+
+App navigation retains the Statistics period and scroll position through game details, Esc, Alt+Left/Right
+and mouse Back. Library controls are absent from this view. Search returns to the library and filters the
+complete in-memory list; it no longer replaces the data needed by hidden collections and statistics.
+Queries always receive the full visible scope, including manual/dynamic/pinned/mixed-membership exclusion.
+
+Request generations clear cached hidden aggregates on visibility changes, reject late responses after
+navigation/lock/panic and distinguish failures from empty data. Session/library events refresh both views;
+recording errors use localized toasts only while unlocked. Local date/timezone changes trigger new queries
+on focus, navigation or the 30-second calendar check. Language dependencies are explicit for Svelte 3.
+All 40 new strings exist in all 11 locales; Intl handles dates, numbers and duration units. Top games are
+text-only. Charts have accessible names, keyboard focus/arrow navigation and textual date/duration tooltips.
+
+Validation: `go vet ./...`, `go test ./...` and `game-launcher/build.ps1` passed on Windows; Wails regenerated
+bindings and built the executable. Existing accessibility/unused-export, Browserslist and bundle-size warnings
+remain; the new chart/session/statistics components introduce no compiler warnings.
+
+The deterministic `?shot=stats` mock freezes time and supplies all three new bound methods through
+`build-ui.cjs` / `stats-fixture.cjs`. Headless Edge passed 48 assertions: fixed totals/month-boundary splitting,
+legacy time, eight/52 bars, latest five/interruption, period and exact scroll restoration, engine expansion,
+disk exclusions, search/collection independence, manual/dynamic/pinned/mixed hidden membership, reveal/hide,
+lock/panic and late results, errors/retries/toasts, editor omission, completed-session refresh, local day and
+timezone changes, live EN/RU localization, keyboard charts, narrow layout and empty-library guidance.
+No external requests or runtime exceptions occurred. English/Russian and narrow screenshots were inspected.
+The existing find-by-name flow also passed 35 assertions, including Sessions omission from preview.
+
+These are mocked browser checks, not tests against the owner's database or actual games. The native Wails
+window, real-game interaction, other operating systems and all 11 languages' visual layouts were not manually
+exercised in this step. Backend lifecycle coverage remains as documented in step 1.

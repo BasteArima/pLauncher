@@ -63,7 +63,12 @@ const mock = `(function () {
     author: 'Harbor Studio', engine: '', version: url.includes('f95zone') ? '0.3' : '', languages: ['English', 'Русский'], tags: ['Visual Novel', 'Mystery'],
     cover_path: location.origin + '/media/covers/g01.svg', images: [1, 2].map(n => location.origin + '/media/covers/g01-' + n + '.svg'),
   });
+  const stats = (${require('./stats-fixture.cjs').toString()})({ games, collections, priv, enabled: params.get('shot') === 'stats' });
+  collections = stats.collections;
   const impl = {
+    GetLibraryStats: stats.library, GetGameSessions: stats.game, GetSessionRevision: stats.revision,
+    Unlock: () => { priv.locked = false; }, VerifyPin: () => true,
+    Lock: () => { priv.locked = true; window.__mockEmit('privacy-locked'); },
     IsConfigured: () => true, GetGames: () => games, SearchGames: (q) => games.filter(g => g.title.toLowerCase().includes(q.toLowerCase())),
     GetScanPaths: () => ['D:/Games'], GetCollections: () => collections, SaveCollections: (c) => { collections = c; },
     GetSupportedSources: () => [{ name: 'F95zone', domain: 'f95zone.to' }, { name: 'Pornolab', domain: 'pornolab.net' }, { name: 'Steam', domain: 'store.steampowered.com' }, { name: 'VNDB', domain: 'vndb.org' }],
@@ -90,7 +95,7 @@ const mock = `(function () {
   const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve().then(() => { controls.calls.push({ name, args }); return impl[name]?.(...args); }).then(value => JSON.parse(JSON.stringify(value ?? null))) });
   window.go = { main: { App } };
   const events = {};
-  window.__mockEmit = name => (events[name] || []).forEach(fn => fn());
+  window.__mockEmit = (name, ...args) => { if (name === 'privacy-locked') priv.locked = true; (events[name] || []).forEach(fn => fn(...args)); };
   window.runtime = new Proxy({}, { get: (_, name) => name === 'EventsOnMultiple' ? (event, fn) => { (events[event] ||= []).push(fn); return () => {}; } : () => {} });
 
   // Сценарии съёмки

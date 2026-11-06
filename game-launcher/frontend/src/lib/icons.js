@@ -1,6 +1,8 @@
 // Тонкие линейные иконки (24×24, stroke) — единый набор вместо эмодзи в меню, панелях и настройках.
 // Использование: <Icon name="trash"/> (components/Icon.svelte) или iconSvg(name) для готовой строки SVG.
 export const ICONS = {
+    chart: '<path d="M4 3v17h17M9 15V9m5 6V5m5 10v-3"/>',
+    'chevron-right': '<path d="m9 5 7 7-7 7"/>',
     external: '<path d="M14 3h7v7M21 3l-11 11M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/>',
     back: '<path d="M19 12H5m7-7-7 7 7 7"/>',
     play: '<path d="M7 4.5v15l12.5-7.5z"/>',

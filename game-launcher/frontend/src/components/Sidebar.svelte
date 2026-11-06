@@ -15,6 +15,8 @@
     export let missingCount = 0;
     export let noCoverCount = 0;           // игры без обложки (ещё не спарсены)
     export let isHome = true;
+    export let statisticsActive = false;
+    export let onStatistics = () => {};
     export let activeFilter = 'all';
     export let activeCollection = '';       // открытая коллекция (подсветка строки)
     export let onOpenCollection = (key) => {};
@@ -83,8 +85,8 @@
     const sectionCls = 'px-2.5 mb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider';
     $: hasSmart = updatesCount || noCoverCount || missingCount;
     // Системные строки «Все игры» и «Избранное»: подсвечены, пока не открыта коллекция или умный список
-    $: allActive = !activeCollection && !['updates', 'nocover', 'missing', 'favorites'].includes(activeFilter);
-    $: favActive = !activeCollection && activeFilter === 'favorites';
+    $: allActive = !statisticsActive && !activeCollection && !['updates', 'nocover', 'missing', 'favorites'].includes(activeFilter);
+    $: favActive = !statisticsActive && !activeCollection && activeFilter === 'favorites';
 </script>
 
 <aside class="glass-strong flex flex-col z-10 relative shrink-0" style="width:{width}px">
@@ -104,6 +106,10 @@
         </button>
     </div>
 
+    <div class="px-3 pb-4">
+        <button data-nav-statistics on:click={onStatistics} aria-current={statisticsActive ? 'page' : undefined}
+                class={navCls(statisticsActive)}><Icon name="chart" size={17}/><span>{$t('stats.title')}</span></button>
+    </div>
     <nav class="flex-1 overflow-y-auto px-2 pb-2">
 
 

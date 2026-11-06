@@ -11,7 +11,6 @@
         Launch,
         OpenFolder,
         RemoveGame,
-        SearchGames,
         UpdateGame,
         CheckAllUpdates,
         IsConfigured,
@@ -44,6 +43,8 @@
     import { initUpdater, updateModalOpen } from './lib/update.js';
     import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
     import SmartBanner from './components/SmartBanner.svelte';
+    import Statistics from './components/Statistics.svelte';
+    import { calendarState } from './lib/statistics.js';
 
     import TitleBar from './components/TitleBar.svelte';
     import Sidebar from './components/Sidebar.svelte';
@@ -74,6 +75,33 @@
 
     // --- Состояние библиотеки и навигации ---
     let games = [];
+    let mainView = 'library';
+    let statsPeriod = 'month';
+    let statsScroll = 0;
+    let sessionRevision = 0;
+    let privacyEpoch = 0;
+    let gamesRequest = 0;
+    let calendar = calendarState();
+    let calendarTimer;
+    const sessionUnsubscribers = [];
+    function refreshCalendar() {
+        const next = calendarState();
+        if (next.key !== calendar.key) calendar = next;
+    }
+    async function restoreStatsScroll() {
+        await tick();
+        if (mainView === 'stats' && !selectedGame && mainEl) mainEl.scrollTop = statsScroll;
+    }
+    function openStatistics() {
+        const same = mainView === 'stats' && !selectedGame;
+        if (isEditing) return;
+        clearSelection(); clearInfoPreview();
+        selectedGame = null;
+        mainView = 'stats';
+        activeCollection = ''; activeFilter = 'all'; tagFilter = emptyTags(); searchQuery = '';
+        statsScroll = 0;
+        refreshCalendar(); afterViewChange(same);
+    }
     let scanning = false;
     let checkingUpdates = false;
     let selectedGame = null;
@@ -152,6 +180,7 @@
     }
     function onLocked() {
         locked = true;
+        privacyEpoch++; gamesRequest++;
         showHidden = false;
         closeOverlays();
         games = [];
@@ -164,6 +193,7 @@
         await loadCustomLocales();
     }
     function onPanic() {
+        privacyEpoch++; gamesRequest++;
         showHidden = false;
         discreet.set(true);              // вернувшись, обложки будут размыты
         closeOverlays();
@@ -183,7 +213,7 @@
     function markActivity() { lastActivity = Date.now(); }
     const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel'];
     let idleTimer = null;
-    function onWindowFocus() { NotifyWindowShown().catch(() => {}); markActivity(); }
+    function onWindowFocus() { refreshCalendar(); NotifyWindowShown().catch(() => {}); markActivity(); }
     function checkIdle() {
         if (locked || !privacy || !privacy.has_pin || !privacy.idle_lock_min) return;
         if (Date.now() - lastActivity > privacy.idle_lock_min * 60 * 1000) lockNow();
@@ -206,6 +236,8 @@
     $: hiddenIds = new Set(hiddenCols.flatMap(c => buildCol(c, games).items.map(g => g.id)));
     $: visibleGames = showHidden || !hiddenIds.size ? games : games.filter(g => !hiddenIds.has(g.id));
     $: visibleCollections = showHidden ? collections : collections.filter(c => !c.hidden);
+    $: sessionScopeKey = JSON.stringify([privacyEpoch, showHidden, visibleGames.map(g => g.id).sort()]);
+    $: if (selectedGame && !visibleGames.some(g => g.id === selectedGame.id)) closeGame();
     // Открытая коллекция: её игры (динамические — по тегам), «Без категории» — не попавшие никуда
     $: collectionIds = !activeCollection ? null
         : activeCollection === '__uncat' ? new Set(uncategorized.map(g => g.id))
@@ -217,6 +249,7 @@
         return tf.mode === 'any' ? tf.inc.some(x => gt.includes(x)) : tf.inc.every(x => gt.includes(x));
     }
     $: filteredGames = sortGames(visibleGames.filter(g => {
+        if (searchQuery.trim() && !(g.title || '').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())) return false;
         if (collectionIds && !collectionIds.has(g.id)) return false;
         if (hasTags && !matchTags(g.tags || [], tagFilter)) return false;
         if (activeFilter === 'favorites') return g.favorite;
@@ -307,7 +340,8 @@
     $: manualCollections = visibleCollections.filter(c => c.type === 'manual');
 
     async function loadCollections() {
-        try { collections = await GetCollections() || []; } catch (e) { console.error(e); }
+        const epoch = privacyEpoch;
+        try { const result = await GetCollections() || []; if (epoch === privacyEpoch && !locked) collections = result; } catch (e) { console.error(e); }
     }
     async function persistCollections() {
         try { await SaveCollections(collections); } catch (err) { showToast(tr('toast.col_fail', { err }), 'error'); }
@@ -400,8 +434,11 @@
 
     // --- Загрузка данных ---
     async function loadGames() {
+        const ticket = ++gamesRequest, epoch = privacyEpoch;
         try {
-            games = await GetGames() || [];
+            const result = await GetGames() || [];
+            if (ticket !== gamesRequest || epoch !== privacyEpoch || locked) return;
+            games = result;
             pruneSelection();
             // Открыта карточка (и не редактируем) — подхватываем свежие данные
             if (selectedGame && !isEditing) {
@@ -414,7 +451,7 @@
     }
     // Полная перезагрузка библиотеки (смена папки данных, импорт, очистка)
     async function reloadLibrary(resetSelection) {
-        if (resetSelection) { clearInfoPreview(); selectedGame = null; isEditing = false; }
+        if (resetSelection) { privacyEpoch++; gamesRequest++; mainView = 'library'; clearInfoPreview(); selectedGame = null; isEditing = false; }
         try { scanPaths = await GetScanPaths(); } catch (e) {}
         await refreshPrivacy();          // у другой библиотеки (импорт/смена папки) свои настройки
         await loadCollections();
@@ -471,14 +508,6 @@
         else addGamesFolder();
     }
 
-    async function handleSearch() {
-        try {
-            games = searchQuery.trim() === '' ? (await GetGames() || []) : (await SearchGames(searchQuery) || []);
-        } catch (err) {
-            console.error('Ошибка поиска:', err);
-        }
-    }
-
     // Убрать из выделения игры, которых больше нет (удалены/скрыты)
     function pruneSelection() {
         if (!$selection.size) return;
@@ -510,7 +539,7 @@
     let mainEl;
     let showToTop = false;
     let libScroll = 0;                  // где были в библиотеке, когда открыли игру
-    function onMainScroll() { showToTop = !!mainEl && mainEl.scrollTop > mainEl.clientHeight * 0.6; }
+    function onMainScroll() { showToTop = !!mainEl && mainEl.scrollTop > mainEl.clientHeight * 0.6; if (mainView === 'stats' && !selectedGame && mainEl) statsScroll = mainEl.scrollTop; }
     function scrollTop(smooth) { if (mainEl) mainEl.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' }); }
     // Сменили вид: новый список — сверху; тот же вид (повторный щелчок) — плавно наверх
     async function afterViewChange(same) { libScroll = 0; await tick(); scrollTop(same); }
@@ -603,7 +632,8 @@
     }
     // Пункт боковой панели (все игры, избранное, умные списки): сбрасывает коллекцию и тег
     function applyFilter(filter) {
-        const same = !selectedGame && activeFilter === filter && !activeCollection && !hasTags;
+        const same = mainView === 'library' && !selectedGame && activeFilter === filter && !activeCollection && !hasTags;
+        mainView = 'library';
         clearSelection();
         afterViewChange(same);
         activeFilter = filter;
@@ -613,7 +643,8 @@
     }
     // Открыть коллекцию сеткой (щелчок по её названию в панели)
     function openCollection(key) {
-        const same = !selectedGame && activeCollection === key;
+        const same = mainView === 'library' && !selectedGame && activeCollection === key;
+        mainView = 'library';
         clearSelection();
         afterViewChange(same);
         activeCollection = key;
@@ -627,13 +658,12 @@
     function resetView() {
         searchQuery = '';
         applyFilter('all');
-        handleSearch();
     }
     // Ввод в поиске (верхняя панель): ищем по всей библиотеке, а не внутри открытой коллекции
     function onSearchInput() {
+        mainView = 'library';
         if (selectedGame) closeGame();
         if (searchQuery.trim()) { activeCollection = ''; activeFilter = 'all'; tagFilter = emptyTags(); }
-        handleSearch();
     }
     // «Теги ▾»: теги текущего вида (коллекции/фильтра) по частоте
     $: scopeTags = (() => {
@@ -643,6 +673,7 @@
     })();
     function setTags(tf) { clearSelection(); tagFilter = tf; afterViewChange(false); }
     function applyTag(tag) {
+        mainView = 'library';
         tagFilter = { inc: [tag], exc: [], mode: 'all' };
         activeFilter = 'all';
         activeCollection = '';
@@ -830,7 +861,7 @@
     let navStack = [];
     let navPos = -1;
     let navApplying = false;
-    $: navKey = JSON.stringify({ g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: tagFilter });
+    $: navKey = JSON.stringify({ v: mainView, g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: tagFilter });
     $: recordNav(navKey);
     function recordNav(key) {
         if (navApplying || navStack[navPos] === key) return;
@@ -845,10 +876,13 @@
         navPos = i;
         const st = JSON.parse(navStack[i]);
         clearSelection();
+        mainView = st.v || 'library';
+        refreshCalendar();
         activeFilter = st.f; activeCollection = st.c; tagFilter = st.t || emptyTags();
-        const g = st.g ? games.find(x => x.id === st.g) : null;
+        const g = st.g ? visibleGames.find(x => x.id === st.g) : null;
         if (g) selectGame(g); else closeGame();
         await tick();
+        if (mainView === 'stats' && !selectedGame) restoreStatsScroll();
         navApplying = false;
     }
 
@@ -895,6 +929,7 @@
             else if ($selecting) clearSelection();
             else if (inInput) e.target.blur();
             else if (selectedGame) closeGame();
+            else if (mainView === 'stats') { e.preventDefault(); goNav(-1); }
             return;
         }
         if (needsSetup) return;
@@ -935,6 +970,7 @@
             else if (e.key === 'Backspace') { e.preventDefault(); closeGame(); }
             return;
         }
+        if (mainView === 'stats') return;
         // Библиотека: стрелки, выделение
         const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
         if (dirs[e.key] && !e.altKey) { e.preventDefault(); focusNeighbor(dirs[e.key]); return; }
@@ -943,7 +979,7 @@
     }
     // Ctrl+колесо над библиотекой — размер карточек
     function onMainWheel(e) {
-        if (!(e.ctrlKey || e.metaKey) || selectedGame) return;
+        if (!(e.ctrlKey || e.metaKey) || selectedGame || mainView === 'stats') return;
         e.preventDefault();
         stepCardSize(e.deltaY < 0 ? 1 : -1);
     }
@@ -971,7 +1007,10 @@
     onMount(async () => {
         OnFileDrop((x, y, paths) => handleNativeDrop(paths), false);
         // Бэкенд шлёт событие, когда обновилось время в игре (после выхода из игры)
-        EventsOn('games-updated', () => { if (!locked) loadGames(); });
+        sessionUnsubscribers.push(EventsOn('games-updated', () => { if (!locked) loadGames(); }));
+        sessionUnsubscribers.push(EventsOn('sessions-updated', () => { if (!locked) { sessionRevision++; refreshCalendar(); } }));
+        sessionUnsubscribers.push(EventsOn('session-recording-error', err => { if (!locked) showToast(tr('toast.error', { err }), 'error'); }));
+        calendarTimer = setInterval(refreshCalendar, 30000);
         EventsOn('privacy-locked', onLocked);
         EventsOn('privacy-panic', onPanic);
         window.addEventListener('resize', onWindowResize);
@@ -1006,6 +1045,8 @@
         window.removeEventListener('focus', onWindowFocus);
         for (const ev of ACTIVITY_EVENTS) window.removeEventListener(ev, markActivity);
         clearInterval(idleTimer);
+        clearInterval(calendarTimer);
+        sessionUnsubscribers.forEach(off => off?.());
     });
 
     async function onSetupConfigured() {
@@ -1046,7 +1087,7 @@
             </div>
         {/if}
 
-        <Sidebar width={sidebarWidth}
+        <Sidebar width={sidebarWidth} statisticsActive={mainView === 'stats'} onStatistics={openStatistics}
                  groups={sidebarGroups}
                  totalGames={games.length}
                  libCount={visibleGames.length}
@@ -1076,6 +1117,12 @@
              class="w-1 shrink-0 self-stretch z-20 cursor-col-resize bg-white/5 hover:bg-indigo-400/50 transition-colors {resizingSidebar ? 'bg-indigo-400/60' : ''}"></div>
 
         <main bind:this={mainEl} on:scroll={onMainScroll} class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
+            {#if mainView === 'stats' && !locked}
+                <div class:hidden={!!selectedGame}>
+                    <Statistics games={visibleGames} scopeKey={sessionScopeKey} revision={sessionRevision} {calendar}
+                                active={!selectedGame} bind:period={statsPeriod} onSelect={selectGame} onReady={restoreStatsScroll}/>
+                </div>
+            {/if}
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
                     <button on:click={closeGame} title="Esc" class:hidden={isEditing || !!gameInfoPreview}
@@ -1087,7 +1134,7 @@
                         <GameEditor bind:game={selectedGame} {supportedSources} dirty={editDirty} onSave={saveEdit} onCancel={cancelEdit}/>
                     {:else}
                         {#key selectedGame.id}
-                        <GameDetail game={selectedGame} {supportedSources}
+                        <GameDetail game={selectedGame} {supportedSources} {visibleGames} {sessionScopeKey} {sessionRevision} {calendar}
                                     preview={gameInfoPreview?.game || null} previewSource={gameInfoPreview?.source || ''} {savingInfo}
                                     onPreview={previewInfo} onPreviewBack={backFromPreview} onPreviewSave={saveInfoPreview}
                                     inCollections={collectionsView.filter(c => c.items.some(x => x.id === selectedGame.id)).map(c => ({ id: c.id, name: c.name, dynamic: c.type === 'dynamic' }))}
@@ -1105,7 +1152,7 @@
                     {/if}
                 </div>
 
-            {:else}
+            {:else if mainView === 'library'}
                 <!-- Заголовок вида: название + число, справа сортировка -->
                 <div class="flex items-center gap-3 mb-4 animate-fade-in flex-wrap">
                     <h2 class="text-2xl font-semibold text-white tracking-tight truncate min-w-0">{viewTitle}</h2>
@@ -1225,7 +1272,7 @@
                 <PinDialog mode="lock" onSuccess={onUnlocked}/>
             {/if}
 
-            {#if $selecting && !selectedGame && !locked}
+            {#if $selecting && !selectedGame && !locked && mainView === 'library'}
                 <SelectionBar games={visibleGames} collections={visibleCollections}
                               onAddToCollection={bulkAddToCollection}
                               onRemoveFromCollection={bulkRemoveFromCollection}

@@ -6,8 +6,9 @@ const assert = require('node:assert/strict');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 (async () => {
-  const tabs = await (await fetch('http://127.0.0.1:9334/json')).json();
-  const tab = tabs.find(t => t.url.startsWith('http://127.0.0.1:5393')) || tabs.find(t => t.url === 'about:blank');
+  const origin = 'http://127.0.0.1:' + (process.env.UI_PORT || '5393');
+  const tabs = await (await fetch('http://127.0.0.1:' + (process.env.CDP_PORT || '9334') + '/json')).json();
+  const tab = tabs.find(t => t.url.startsWith(origin)) || tabs.find(t => t.url === 'about:blank');
   const ws = new WebSocket(tab.webSocketDebuggerUrl);
   await new Promise(resolve => ws.addEventListener('open', resolve, { once: true }));
   let seq = 0;
@@ -52,7 +53,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const choose = '[data-hit-url]';
   const preview = '[data-info-preview]';
   const load = async (extra = '') => {
-    await send('Page.navigate', { url: 'http://127.0.0.1:5393/?shot=find' + extra });
+    await send('Page.navigate', { url: origin + '/?shot=find' + extra });
     await wait('document.body?.dataset.ready === "1"');
     await wait(visible('[data-find-tab=name]'));
     if (!await evaluate(visible('[data-find-query]'))) await click('[data-find-tab=name]');
@@ -75,6 +76,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     await shot('results', '[data-metadata-panel]');
     const original = await snapshot();
     await click(choose); await wait(visible(preview));
+    check('preview omits play sessions', await evaluate('!document.querySelector("[data-game-sessions]")'));
     check('preview leaves library unchanged', await snapshot(), original);
     check('preview fallback version', await evaluate('document.querySelector("[data-game-detail]").innerText.includes("0.3")'));
     check('preview has no play/status/notes mutations', await evaluate('!Array.from(document.querySelectorAll("[data-game-detail] button")).filter(e=>e.getClientRects().length).some(e=>/^(Play|Want|Playing|Edit notes|Add link)$/.test(e.textContent.trim()))'));

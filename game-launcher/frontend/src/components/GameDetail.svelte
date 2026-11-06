@@ -9,10 +9,15 @@
     import { Launch, OpenFolder, OpenURL, SelectExecutable, UpdateGame, UpdateGameMetadata, RecalcGameSize } from '../../wailsjs/go/main/App.js';
     import Icon from './Icon.svelte';
     import MetadataPanel from './MetadataPanel.svelte';
+    import GameSessions from './GameSessions.svelte';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { STATUSES } from '../lib/status.js';
 
     export let game;
+    export let visibleGames = [];
+    export let sessionScopeKey = '';
+    export let sessionRevision = 0;
+    export let calendar;
     export let preview = null;
     export let previewSource = '';
     export let savingInfo = false;
@@ -223,7 +228,7 @@
         </section>
 
         <!-- Скрываем, не размонтируем: после превью остаются запрос, источники и результаты. -->
-        <div class:hidden={!!preview} style="order: {noInfo && !dismissed ? 1 : 4}" data-metadata-panel>
+        <div class:hidden={!!preview} style="order: {noInfo && !dismissed ? 1 : 5}" data-metadata-panel>
             <MetadataPanel {game} {supportedSources} {parsing} onParse={parse} {onReload} {onPreview} onDismiss={dismissInfo} prominent={noInfo && !dismissed}/>
         </div>
 
@@ -245,7 +250,10 @@
             {/if}
         </section>
 
-        <section class="order-3" class:hidden={!!preview}>
+        {#if !preview}
+            <GameSessions {game} {visibleGames} scopeKey={sessionScopeKey} revision={sessionRevision} {calendar}/>
+        {/if}
+        <section class="order-4" class:hidden={!!preview}>
             <div class="flex items-center gap-3 mb-3">
                 <h3 class="{sectionTitle} !mb-0 flex-1">{$t('detail.notes')}</h3>
                 {#if !editingNotes && hasSpoilers}

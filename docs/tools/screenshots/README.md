@@ -46,3 +46,34 @@ results, read-only preview, blur, language changes, persistence and lock-time re
 It writes `out/find-checks.json` and `out/find-*.png`. Stop only the dedicated server/browser afterward.
 The mock exposes `window.__findMock` controls (failedSource, delays, empty, previewError, saveError, calls)
 and `window.__mockEmit` for events. Add `&keep=1` to preserve local preferences across reloads.
+
+
+## Sessions and Statistics regression
+
+Use the same build/server/dedicated Edge setup, then run:
+
+```powershell
+node docs/tools/screenshots/test-stats.cjs
+```
+
+The script opens `?shot=stats`. `stats-fixture.cjs`, serialized by `build-ui.cjs`, freezes the clock at
+2026-11-06 12:00 UTC and supplies GetGameSessions, GetLibraryStats and GetSessionRevision. It includes
+boundary-crossing sessions, old playtime without history, an empty/untracked game, interrupted history,
+manual/dynamic/pinned hidden collections with mixed membership, and unknown/missing/measured-zero sizes.
+The 48 assertions cover totals, charts, navigation/scroll, privacy and late replies, error/retry/empty states,
+calendar/zone changes, language changes, keyboard access, editor omission and completed-session refresh.
+Outputs: `out/stats-checks.json` and `out/stats-*.png`. Preview omission is checked by `test-find.cjs`.
+
+Both scripts accept alternate ports when the defaults are occupied:
+
+```powershell
+$env:UI_PORT = '5394'
+$env:CDP_PORT = '9335'
+node docs/tools/screenshots/test-stats.cjs
+node docs/tools/screenshots/test-find.cjs
+```
+
+Start the server and dedicated Edge with matching ports; never reuse a normal browser profile.
+`window.__statsMock` exposes delay, error, sessionError, emptyActivity and calls, plus complete(gameID),
+advanceDay() and emptyLibrary(). `window.__mockEmit(name, ...args)` simulates revision/privacy/error events.
+Only fictional local assets are used. These checks do not open real games or a real library.

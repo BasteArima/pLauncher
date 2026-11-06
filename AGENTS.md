@@ -37,7 +37,10 @@ The app is fully working. Done so far:
 - **Discreet mode** (👁 in the titlebar / Ctrl+H) blurs all covers. Games without a cover are listed under the
   sidebar filter «No cover» (`activeFilter === 'nocover'`, shown only when there are any) — a to-do list for parsing.
 - **Cover framing** (fill/contain/stretch, focus point, zoom; separate for wide and tall cards), per game, in edit mode.
-- **Playtime tracking** via `cmd.Wait` (no polling); shown on detail; sort by playtime.
+- **Play sessions and statistics**: detached `cmd.Wait` monitor retains sessions after UI closure. Game detail
+  shows eight weekly bars, session count/longest and latest five. The permanent Statistics sidebar entry opens
+  library totals, 52 weekly bars, top games, statuses, engines, cached disk size and missing-metadata counts.
+  All-time totals retain legacy playtime; period totals use recorded sessions. Hidden games are excluded.
 - **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize; scan/update-check
   status; search; icon buttons discreet / hidden collections (only if any) / lock (only with PIN) / hotkeys / Settings).
   Frequent actions live at the top of the **sidebar**: «Scan folders» (no scan paths → folder picker), + add game,
@@ -321,8 +324,8 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 
 1. ✅ **DONE — Find game info by name** — search Steam / F95zone / VNDB by the folder name, pick a result, preview, save.
    Full spec: [`docs/specs/find-by-name.md`](docs/specs/find-by-name.md). Adds a VNDB parser.
-2. **Play sessions + Stats tab — backend done, interface next.** Durable session recording and scoped
-   statistics methods are implemented. Next: game-page Sessions block and the Statistics view.
+2. ✅ **DONE — Play sessions + Stats tab.** Durable recording, game-page Sessions and the sidebar Statistics
+   view are implemented. Real-library acceptance remains manual; headless UI checks use fictional data.
    Full spec: [`docs/specs/play-sessions-stats.md`](docs/specs/play-sessions-stats.md).
 3. **Multiple launch files** (#7 above): main file ★ + extra ones (config, walkthrough) in a menu next to Play;
    picked in edit mode.
@@ -398,15 +401,42 @@ Recovery runs on startup and in the UI's two-second session watcher; it continue
 App methods: `GetGameSessions(gameID, visibleGameIDs, timeZone)`, `GetLibraryStats(visibleGameIDs, period,
 timeZone)` and `GetSessionRevision()`. Periods: `week`, `month`, `all`; zones are IANA names, with bundled tzdata.
 Pass IDs from `visibleGames`, never the whole or currently filtered library. Empty scope means no games.
-Locked/unconfigured calls return null; late locked responses are discarded. Frontend will invalidate its own
+Locked/unconfigured calls return null; late locked responses are discarded. Frontend invalidates its own
 responses on reveal/hide/navigation. Stats use Monday weeks, calendar months and 52 rolling weekly buckets;
 intervals crossing boundaries are split in local time, including DST. All-time totals use stored minutes.
 `GameSessions.tracking_supported` exposes direct-process tracking capability. `sessions-updated` and
 `games-updated` are payload-free revision notifications; `session-recording-error` / GetSessionRevision errors
-use apperr and all 11 locales. Step 2 must handle those events, including error display, without leaking data.
+use apperr and all 11 locales. App handles these events and suppresses recording-error toasts while locked.
 
 Windows process tests use real detached helper processes and an accelerated duration clock. Optional
 `TestBuiltMonitorEntry` in internal/launcher accepts `PLAUNCHER_BUILT_EXE` and verifies the packaged binary's
 windowless monitor entry with a short helper launch. Vet/test/build and that smoke check passed. Linux/Darwin
-monitor packages compiled but were not executed. No actual user games or library were launched; UI work and
-interactive real-game verification are still pending.
+monitor packages compiled but were not executed. No actual user games or library were launched;
+interactive real-game verification remains manual.
+
+
+### Play sessions interface (2026-11-06)
+
+`Statistics.svelte` is a main-area destination (`mainView`, included in `navStack`), opened from the permanent
+sidebar row below scan/add/update. App owns `statsPeriod` (month by default) and scroll restoration when a top
+game opens and closes. The view covers the entire `visibleGames` list, independent of collection/tag/search.
+Library title search now filters locally: never replace `games` with search results, because hidden dynamic
+collections and statistics need the complete library. Text-only top-game rows need no additional media blur.
+
+`GameSessions.svelte` sits after About and before Notes; metadata previews and the editor omit it. Shared
+`WeeklyBars.svelte` uses CSS bars with accessible date/duration labels, focus tooltips and arrow/Home/End keys.
+The 52-week chart scrolls horizontally at narrow widths. Dates, durations, numbers and units use Intl; all
+40 new labels/explanations exist in the 11 locales. Keep explicit language/calendar dependencies for Svelte 3.
+
+`lib/statistics.js` owns request generations. Visibility IDs, reveal/hide and a privacy epoch form the scope
+key: changed scopes clear cached data immediately; inactive/destroyed components invalidate pending replies.
+Game IDs are part of session keys. Events refresh sessions and totals, including refreshed game metadata.
+Calendar identity includes local date and IANA zone; focus, returning to Statistics and a 30-second timer
+refresh it. All-time totals still come from backend `time_played`, never synthesized session history.
+
+Headless regression: `docs/tools/screenshots/test-stats.cjs` with `?shot=stats`; fixture and controls live in
+`stats-fixture.cjs`, wired through `build-ui.cjs`. Both stats/find scripts accept UI_PORT/CDP_PORT for isolated
+servers and Edge profiles. The 48 stats checks cover exact mock totals, navigation/scroll, hidden membership,
+late replies, lock/panic, errors/retries, calendar changes, languages, narrow layout and editor omission;
+35 find checks include preview omission and the original search/save flow. Vet/test/build passed on Windows.
+Mock tests are not real-library or real-game acceptance tests.
