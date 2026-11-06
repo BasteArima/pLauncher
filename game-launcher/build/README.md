@@ -8,6 +8,15 @@ The structure is:
 * darwin - macOS specific files
 * windows - Windows specific files
 
+## Application icon
+
+The selected flat p concept is `docs/design/icon-concepts/2026-11-07/01-flat-p.png` at the repository root.
+`appicon.png` is its unchanged copy: Wails uses it for the macOS bundle, and the app embeds it for the Linux window icon.
+Windows builds and the installer use `windows/icon.ico`, generated from the same PNG.
+When replacing the PNG, remove the existing ICO and run a Windows `wails build` to regenerate it;
+Wails preserves an ICO that already exists. Commit both assets together.
+All four original concepts and their generation prompts are retained in `docs/design/icon-concepts/2026-11-07/`.
+
 ## Mac
 
 The `darwin` directory holds files specific to Mac builds.

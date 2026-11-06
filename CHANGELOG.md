@@ -31,6 +31,7 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 - «Remove from Continue playing» in the game menu. Finished and dropped games no longer show there.
 
 ### Changed
+- A simpler lavender p on graphite is now the application icon, matching the flat redesign.
 - New look: flat dark theme, Inter font, line icons instead of emoji, wide cards by default (tall ones in view
   options). Hovering a card shows Play, favorite and menu buttons.
 - Title bar with search on the right. The sidebar starts with «Scan folders», then Collections with «All games» and

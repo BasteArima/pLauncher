@@ -2,7 +2,9 @@
 
 Created 2026-11-07 using the built-in image generation tool.
 
-Four exploratory alternatives for the flat redesign. The application icon and UI have not been replaced.
+Four exploratory alternatives for the flat redesign. Concept 01 was selected for application builds on 2026-11-07.
+Its unchanged PNG is copied to `game-launcher/build/appicon.png`; the Windows ICO is generated from it.
+The custom title-bar mark remains a separate UI element.
 
 - `01-flat-p.png`: familiar lowercase p, simplified for the flat theme.
 - `02-p-play.png`: lowercase p with a negative-space play triangle.
@@ -11,7 +13,8 @@ Four exploratory alternatives for the flat redesign. The application icon and UI
 
 Palette direction: graphite #0E1014 / #161920, muted violet #6D5BD0, accent #8C7CF0, off-white #F4F5F8. These are raster concepts, not pixel-perfect production vectors. The generator retained subtle tonal variation despite the flat-fill brief.
 
-Validation: visually reviewed all four images; dimensions and transparent corner alpha checked. No application integration, executable build, or real taskbar-size visual acceptance performed.
+Concept validation: visually reviewed all four images; dimensions and transparent corner alpha checked.
+Build integration: Windows tests, vet and the full build passed. The built EXE icon resources match the generated ICO at all six sizes (16, 32, 48, 64, 128 and 256 pixels). macOS and Linux builds, and interactive taskbar appearance, were not checked on this machine.
 
 ## Generation prompts
 
