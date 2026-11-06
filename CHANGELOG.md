@@ -5,6 +5,33 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+### Added
+- Play status for every game (playing, want to play, finished, dropped), a 5-star rating and personal notes, where
+  `||text||` stays hidden as a spoiler until clicked. Status chips above the grid filter by status.
+- Filter by several tags at once: all of them or any of them, and exclude tags you don't want to see.
+- Edit mode looks like the game page itself. Unsaved changes are marked, Esc cancels and Ctrl+S saves. Screenshots
+  can be reordered by dragging, any screenshot can become the cover, and images dropped onto the window are added
+  as screenshots.
+- Covers can be zoomed and framed separately for wide and tall cards, by dragging and scrolling over a live preview
+  or with sliders.
+- Smart lists (updates, no cover, folder not found) with one button that handles the whole list.
+- Back and forward like in a browser: mouse side buttons or Alt+←/→. A «Back to top» button in long lists.
+- «Remove from Continue playing» in the game menu. Finished and dropped games no longer show there.
+
+### Changed
+- New look: flat dark theme, Inter font, line icons instead of emoji, wide cards by default (tall ones in view
+  options). Hovering a card shows Play, favorite and menu buttons.
+- Title bar with search on the right. The sidebar starts with «Scan folders», then Collections with «All games» and
+  «Favorites» at the top; clicking a collection opens it as a grid.
+- The library opens as a grid with chips and a «Tags» menu. Shelves, card shape and size are in the view options
+  popover, and the big hero banner is off by default.
+- The game page has a media viewer with the cover first, a play card with stats, status and rating, update and site
+  links, and collections in the details. Games without info show a «Find game info» block.
+- Context menus open where you click and flip near window edges.
+
+### Fixed
+- Scrolling a large library is smooth again (blur effects no longer run on every card).
+
 ## [1.1.0] - 2026-11-05
 
 ### Added

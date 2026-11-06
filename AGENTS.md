@@ -28,24 +28,25 @@ The app is fully working. Done so far:
 - **Author & Engine fields** (`Game.Author`/`Engine`): parsed per-site (Steam developers; F95/pornolab/island
   body + title; erotorrent dev field). **Engine auto-detection by folder contents** (`scanner.DetectEngine`,
   13 engines) runs on scan/drop and backfills empty engine for existing games on re-scan.
-- **Library UI (Steam-like)**: aurora/glass dark theme; resizable + collapsible-tree sidebar with game
-  icons; home with hero banner + configurable, drag-reorderable shelves ("edit sections" mode); Steam-style
-  detail page (hero header, description, screenshots, lightbox); grid + sort.
+- **Library UI**: flat dark theme (see the Redesign bullet); resizable + collapsible-tree sidebar with game
+  icons; grid (default) or shelves view (configurable, drag-reorderable shelves in "edit sections" mode, optional
+  hero banner); game page with media viewer + lightbox; sort.
 - **Collections**: manual + dynamic-by-tags; CRUD; sidebar groups & a `collection` shelf type come from
   them; drag a game onto a collection to add it (works for dynamic too via pinned `game_ids`).
 - **Tags & favorites**: auto-tags from parsing + manual editing; favorites (♥) with shelf/filter.
 - **Discreet mode** (👁 in the titlebar / Ctrl+H) blurs all covers. Games without a cover are listed under the
   sidebar filter «No cover» (`activeFilter === 'nocover'`, shown only when there are any) — a to-do list for parsing.
-- **Cover fit/position editor** (fill/contain/stretch + X/Y), per game.
+- **Cover framing** (fill/contain/stretch, focus point, zoom; separate for wide and tall cards), per game, in edit mode.
 - **Playtime tracking** via `cmd.Wait` (no polling); shown on detail; sort by playtime.
 - **Custom UI chrome**: frameless window + custom titlebar (drag, min/max/close, double-click maximize; scan/update-check
-  status; quick buttons 👁 discreet / hidden collections (only if any) / 🔒 lock (only with PIN) / hotkeys / ⚙ Settings with a
-  label). Frequent actions live at the top of the **sidebar**: «Scan folders» (no scan paths → folder picker), + add game,
-  ⬆ check game updates; then **Recent** (3 last launched with a big Play) and the collection tree, whose game rows show
-  a Play button on hover. Custom context menus (`ContextMenu`, items support `hint` = shortcut), custom confirm dialog
-  (no native popups), toasts.
-- **Redesign in progress** (2026-11, by the owner's choice instead of the paused Rust rewrite): mockups on the canvas
-  https://claude.ai/artifact/QZNnh6NG3xBRrCTQ58a2wD, row A3 is the target. Done: sidebar + titlebar; flat theme — the
+  status; search; icon buttons discreet / hidden collections (only if any) / lock (only with PIN) / hotkeys / Settings).
+  Frequent actions live at the top of the **sidebar**: «Scan folders» (no scan paths → folder picker), + add game,
+  check game updates; then the collection tree, whose game rows show a Play button on hover. Custom context menus
+  (`ContextMenu`: opens at the click point and flips near window edges; items support `hint` = shortcut), custom
+  confirm dialog (no native popups), toasts.
+- **Redesign** (2026-11, by the owner's choice instead of the paused Rust rewrite; the layout part is done, what is left
+  are new features, see Roadmap): mockups on the canvas https://claude.ai/artifact/QZNnh6NG3xBRrCTQ58a2wD (private;
+  row A3 is the target). Done: sidebar + titlebar; flat theme — the
   palette lives in `tailwind.config.js` (the `slate` and `indigo` scales are **overridden**, so components keep using
   `text-slate-400` / `bg-indigo-500`), `.glass*` / `.aurora-bg` in `style.css` are now flat surfaces (names kept), font
   Inter Variable bundled via `@fontsource-variable/inter` (no network fonts); cards: caption under the cover, shape
@@ -82,7 +83,6 @@ The app is fully working. Done so far:
   **Continue playing** (`recentlyPlayed`) skips finished/dropped games and ones hidden via the menu item «Remove from Continue
   playing» (localStorage `plauncher_continue_hidden`: id → last_launched_at at hide time; launching again brings it back).
   Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.
-  Next ideas (need backend): search by folder name (Steam/VNDB/F95), preview before saving, statuses/rating/notes.
 - **Persistence**: configurable data folder (first-run wizard, settings, move-on-change); window size;
   sidebar width; sort/layout/collapsed/lang in localStorage.
 - **i18n**: en/ru/es/pt(-BR)/de/fr/zh(-Hans)/uk/ja/pl/tr built-in + user languages from `data/languages/*.json` (README + `_example.json`
@@ -127,7 +127,8 @@ The app is fully working. Done so far:
 - **SQLite** is opened with `_pragma=busy_timeout(5000)`: background size calculation writes concurrently with UI.
 - **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`); the reference list
   lives in `lib/hotkeys.js` (F1 window + Settings → General). F5/Ctrl+R are intercepted (a WebView reload would
-  drop state). Card size: slider in `ViewControls`, Ctrl+wheel, Ctrl +/−/0.
+  drop state). Card size: slider in `ViewOptions`, Ctrl+wheel, Ctrl +/−/0. The list in `hotkeys.js` still lacks
+  Alt+←/→ and mouse back/forward (history) and Ctrl+S / Esc in edit mode.
 - **Launcher self-update**: check in `updater.go` (GitHub Releases of `updateRepo`, ldflag; public repo since
   2026-09-24), download + install in `updater_install.go`, UI in `lib/update.js` + `UpdateModal.svelte` + the pill in
   `TitleBar`. Flow: `StartLauncherDownload` (event `launcher-download`) → `.new` + `.new.verified` →
@@ -163,16 +164,18 @@ game-launcher/
     parser/                one file per site + parser.go (factory, helpers) + extract.go (release-title parsing)
     launcher/launcher.go   launch exe (+ playtime via cmd.Wait goroutine), open folder, find exes
   frontend/src/
-    App.svelte             root: library state, derived lists, navigation, wiring (~700 lines)
-    components/            Sidebar, GameDetail, GameEditor, MetadataPanel, Hero, Shelf, GameGrid, GameCard,
-                           ShelfEditor, SortSelect, Lightbox, TitleBar, ContextMenu, Toast, ConfirmDialog,
-                           SetupWizard, SettingsModal, CollectionModal, RelinkModal
+    App.svelte             root: library state, derived lists, navigation/history, wiring (~1150 lines)
+    components/            Sidebar, TitleBar, GameGrid, GameCard, Shelf, ShelfEditor, Hero, GameDetail, GameEditor,
+                           MetadataPanel, SmartBanner, TagFilter, ViewOptions, ViewControls, SelectionBar, Lightbox,
+                           ContextMenu, Toast, ConfirmDialog, PinDialog, Icon, SetupWizard, SettingsModal (+ settings/),
+                           CollectionModal, RelinkModal, UpdateModal, HotkeysHelp, EmptyLibrary
     lib/ui.js              showToast() + askConfirm() stores (usable from any component)
-    lib/util.js            mediaSrc, coverStyle, sortGames, fmtPlaytime, localStorage helpers, clickOutside
+    lib/util.js            mediaSrc, coverStyle(g, shape), sortGames, fmtPlaytime, localStorage helpers, clickOutside
     lib/shelves.js         shelves (load/build) + buildCol (collection membership)
     lib/inputMenu.js       cut/copy/paste menu for text inputs
-    lib/view.js / bulk.js / hotkeys.js / privacy.js   selection+card size / bulk actions / hotkey list / blur stores
-    i18n.js + locales/{en,ru,es}.json
+    lib/view.js / bulk.js / hotkeys.js / privacy.js   selection, card size/shape, view / bulk actions / hotkey list / blur
+    lib/icons.js / status.js   line icons (no emoji in the UI) / play statuses with colours
+    i18n.js + locales/{en,ru,es,pt,de,fr,zh,uk,ja,pl,tr}.json
   ../.github/workflows/    ci.yml (vet/test on Windows+Ubuntu 24.04+macOS), release.yml (tag v* → win exe, linux
                            binary+tar.gz, macOS universal .app zip, each with .sha256; names = updater.assetNameFor)
   wails.json               app name "pLauncher", build metadata, icon source = build/appicon.png
@@ -290,9 +293,8 @@ High value (turns the app from a gallery into a real collection tracker):
    clickable source badges (open / load-into-parser / re-check), amber card ring + ⬆ on home cards, amber
    "update: {v}" badge on detail with **Accept** (re-parse), top-bar "Check all", and an "Updates"
    sidebar filter. NOT done: background/scheduled auto-checks. Steam has no version → can't be tracked.
-2. **Play status / backlog** — per-game status (playing / finished / dropped / want-to-play); filters and
-   shelves by status. Fits the existing dynamic-collection machinery.
-3. **Rating & notes** — personal star rating + a notes field (spoilers under a toggle).
+2. ✅ **DONE — Play status** (playing / want / finished / dropped), status chips over the grid. NOT done: shelves by status.
+3. ✅ **DONE — Rating & notes** (0–5 stars, notes with `||spoiler||`).
 
 Privacy (matters for this content):
 4. ✅ **DONE — PIN lock, idle auto-lock, global panic hotkey, hidden collections.** NOT done: neutral
@@ -307,13 +309,42 @@ Polish / convenience:
 8. ✅ **DONE — Relink moved games** (see "Current state").
 9. ✅ **DONE — Backup/export library** (zip). NOT done: a "library health" dashboard (no cover / no
    description / no exe as actionable lists).
-10. **Multi-tag filter** (AND/OR, exclude) and a tag blacklist (hide unwanted genres).
+10. ✅ **DONE — Multi-tag filter** (all/any, exclude). NOT done: a permanent tag blacklist (hide unwanted genres).
 11. ✅ **DONE — Localized errors via codes** (`internal/apperr` + `localizeError` in i18n.js).
 12. ✅ **DONE — Self-update + CI releases for Windows/Linux/macOS.** Self-update installs on Windows & Linux;
     macOS (unsigned .app) only links to the release page. Linux builds need `-tags webkit2_41` (WebKitGTK 4.1).
     CI runs on push; logs need a GitHub login (annotations are readable via the public API).
 
 Owner's note: #1 (update checking) and #2 (statuses) are expected to give the biggest payoff.
+
+### Next up (left from the redesign mockups, agreed order)
+
+1. **Find game info by name** — search Steam / F95zone / VNDB by the folder name, pick a result, preview, save.
+   Full spec: [`docs/specs/find-by-name.md`](docs/specs/find-by-name.md). Adds a VNDB parser.
+2. **Play sessions + Stats tab** — store each launch (start, duration) in a new table where playtime is counted now;
+   game page block «Play sessions» (8-week chart, count, longest); a Stats view (hours, statuses, engines, disk
+   size, weekly activity). Sessions start accumulating only after release, so ship them early.
+3. **Multiple launch files** (#7 above): main file ★ + extra ones (config, walkthrough) in a menu next to Play;
+   picked in edit mode.
+4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
+   find info by name).
+5. **List view** (mockup B): dense table — title, status, version, engine, played, last played, size; sortable
+   headers; a third option in `ViewOptions` next to grid/shelves.
+6. Small: hotkey list entries (see Hotkeys), «Found on <site> · date» / «Edited» in the game page details, refresh
+   README screenshots (`docs/tools/screenshots/make.ps1`, the mock needs the new UI states).
+
+## Working agreements (for any agent)
+
+- **Commits**: no `Co-Authored-By` trailers and no "Generated with …" lines, ever. Commit when asked or at the end of a
+  finished step; **never push** unless the owner says so. Short English commit subject, body explains why.
+- Answer the owner in **Russian**; code comments may be Russian; docs and commit messages are English.
+- Every user-facing string goes into **all 11 locales** (`locales_test.go` fails otherwise). When patching JSON or
+  Svelte files from scripts, keep UTF-8 and the file's line endings (most files are CRLF in the working tree).
+- Verify UI changes without the real window: `node docs/tools/screenshots/build-ui.cjs` (needs `frontend/dist`) →
+  serve `docs/tools/screenshots/out/ui` on port 5393 (`python -m http.server 5393`) → headless Edge with
+  `--remote-debugging-port` and a small CDP script (click, screenshot, read state). New bound methods need a mock in
+  `build-ui.cjs`.
+- The owner tests the built exe on the real library; say plainly what was and wasn't checked.
 
 ## More detail
 
