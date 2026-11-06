@@ -8,6 +8,11 @@
     export let index = 0;
     export let onClose = () => {};
 
+    // Картинка вписывается в окно целиком и растягивается до него, даже если сама меньше
+    // (иначе маленький скриншот на весь экран выглядел мельче, чем в галерее страницы).
+    let ratio = 0;
+    $: fitStyle = ratio ? `width:min(calc(100vw - 16rem), calc((100vh - 8rem) * ${ratio}))` : '';
+
     function next(e) { if (e) e.stopPropagation(); index = (index + 1) % images.length; }
     function prev(e) { if (e) e.stopPropagation(); index = (index - 1 + images.length) % images.length; }
 
@@ -28,15 +33,16 @@
 <div class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[95] flex items-center justify-center p-10 animate-fade-in" on:click={onClose}>
     <button class="absolute top-6 right-8 text-slate-400 hover:text-white text-5xl font-light transition-colors z-50" on:click={onClose}>&times;</button>
 
-    <div class="absolute left-0 top-0 bottom-0 w-1/4 flex items-center justify-start pl-8 group cursor-pointer" on:click={prev}>
+    <div class="absolute left-0 top-0 bottom-0 w-32 flex items-center justify-start pl-8 group cursor-pointer" on:click={prev}>
         <div class="text-white/30 group-hover:text-white text-7xl transition-colors drop-shadow-2xl">&#10094;</div>
     </div>
 
-    <img src={mediaSrc(images[index])} alt="fullscreen"
-         class="{blurCls($coverBlur, 'self')} transition max-w-[80vw] max-h-[80vh] object-contain rounded-lg shadow-2xl border border-slate-700"
+    <img src={mediaSrc(images[index])} alt="fullscreen" draggable="false" style={fitStyle}
+         on:load={(e) => ratio = e.currentTarget.naturalWidth / e.currentTarget.naturalHeight || 0}
+         class="{blurCls($coverBlur, 'self')} transition h-auto max-w-[calc(100vw-16rem)] max-h-[calc(100vh-8rem)] object-contain rounded-lg shadow-2xl border border-slate-700"
          on:click|stopPropagation/>
 
-    <div class="absolute right-0 top-0 bottom-0 w-1/4 flex items-center justify-end pr-8 group cursor-pointer" on:click={next}>
+    <div class="absolute right-0 top-0 bottom-0 w-32 flex items-center justify-end pr-8 group cursor-pointer" on:click={next}>
         <div class="text-white/30 group-hover:text-white text-7xl transition-colors drop-shadow-2xl">&#10095;</div>
     </div>
 

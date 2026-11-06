@@ -792,11 +792,19 @@
     // --- Drag&Drop папок из проводника ---
     // DOM-события dragover/dragleave нужны только для оверлея; реальные абсолютные пути
     // приходят из нативного OnFileDrop (WebView2 не отдаёт их в dataTransfer).
+    // Перетаскивание, начатое внутри окна (карточка, миниатюра), — не файлы из проводника,
+    // даже если браузер кладёт в него тип Files. Оверлей для него не показываем.
+    let internalDrag = false;
     function isFileDrag(e) {
-        return e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+        return !internalDrag && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
     }
     function onDragOver(e) { if (isFileDrag(e)) { e.preventDefault(); isDragging = true; } }
     function onDragLeave(e) { if (isFileDrag(e)) { e.preventDefault(); isDragging = false; } }
+    // Страховка от «залипшего» оверлея: отпустили где угодно, перетаскивание кончилось,
+    // или мышь снова двигается без перетаскивания (во время drag событий mousemove нет).
+    function endDrag() { internalDrag = false; isDragging = false; }
+    function onWindowDrop(e) { if (isFileDrag(e)) e.preventDefault(); isDragging = false; }
+    function onWindowMouseMove() { if (isDragging) isDragging = false; }
     const IMAGE_RE = /\.(png|jpe?g|webp|gif|avif|bmp)$/i;
     async function handleNativeDrop(paths) {
         isDragging = false;
@@ -1012,7 +1020,8 @@
     }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:mousedown={handleGlobalMouseDown} on:mouseup={preventBrowserMouseNav} on:auxclick={preventBrowserMouseNav}/>
+<svelte:window on:keydown={handleKeydown} on:mousedown={handleGlobalMouseDown}
+               on:dragstart={() => internalDrag = true} on:dragend={endDrag} on:drop={onWindowDrop} on:mousemove={onWindowMouseMove} on:mouseup={preventBrowserMouseNav} on:auxclick={preventBrowserMouseNav}/>
 <div class="flex flex-col h-screen overflow-hidden aurora-bg text-slate-300 font-sans relative"
      on:dragover={onDragOver}
      on:dragleave={onDragLeave}
