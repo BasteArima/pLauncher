@@ -348,6 +348,9 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
   `--remote-debugging-port` and a small CDP script (click, screenshot, read state). New bound methods need a mock in
   `build-ui.cjs`.
 - The owner tests the built exe on the real library; say plainly what was and wasn't checked.
+- **UI follows the mockups in [`docs/design/`](docs/design/README.md)** when one exists for the screen: match the
+  layout and density, not just the behaviour; compare a mock-UI screenshot with the mockup before finishing.
+  Mockups that aren't exported there are on the owner's private canvas: ask for an export instead of guessing.
 
 ## More detail
 
