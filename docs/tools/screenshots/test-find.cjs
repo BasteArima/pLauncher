@@ -134,6 +134,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     check('saved source', saved.sources[0].source, 'Steam');
     check('saved title displayed', await evaluate('document.querySelector("main h1").textContent'), 'Moonlit Harbor');
     await shot('saved');
+    await shot('compact', '[data-metadata-panel]');
     check('only ApplyGameInfo writes', await evaluate('!window.__findMock.calls.some(c=>["UpdateGame","UpdateGameMetadata","Launch"].includes(c.name))'));
 
     await load();

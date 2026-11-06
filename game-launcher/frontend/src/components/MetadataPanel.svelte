@@ -49,32 +49,35 @@
 
 <div class="rounded-2xl border p-5 {prominent ? 'bg-slate-900/60 border-white/10 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
     <div class="flex flex-wrap items-center gap-3 mb-5">
-        {#if prominent}<h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>{/if}
+        {#if prominent}
+            <h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>
+        {:else}
+            <div class="flex items-center gap-2 relative">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
+                <button on:click={() => showSources = !showSources} title={$t("meta.sources")}
+                        class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">?</button>
+                {#if showSources}
+                    <div class="absolute left-0 top-7 z-20 w-64 glass-strong rounded-xl shadow-2xl p-3 animate-fade-in" use:clickOutside on:clickoutside={() => showSources = false}>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{$t("meta.sources")}</div>
+                        <div class="flex flex-col gap-1.5">
+                            {#each supportedSources as s}
+                                <div class="flex items-center justify-between gap-2 text-sm">
+                                    <span class="text-slate-200">{s.name}</span>
+                                    <span class="text-[11px] text-slate-500 font-mono truncate">{s.domain}</span>
+                                </div>
+                            {/each}
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2 pt-2 border-t border-white/10">{$t("meta.sources_hint")}</p>
+                    </div>
+                {/if}
+            </div>
+        {/if}
         <div class="flex gap-1 p-1 rounded-xl bg-slate-950 ml-auto" role="group" aria-label={$t('meta.find_title')}>
             <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
                     class="px-3 py-2 text-sm rounded-lg transition {tab === 'name' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
             <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
                     class="px-3 py-2 text-sm rounded-lg transition {tab === 'link' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_link')}</button>
         </div>
-    </div>
-    <div class="flex items-center gap-2 mb-3 relative {prominent ? 'hidden' : ''}">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
-        <button on:click={() => showSources = !showSources} title={$t("meta.sources")}
-                class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">?</button>
-        {#if showSources}
-            <div class="absolute left-0 top-7 z-20 w-64 glass-strong rounded-xl shadow-2xl p-3 animate-fade-in" use:clickOutside on:clickoutside={() => showSources = false}>
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{$t("meta.sources")}</div>
-                <div class="flex flex-col gap-1.5">
-                    {#each supportedSources as s}
-                        <div class="flex items-center justify-between gap-2 text-sm">
-                            <span class="text-slate-200">{s.name}</span>
-                            <span class="text-[11px] text-slate-500 font-mono truncate">{s.domain}</span>
-                        </div>
-                    {/each}
-                </div>
-                <p class="text-[11px] text-slate-500 mt-2 pt-2 border-t border-white/10">{$t("meta.sources_hint")}</p>
-            </div>
-        {/if}
     </div>
     {#if activeSources.length}
         <div class="flex flex-wrap gap-2 mb-3">
