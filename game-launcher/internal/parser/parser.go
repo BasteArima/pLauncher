@@ -244,6 +244,22 @@ func sniffImageExt(path string) string {
 // maxScreenshots — сколько скриншотов максимум скачиваем на игру.
 const maxScreenshots = 15
 
+// Режим «только метаданные» (saveDir пуст) нужен двум местам: проверке обновлений (только версия,
+// много игр подряд) и предпросмотру найденной игры (нужны и ссылки на картинки). Добывать картинки
+// лишними запросами (F95: Latest Updates JSON) стоит только для предпросмотра.
+type previewImagesKey struct{}
+
+// WithPreviewImages помечает разбор как предпросмотр: парсер вернёт ссылки на картинки, даже если
+// за ними нужно сходить отдельно.
+func WithPreviewImages(ctx context.Context) context.Context {
+	return context.WithValue(ctx, previewImagesKey{}, true)
+}
+
+// wantsImages: картинки нужны при сохранении (saveDir задан) и в предпросмотре.
+func wantsImages(ctx context.Context, saveDir string) bool {
+	return saveDir != "" || ctx.Value(previewImagesKey{}) != nil
+}
+
 // downloadInto скачивает обложку и до maxScreenshots скриншотов в saveDir и проставляет
 // пути в game. Обложка и скриншоты получают разные префиксы имён, чтобы не затирать
 // друг друга (раньше cover и первый скрин оба сохранялись как 0.jpg).

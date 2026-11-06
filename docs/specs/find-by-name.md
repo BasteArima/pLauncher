@@ -178,7 +178,7 @@ contact these services.
   simplified Chinese are mapped to the existing shared language label without duplicates.
   API reference: https://api.vndb.org/kana#vn-endpoint.
 
-F95 metadata-only parsing now also consults Latest Updates for missing guest images. It returns remote
+F95 preview parsing (`parser.WithPreviewImages(ctx)`) also consults Latest Updates for missing guest images; plain update checks don't, so «Check all» makes one request per F95 game, as before. It returns remote
 URLs without downloading files. Update checks use only the returned version and never replace library
 media with these URLs. VNDB spoilers are removed from descriptions (including nested and unclosed blocks);
 link labels remain as plain text. The existing metadata merge is reused on apply.

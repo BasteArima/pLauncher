@@ -175,8 +175,8 @@ func (p *F95Parser) Parse(ctx context.Context, pageURL string, saveDir string) (
 	})
 
 	// 4. Гостю вложения первого поста не показывают — берём картинки из публичного JSON.
-	// В режиме «только метаданные» (saveDir пуст) картинки не нужны, лишних запросов не делаем.
-	if coverURL == "" || len(screenshotURLs) == 0 {
+	// Проверке обновлений картинки не нужны: лишних запросов не делаем (их по одной на каждую игру F95).
+	if wantsImages(ctx, saveDir) && (coverURL == "" || len(screenshotURLs) == 0) {
 		if id := f95ThreadID(pageURL); id != 0 {
 			cover, screens, lerr := f95LatestImages(ctx, p.client, id, game.Title)
 			if lerr != nil {

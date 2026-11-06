@@ -65,7 +65,7 @@ func (a *App) PreviewGameInfo(url string) (*models.Game, error) {
 	if err != nil {
 		return nil, err
 	}
-	g, err := p.Parse(a.ctx, url, "")
+	g, err := p.Parse(parser.WithPreviewImages(a.ctx), url, "")
 	if a.isLocked() {
 		return nil, nil
 	}
