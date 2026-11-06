@@ -4,6 +4,7 @@
     import { t, tr } from '../i18n.js';
     import { showToast } from '../lib/ui.js';
     import Icon from './Icon.svelte';
+    import FindByName from './FindByName.svelte';
     import { clickOutside } from '../lib/util.js';
     import { OpenURL, CheckGameUpdates, CheckSourceUpdate } from '../../wailsjs/go/main/App.js';
 
@@ -14,18 +15,21 @@
     export let onReload = async () => {};
     export let prominent = false;                       // игра без информации: крупный блок «Найти информацию»
 
+    export let onPreview = async (hit, version) => {};
+    export let onDismiss = () => {};
+    let tab = prominent ? 'name' : 'link';
     let parseUrl = '';
     let showSources = false;
     let checking = false;
 
     // При переключении на другую игру очищаем инпут парсера
     let lastId = game && game.id;
-    $: if (game && game.id !== lastId) { lastId = game.id; parseUrl = ''; }
+    $: if (game && game.id !== lastId) { lastId = game.id; parseUrl = ''; tab = prominent ? 'name' : 'link'; }
 
     $: activeSources = (game.sources || []).filter(s => s.url);
 
     async function parse() {
-        if (!parseUrl) return;
+        if (!parseUrl.trim() || parsing) return;
         if (await onParse(parseUrl)) parseUrl = '';
     }
 
@@ -46,12 +50,7 @@
 <div class="rounded-2xl border p-5 {prominent ? 'bg-indigo-950 border-indigo-800 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
     {#if prominent}
         <h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>
-        <p class="text-sm text-indigo-100/80 mt-1 mb-3">{$t('meta.find_hint')}</p>
-        <div class="flex flex-wrap gap-1.5 mb-4">
-            {#each supportedSources as s}
-                <span class="px-2.5 py-0.5 rounded-full text-xs bg-indigo-900 text-indigo-100" title={s.domain}>{s.name}</span>
-            {/each}
-        </div>
+        <p class="text-sm text-indigo-100/80 mt-1 mb-3">{$t('find.hint')}</p>
     {/if}
     <div class="flex items-center gap-2 mb-3 relative {prominent ? 'hidden' : ''}">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
@@ -80,7 +79,7 @@
                             class="px-3 py-1 text-slate-200 hover:bg-white/10 transition-colors">
                         {#if s.source === game.primary_source}<span class="text-amber-400" title={$t("edit.primary_source")}>★</span> {/if}{s.source} ↗
                     </button>
-                    <button on:click={() => parseUrl = s.url} title={$t("meta.use_for_parse")}
+                    <button on:click={() => { parseUrl = s.url; tab = 'link'; }} title={$t("meta.use_for_parse")}
                             class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-indigo-300 border-l border-white/10 transition-colors"><Icon name="download" size={13}/></button>
                     <button on:click={() => checkSource(s.source)} disabled={checking} title={$t("meta.check_source")}
                             class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-amber-300 border-l border-white/10 transition-colors disabled:opacity-50"><Icon name="refresh" size={13}/></button>
@@ -92,6 +91,14 @@
             {checking ? $t('meta.checking') : $t('meta.check_updates')}
         </button>
     {/if}
+    <div class="flex gap-1 border-b border-white/10 mb-4" role="group" aria-label={$t('meta.find_title')}>
+        <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
+                class="px-3 py-2 text-sm border-b-2 transition {tab === 'name' ? 'border-indigo-400 text-white' : 'border-transparent text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
+        <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
+                class="px-3 py-2 text-sm border-b-2 transition {tab === 'link' ? 'border-indigo-400 text-white' : 'border-transparent text-slate-400 hover:text-white'}">{$t('find.tab_link')}</button>
+    </div>
+    <div class:hidden={tab !== 'name'}><FindByName {game} {onPreview}/></div>
+    <div class:hidden={tab !== 'link'}>
     <div class="flex gap-3">
         <input type="text" bind:value={parseUrl} placeholder={$t("meta.url_ph")}
                on:keydown={(e) => { if (e.key === 'Enter') parse(); }}
@@ -100,4 +107,8 @@
             {parsing ? $t('meta.downloading') : prominent ? $t('meta.get_info') : $t('meta.update')}
         </button>
     </div>
+    </div>
+    {#if prominent}
+        <button data-find-dismiss on:click={onDismiss} class="mt-4 text-xs text-slate-400 hover:text-white underline underline-offset-4">{$t('find.dismiss')}</button>
+    {/if}
 </div>

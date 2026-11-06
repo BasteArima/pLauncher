@@ -3,6 +3,7 @@ import { tr } from '../i18n.js';
 
 // URL обложки/скриншота (файлы отдаются бэкендом по /media/<путь>)
 export function mediaSrc(p) {
+    if (/^https?:\/\//i.test(p || '')) return p;
     return p ? `/media/${p.replaceAll('\\', '/')}` : '';
 }
 

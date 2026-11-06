@@ -39,29 +39,59 @@ const collections = [
 ];
 
 const mock = `(function () {
-  try { localStorage.clear(); localStorage.setItem('plauncher_lang', 'en'); localStorage.setItem('plauncher_sidebar_w', '270'); } catch (e) {}
+  const params = new URLSearchParams(location.search);
+  try { if (!params.has('keep')) localStorage.clear(); localStorage.setItem('plauncher_lang', 'en'); localStorage.setItem('plauncher_sidebar_w', '270'); } catch (e) {}
   const games = ${JSON.stringify(data)};
   let collections = ${JSON.stringify(collections)};
   const priv = { has_pin: true, locked: false, idle_lock_min: 15, panic_enabled: true, panic_mods: 3, panic_vk: 72, panic_label: 'Ctrl+Alt+H', panic_action: 'hide', lock_on_panic: true, blur_mode: 'none', start_discreet: false };
+  if (params.get('shot') === 'find') {
+    for (const id of ['g01', 'g02']) Object.assign(games.find(g => g.id === id), {
+      title: id === 'g01' ? 'MoonlitHarbor_v0.3' : 'QuietTown_v1.0', folder_path: 'D:/Games/' + (id === 'g01' ? 'MoonlitHarbor_v0.3' : 'QuietTown_v1.0'),
+      description: '', cover_path: '', images: [], tags: ['Manual'], version: '', author: '', sources: [], primary_source: '',
+      update_available: false, update_version: '', update_source: '',
+    });
+  }
+  const controls = window.__findMock = { failedSource: 'F95zone', delay: 180, previewDelay: 180, saveDelay: 180, previewError: false, saveError: false, empty: false, calls: [] };
+  const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const results = ['Steam', 'F95zone', 'VNDB'].flatMap((source, i) => [0, 1].map(j => ({
+    source, url: source === 'VNDB' ? 'https://vndb.org/v' + (1 + j) : source === 'Steam' ? 'https://store.steampowered.com/app/' + (1 + j) + '/' : 'https://f95zone.to/threads/' + (1 + j) + '/',
+    title: j ? 'Moonlit Harbor: Afterlight' : 'Moonlit Harbor', author: 'Harbor Studio', version: source === 'F95zone' ? '0.3' : '', year: '2026',
+    thumb: location.origin + '/media/covers/g01.svg', score: j ? 0.45 - i * 0.02 : 0.96 - i * 0.18, best: i === 0 && j === 0,
+  }))).sort((a, b) => b.score - a.score);
+  const previewData = url => ({
+    title: results.find(h => h.url === url)?.title || 'Moonlit Harbor', description: 'A quiet harbor, an unexpected letter, and a summer that changes everything. Explore the town and choose your own path.',
+    author: 'Harbor Studio', engine: '', version: url.includes('f95zone') ? '0.3' : '', languages: ['English', 'Русский'], tags: ['Visual Novel', 'Mystery'],
+    cover_path: location.origin + '/media/covers/g01.svg', images: [1, 2].map(n => location.origin + '/media/covers/g01-' + n + '.svg'),
+  });
   const impl = {
     IsConfigured: () => true, GetGames: () => games, SearchGames: (q) => games.filter(g => g.title.toLowerCase().includes(q.toLowerCase())),
     GetScanPaths: () => ['D:/Games'], GetCollections: () => collections, SaveCollections: (c) => { collections = c; },
-    GetSupportedSources: () => [{ name: 'F95zone', domain: 'f95zone.to' }, { name: 'Pornolab', domain: 'pornolab.net' }, { name: 'Steam', domain: 'store.steampowered.com' }],
-    SuggestSearchName: (id) => ({ title: games.find(g => g.id === id)?.title || '', version: '' }),
-    SearchGameInfo: (query) => ({ hits: ['F95zone', 'Steam', 'VNDB'].map((source, i) => ({
-      source, url: source === 'VNDB' ? 'https://vndb.org/v1' : source === 'Steam' ? 'https://store.steampowered.com/app/1/' : 'https://f95zone.to/threads/1/',
-      title: query, author: 'Example Studio', version: source === 'F95zone' ? '0.3' : '', year: '2026',
-      thumb: '/media/covers/g01.svg', score: i === 0 ? 1 : 0.7, best: i === 0,
-    })), failed: [] }),
-    PreviewGameInfo: () => ({ ...games[0], title: 'Found game', cover_path: '/media/covers/g01.svg' }),
-    ApplyGameInfo: (id, url) => { const g = games.find(g => g.id === id); if (g) { g.description = games[0].description; g.cover_path = games[0].cover_path; g.sources = [{ source: 'VNDB', url, last_version: '' }]; } },
+    GetSupportedSources: () => [{ name: 'F95zone', domain: 'f95zone.to' }, { name: 'Pornolab', domain: 'pornolab.net' }, { name: 'Steam', domain: 'store.steampowered.com' }, { name: 'VNDB', domain: 'vndb.org' }],
+    SuggestSearchName: (id) => ({ title: id === 'g01' ? 'Moonlit Harbor' : id === 'g02' ? 'Quiet Town' : games.find(g => g.id === id)?.title || '', version: id === 'g01' ? '0.3' : id === 'g02' ? '1.0' : '' }),
+    SearchGameInfo: async (query, sources) => {
+      await pause(controls.delay);
+      return { hits: controls.empty ? [] : results.filter(h => sources.includes(h.source) && h.source !== controls.failedSource),
+        failed: sources.includes(controls.failedSource) ? [{ source: controls.failedSource, error: '[parse.request] mock timeout' }] : [] };
+    },
+    PreviewGameInfo: async url => { await pause(controls.previewDelay); if (controls.previewError) throw '[parse.request {"site":"Steam"}] mock error'; return previewData(url); },
+    ApplyGameInfo: async (id, url) => {
+      await pause(controls.saveDelay);
+      if (controls.saveError) throw '[app.library_save] mock error';
+      const g = games.find(g => g.id === id), metadata = previewData(url), source = results.find(h => h.url === url).source;
+      const tags = [...new Set([...(g.tags || []), ...metadata.tags])];
+      Object.assign(g, metadata, { tags, engine: metadata.engine || g.engine, version: metadata.version || g.version || '0.3',
+        cover_path: 'covers/g01.svg', images: ['covers/g01-1.svg', 'covers/g01-2.svg'],
+        sources: [{ source, url, last_version: metadata.version }], primary_source: source, update_available: false, update_version: '', update_source: '' });
+    },
     GetCustomLocales: () => ({}), GetAppVersion: () => '1.0.0', GetDataDir: () => 'D:/pLauncher-data', GetPrivacy: () => priv, NotifyWindowShown: () => null,
     GetIgnoredPaths: () => ['D:/Games/_videos'], CheckLauncherUpdate: () => ({ available: false, current: '1.0.0', latest: '1.0.0' }),
     UpdateGame: (g) => { const i = games.findIndex(x => x.id === g.id); if (i >= 0) games[i] = g; return null; },
   };
-  const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve(impl[name] ? JSON.parse(JSON.stringify(impl[name](...args) ?? null)) : null) });
+  const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve().then(() => { controls.calls.push({ name, args }); return impl[name]?.(...args); }).then(value => JSON.parse(JSON.stringify(value ?? null))) });
   window.go = { main: { App } };
-  window.runtime = new Proxy({}, { get: (_, name) => name === 'EventsOnMultiple' ? () => () => {} : () => {} });
+  const events = {};
+  window.__mockEmit = name => (events[name] || []).forEach(fn => fn());
+  window.runtime = new Proxy({}, { get: (_, name) => name === 'EventsOnMultiple' ? (event, fn) => { (events[event] ||= []).push(fn); return () => {}; } : () => {} });
 
   // Сценарии съёмки
   const shot = new URLSearchParams(location.search).get('shot') || 'home';
@@ -71,7 +101,7 @@ const mock = `(function () {
   const st = document.createElement('style'); st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'; document.head.appendChild(st);
   window.addEventListener('load', async () => {
     await sleep(900);
-    if (shot === 'detail') { card('g01').click(); await sleep(600); }
+    if (shot === 'detail' || shot === 'find') { card('g01').click(); await sleep(600); }
     if (shot === 'discreet') { key('h', { ctrlKey: true, code: 'KeyH' }); await sleep(400); }
     if (shot === 'bulk') {
       [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Select').click(); await sleep(200);

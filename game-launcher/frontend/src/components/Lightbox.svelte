@@ -1,6 +1,7 @@
 <script>
     // Полноэкранный просмотр скриншотов. Сам обрабатывает клавиши (Esc, ←/→)
     // и боковые кнопки мыши; App на это время свои обработчики пропускает.
+    import { coverBlur, blurCls } from '../lib/privacy.js';
     import { mediaSrc } from '../lib/util.js';
 
     export let images = [];
@@ -32,7 +33,7 @@
     </div>
 
     <img src={mediaSrc(images[index])} alt="fullscreen"
-         class="max-w-[80vw] max-h-[80vh] object-contain rounded-lg shadow-2xl border border-slate-700"
+         class="{blurCls($coverBlur, 'self')} transition max-w-[80vw] max-h-[80vh] object-contain rounded-lg shadow-2xl border border-slate-700"
          on:click|stopPropagation/>
 
     <div class="absolute right-0 top-0 bottom-0 w-1/4 flex items-center justify-end pr-8 group cursor-pointer" on:click={next}>

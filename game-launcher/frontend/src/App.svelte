@@ -30,6 +30,8 @@
         SelectFolder,
         AddScanPath,
         CopyScreenshotToData,
+        PreviewGameInfo,
+        ApplyGameInfo,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
@@ -75,6 +77,11 @@
     let scanning = false;
     let checkingUpdates = false;
     let selectedGame = null;
+    let gameInfoPreview = null; // { game, source, url }: только в памяти до сохранения
+    let savingInfo = false;
+    let infoRequest = 0;
+    let previewScroll = 0;
+    let previewLoading = false;
     let isEditing = false;
     $: editDirty = isEditing && !!selectedGame && JSON.stringify(selectedGame) !== originalGameSnapshot;
     let originalGameSnapshot = '';       // слепок игры для «есть ли несохранённые изменения»
@@ -112,7 +119,8 @@
     let collectionModal = null;          // null — закрыто; {collection: null|col}
     let lightboxIndex = null;            // null — закрыто
     // Картинки страницы игры: обложка первой, затем скриншоты (тот же порядок, что в ленте)
-    $: gallery = selectedGame ? [...(selectedGame.cover_path ? [selectedGame.cover_path] : []), ...(selectedGame.images || [])] : [];
+    $: galleryGame = gameInfoPreview ? gameInfoPreview.game : selectedGame;
+    $: gallery = galleryGame ? [...(galleryGame.cover_path ? [galleryGame.cover_path] : []), ...(galleryGame.images || [])] : [];
     let ctx = null;                      // {x, y, items} — контекстное меню
 
     // --- Приватность: PIN-блокировка, паника, скрытые коллекции ---
@@ -406,7 +414,7 @@
     }
     // Полная перезагрузка библиотеки (смена папки данных, импорт, очистка)
     async function reloadLibrary(resetSelection) {
-        if (resetSelection) { selectedGame = null; isEditing = false; }
+        if (resetSelection) { clearInfoPreview(); selectedGame = null; isEditing = false; }
         try { scanPaths = await GetScanPaths(); } catch (e) {}
         await refreshPrivacy();          // у другой библиотеки (импорт/смена папки) свои настройки
         await loadCollections();
@@ -507,8 +515,78 @@
     // Сменили вид: новый список — сверху; тот же вид (повторный щелчок) — плавно наверх
     async function afterViewChange(same) { libScroll = 0; await tick(); scrollTop(same); }
 
+    // Превью не изменяет запись библиотеки; применяем те же непустые поля, что и бэкенд.
+    function clearInfoPreview() {
+        infoRequest++;
+        gameInfoPreview = null;
+        previewLoading = false;
+        savingInfo = false;
+        lightboxIndex = null;
+    }
+    async function previewInfo(hit, folderVersion) {
+        if (!selectedGame || locked) return;
+        const original = selectedGame;
+        const ticket = ++infoRequest;
+        previewLoading = true;
+        try {
+            const metadata = await PreviewGameInfo(hit.url);
+            if (ticket !== infoRequest || locked || selectedGame?.id !== original.id || !metadata) return;
+            const merged = { ...original };
+            for (const key of ['title', 'version', 'description', 'author', 'engine', 'cover_path']) {
+                if (metadata[key]) merged[key] = metadata[key];
+            }
+            for (const key of ['images', 'languages']) if (metadata[key]?.length) merged[key] = metadata[key];
+            merged.tags = [...(original.tags || [])];
+            const tagKeys = new Set(merged.tags.map(tag => tag.toLowerCase()));
+            for (const tag of metadata.tags || []) {
+                if (!tagKeys.has(tag.toLowerCase())) { tagKeys.add(tag.toLowerCase()); merged.tags.push(tag); }
+            }
+            if (!merged.version) merged.version = folderVersion;
+            merged.sources = [...(original.sources || []).filter(s => s.source !== hit.source), { source: hit.source, url: hit.url, last_version: metadata.version || '' }];
+            merged.primary_source = original.primary_source || hit.source;
+            previewScroll = mainEl?.scrollTop || 0;
+            gameInfoPreview = { game: merged, source: hit.source, url: hit.url };
+            await tick();
+            scrollTop(false);
+            mainEl?.querySelector('[data-preview-back]')?.focus({ preventScroll: true });
+        } catch (err) {
+            if (ticket === infoRequest && !locked) showToast(tr('toast.error', { err }), 'error');
+        } finally { if (ticket === infoRequest) previewLoading = false; }
+    }
+    async function backFromPreview() {
+        if (savingInfo) return;
+        const url = gameInfoPreview?.url;
+        clearInfoPreview();
+        await tick();
+        if (mainEl) {
+            mainEl.scrollTop = previewScroll;
+            [...mainEl.querySelectorAll('[data-hit-url]')].find(el => el.dataset.hitUrl === url)?.focus({ preventScroll: true });
+        }
+    }
+    async function saveInfoPreview() {
+        if (!gameInfoPreview || savingInfo || locked) return;
+        const chosen = gameInfoPreview;
+        const ticket = infoRequest;
+        savingInfo = true;
+        try {
+            await ApplyGameInfo(chosen.game.id, chosen.url);
+            if (ticket !== infoRequest || locked) return;
+            const fresh = await GetGames();
+            if (ticket !== infoRequest || locked) return;
+            games = fresh || [];
+            selectedGame = games.find(g => g.id === chosen.game.id) || selectedGame;
+            clearInfoPreview();
+            showToast(tr('find.saved'), 'success');
+            await tick();
+            scrollTop(false);
+        } catch (err) {
+            if (ticket === infoRequest && !locked) showToast(tr('toast.error', { err }), 'error');
+        } finally { if (ticket === infoRequest) savingInfo = false; }
+    }
+
     // --- Действия с играми ---
     async function selectGame(game) {
+        clearInfoPreview();
         if (!selectedGame && mainEl) libScroll = mainEl.scrollTop;
         const other = !selectedGame || selectedGame.id !== game.id;
         selectedGame = game;
@@ -517,6 +595,7 @@
         if (other) { await tick(); scrollTop(false); }
     }
     async function closeGame() {
+        clearInfoPreview();
         const wasOpen = !!selectedGame;
         selectedGame = null;
         isEditing = false;
@@ -751,6 +830,7 @@
         navPos = navStack.length - 1;
     }
     async function goNav(dir) {
+        if (gameInfoPreview) { if (dir < 0) backFromPreview(); return; }
         const i = navPos + dir;
         if (i < 0 || i >= navStack.length || isEditing) return;
         navApplying = true;
@@ -801,6 +881,8 @@
             else if (collectionModal) collectionModal = null;
             else if (showRelink) showRelink = false;
             else if (showSettings) showSettings = false;
+            else if (gameInfoPreview) { e.preventDefault(); backFromPreview(); }
+            else if (previewLoading) { e.preventDefault(); clearInfoPreview(); }
             else if (isEditing) cancelEdit();
             else if ($selecting) clearSelection();
             else if (inInput) e.target.blur();
@@ -835,6 +917,11 @@
 
         // Страница игры: Ctrl+Enter — играть, Backspace — назад
         if (selectedGame) {
+            if (gameInfoPreview) {
+                if (ctrl && e.key === 'Enter') e.preventDefault();
+                else if (e.key === 'Backspace') { e.preventDefault(); backFromPreview(); }
+                return;
+            }
             if (isEditing) return;
             if (ctrl && e.key === 'Enter') { e.preventDefault(); playGame(selectedGame); }
             else if (e.key === 'Backspace') { e.preventDefault(); closeGame(); }
@@ -857,8 +944,13 @@
         if (e.button !== 3 && e.button !== 4) return;
         const handled = e.defaultPrevented; // лайтбокс уже обработал нажатие
         e.preventDefault();
-        if (handled || lightboxIndex !== null) return;
+        if (handled || lightboxIndex !== null || locked || pinPrompt || isConfirmOpen() || showSettings || showRelink || collectionModal || showHotkeys || ctx || $updateModalOpen) return;
         goNav(e.button === 3 ? -1 : 1);
+    }
+    // Chromium выполняет нативный переход на отпускании боковой кнопки.
+    // Отменяем и его, чтобы возврат из превью не выгружал весь WebView.
+    function preventBrowserMouseNav(e) {
+        if (e.button === 3 || e.button === 4) e.preventDefault();
     }
 
     // --- Старт ---
@@ -884,7 +976,7 @@
         try { appVersion = await GetAppVersion(); } catch (e) {}
         await applyStartInfo();
         // Обновление проверяем и на экране блокировки: плашка всё равно появится только после PIN
-        initUpdater({ appVersion, busy: () => isEditing ? 'editing' : '' });
+        initUpdater({ appVersion, busy: () => isEditing || gameInfoPreview || previewLoading ? 'editing' : '' });
 
         // Первый запуск: папка для данных ещё не выбрана — мастер настройки
         try {
@@ -920,7 +1012,7 @@
     }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:mousedown={handleGlobalMouseDown}/>
+<svelte:window on:keydown={handleKeydown} on:mousedown={handleGlobalMouseDown} on:mouseup={preventBrowserMouseNav} on:auxclick={preventBrowserMouseNav}/>
 <div class="flex flex-col h-screen overflow-hidden aurora-bg text-slate-300 font-sans relative"
      on:dragover={onDragOver}
      on:dragleave={onDragLeave}
@@ -977,7 +1069,7 @@
         <main bind:this={mainEl} on:scroll={onMainScroll} class="flex-1 overflow-y-auto px-8 py-6 relative {$selecting && !selectedGame ? 'pb-32' : ''}" on:wheel|nonpassive={onMainWheel}>
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
-                    <button on:click={closeGame} title="Esc" class:hidden={isEditing}
+                    <button on:click={closeGame} title="Esc" class:hidden={isEditing || !!gameInfoPreview}
                             class="mb-5 h-9 px-3 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
                         {$t("detail.back")}
                     </button>
@@ -985,7 +1077,10 @@
                     {#if isEditing}
                         <GameEditor bind:game={selectedGame} {supportedSources} dirty={editDirty} onSave={saveEdit} onCancel={cancelEdit}/>
                     {:else}
+                        {#key selectedGame.id}
                         <GameDetail game={selectedGame} {supportedSources}
+                                    preview={gameInfoPreview?.game || null} previewSource={gameInfoPreview?.source || ''} {savingInfo}
+                                    onPreview={previewInfo} onPreviewBack={backFromPreview} onPreviewSave={saveInfoPreview}
                                     inCollections={collectionsView.filter(c => c.items.some(x => x.id === selectedGame.id)).map(c => ({ id: c.id, name: c.name, dynamic: c.type === 'dynamic' }))}
                                     onOpenCollection={openCollection}
                                     onCollectionsMenu={(e) => openCtx(e, collectionsMenuItems(selectedGame))}
@@ -997,6 +1092,7 @@
                                     onApplyTag={applyTag}
                                     onOpenImage={(i) => lightboxIndex = i}
                                     onReload={loadGames}/>
+                        {/key}
                     {/if}
                 </div>
 

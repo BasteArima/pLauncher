@@ -319,7 +319,7 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 
 ### Next up (left from the redesign mockups, agreed order)
 
-1. **Find game info by name** — search Steam / F95zone / VNDB by the folder name, pick a result, preview, save.
+1. ✅ **DONE — Find game info by name** — search Steam / F95zone / VNDB by the folder name, pick a result, preview, save.
    Full spec: [`docs/specs/find-by-name.md`](docs/specs/find-by-name.md). Adds a VNDB parser.
 2. **Play sessions + Stats tab** — store each launch (start, duration) in a new table where playtime is counted now;
    game page block «Play sessions» (8-week chart, count, longest); a Stats view (hours, statuses, engines, disk
@@ -352,12 +352,25 @@ Durable project notes live in the agent memory dir
 `~/.claude/projects/<this project>/memory/` (parser-design, data-dir-architecture,
 ui-state-and-collections-plan). The code comments and `extract_test.go` are also good references.
 
-### Find-by-name backend (2026-11-06)
+### Find game info by name (2026-11-06)
 
-The backend half of `docs/specs/find-by-name.md` is implemented; its UI remains pending. `search.go` exposes
+The full `docs/specs/find-by-name.md` flow is implemented. `search.go` exposes
 SuggestSearchName, SearchGameInfo, PreviewGameInfo and ApplyGameInfo. Scanner cleanup does not change scan
 titles. Search runs F95zone/Steam/VNDB concurrently with independent 10-second timeouts and partial failures.
 `Parse(ctx, url, "")` now returns remote media URLs without downloads; update checks must never persist them.
 VNDB links use the Kana API, discard description spoilers and select the top 15 non-spoiler tags.
 Anonymous live Steam storesearch returned Being a DIK seasons and guides; do not assume all adult titles are
 indexed everywhere. Verified F95 fields and live JSON fixtures are documented in the spec and testdata README.
+
+`MetadataPanel` now has name/link tabs; `FindByName.svelte` owns suggestions, source preferences and results.
+`App.gameInfoPreview` holds a separate merged Game for the read-only `GameDetail preview` prop. The metadata
+panel stays mounted but hidden during preview, preserving results on Esc/mouse-back. The sticky bar saves via
+ApplyGameInfo, reloads the library and clears preview. Request generations discard late responses after
+navigation, lock or panic. Ctrl+Enter cannot launch from preview. Native mouse back/forward defaults are also
+cancelled on mouseup/auxclick so Chromium does not navigate away after the application's history action.
+`mediaSrc` accepts HTTP(S) URLs for preview media; blur applies to result thumbnails, preview and lightbox.
+Preferences: `plauncher_find_sources` (source array), `plauncher_noinfo_dismissed` (game-ID array); dismissed
+prominent panels become compact and remain reachable. Do not unmount FindByName on entering preview.
+Headless regression: `docs/tools/screenshots/test-find.cjs` against the `?shot=find` mock on :5393 and dedicated
+Edge CDP on :9334. See its README for setup. The mock has two candidates per source, one failed source by
+default, remote preview URLs and actual in-memory apply behavior. Real-library validation remains manual.
