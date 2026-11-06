@@ -676,5 +676,15 @@
   "find.reason_different": "标题不同",
   "find.updated": "更新于 {date}",
   "sessions.summary": "{count} 次游玩 · 最长 {duration}",
-  "find.hint": "按名称搜索游戏或粘贴页面链接，添加封面、简介和详细信息。"
+  "find.hint": "按名称搜索游戏或粘贴页面链接，添加封面、简介和详细信息。",
+  "hk.history": "历史记录后退 / 前进",
+  "hk.mouse_buttons": "鼠标侧键 4 / 5",
+  "hk.g_edit": "编辑与预览",
+  "hk.edit_save": "保存编辑",
+  "hk.edit_cancel": "取消编辑",
+  "hk.preview_back": "从游戏预览返回",
+  "detail.notes_edited": "编辑于 {date}",
+  "detail.list_position": "{n} / {total}",
+  "detail.previous_game": "上一个游戏",
+  "detail.next_game": "下一个游戏"
 }

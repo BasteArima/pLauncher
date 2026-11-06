@@ -141,12 +141,14 @@
 
     $: links = (displayGame.sources || []).filter(s => s.url);
     $: lastPlayed = ($langStore, game.last_launched_at ? fmtDay(game.last_launched_at * 1000, $langStore) : tr('detail.never'));
+    $: updateFoundOn = (calendar, game.update_found_at ? fmtDay(game.update_found_at * 1000, $langStore) : '');
+    $: notesEditedOn = (calendar, game.notes_updated_at ? fmtDay(game.notes_updated_at * 1000, $langStore) : '');
     $: addedOn = ($langStore, game.added_at ? fmtDay(game.added_at * 1000, $langStore) : '');
     // Дата без года, если это текущий год: «5 нояб.» вместо «5 нояб. 2026 г.»
     function fmtDay(ms, lang) {
         const d = new Date(ms);
         const opts = d.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' };
-        try { return d.toLocaleDateString(lang, opts); } catch (e) { return d.toLocaleDateString(undefined, opts); }
+        try { return new Intl.DateTimeFormat(lang, opts).format(d); } catch (e) { return new Intl.DateTimeFormat(undefined, opts).format(d); }
     }
     // Игра только с папкой (ещё ни разу не парсилась): блок «Найти информацию» сразу под картинками
     $: noInfo = !game.cover_path && !game.description && !(game.sources || []).some(s => s.url);
@@ -271,7 +273,7 @@
                     <span class="text-xs text-slate-500 ml-2">{$t('detail.notes_hint')}</span>
                 </div>
             {:else if displayGame.notes}
-                <div class="rounded-xl bg-slate-900/60 border border-white/5 p-4 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{#each noteParts as part}{#if part.spoiler}<span on:click={() => revealed = true} class="rounded px-0.5 transition {revealed ? 'bg-white/5' : 'bg-slate-700 text-transparent cursor-pointer select-none'}" title={revealed ? '' : $t('detail.show_spoilers')}>{part.text}</span>{:else}{part.text}{/if}{/each}</div>
+                <div class="rounded-xl bg-slate-900/60 border border-white/5 p-4 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap select-text">{#each noteParts as part}{#if part.spoiler}<span on:click={() => revealed = true} class="rounded px-0.5 transition {revealed ? 'bg-white/5' : 'bg-slate-700 text-transparent cursor-pointer select-none'}" title={revealed ? '' : $t('detail.show_spoilers')}>{part.text}</span>{:else}{part.text}{/if}{/each}{#if notesEditedOn}<div data-notes-edited class="mt-2 text-xs text-slate-500 whitespace-normal">{$t('detail.notes_edited', { date: notesEditedOn })}</div>{/if}</div>
             {:else}
                 <button on:click={editNotes} class="text-sm text-slate-500 hover:text-slate-300">{$t('detail.notes_empty')}</button>
             {/if}
@@ -353,7 +355,7 @@
                         <span class="text-sm text-amber-200 font-semibold">{$t('detail.update_out', { v: displayGame.update_version })}</span>
                         {#if displayGame.version}<span class="text-xs text-amber-100/60">{$t('detail.update_have', { v: displayGame.version })}</span>{/if}
                     </div>
-                    {#if displayGame.update_source}<div class="text-xs text-amber-100/60">{$t('detail.update_found', { site: displayGame.update_source })}</div>{/if}
+                    {#if displayGame.update_source}<div class="text-xs text-amber-100/60">{$t('detail.update_found', { site: displayGame.update_source })}{#if updateFoundOn}{' · '}<time data-update-found datetime={new Date(game.update_found_at * 1000).toISOString()}>{updateFoundOn}</time>{/if}</div>{/if}
                     <div class="flex gap-2 flex-wrap mt-1">
                         {#if updateSrc}
                             <button on:click={openUpdatePage} class="h-8 px-3 rounded-md text-xs font-bold bg-amber-400 hover:bg-amber-300 text-amber-950 transition-colors">{$t('detail.update_open')} ↗</button>

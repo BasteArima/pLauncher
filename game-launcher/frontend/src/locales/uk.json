@@ -676,5 +676,15 @@
   "find.reason_different": "Інша назва",
   "find.updated": "оновлено {date}",
   "sessions.summary": "Сесій: {count} · найдовша — {duration}",
-  "find.hint": "Знайдіть гру за назвою або вставте посилання на її сторінку, щоб додати обкладинку, опис і відомості."
+  "find.hint": "Знайдіть гру за назвою або вставте посилання на її сторінку, щоб додати обкладинку, опис і відомості.",
+  "hk.history": "Назад / уперед в історії",
+  "hk.mouse_buttons": "Кнопки миші 4 / 5",
+  "hk.g_edit": "Редагування та перегляд",
+  "hk.edit_save": "Зберегти зміни",
+  "hk.edit_cancel": "Скасувати редагування",
+  "hk.preview_back": "Назад із перегляду гри",
+  "detail.notes_edited": "Змінено {date}",
+  "detail.list_position": "{n} із {total}",
+  "detail.previous_game": "Попередня гра",
+  "detail.next_game": "Наступна гра"
 }

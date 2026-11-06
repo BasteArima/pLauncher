@@ -676,5 +676,15 @@
   "find.reason_different": "Другое название",
   "find.updated": "обновлено {date}",
   "sessions.summary": "Сессий: {count} · самая долгая — {duration}",
-  "find.hint": "Найдите игру по названию или вставьте ссылку на её страницу, чтобы добавить обложку, описание и сведения."
+  "find.hint": "Найдите игру по названию или вставьте ссылку на её страницу, чтобы добавить обложку, описание и сведения.",
+  "hk.history": "Назад / вперёд по истории",
+  "hk.mouse_buttons": "Кнопки мыши 4 / 5",
+  "hk.g_edit": "Правка и превью",
+  "hk.edit_save": "Сохранить правку",
+  "hk.edit_cancel": "Отменить правку",
+  "hk.preview_back": "Назад из превью игры",
+  "detail.notes_edited": "Изменено {date}",
+  "detail.list_position": "{n} из {total}",
+  "detail.previous_game": "Предыдущая игра",
+  "detail.next_game": "Следующая игра"
 }

@@ -130,8 +130,8 @@ The app is fully working. Done so far:
 - **SQLite** is opened with `_pragma=busy_timeout(5000)`: background size calculation writes concurrently with UI.
 - **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`); the reference list
   lives in `lib/hotkeys.js` (F1 window + Settings → General). F5/Ctrl+R are intercepted (a WebView reload would
-  drop state). Card size: slider in `ViewOptions`, Ctrl+wheel, Ctrl +/−/0. The list in `hotkeys.js` still lacks
-  Alt+←/→ and mouse back/forward (history) and Ctrl+S / Esc in edit mode.
+  drop state). Card size: slider in `ViewOptions`, Ctrl+wheel, Ctrl +/−/0. The shared F1/settings list also
+  includes Alt+←/→ and mouse side buttons (history), Ctrl+S / Esc in edit mode, and Esc/Backspace from preview.
 - **Launcher self-update**: check in `updater.go` (GitHub Releases of `updateRepo`, ldflag; public repo since
   2026-09-24), download + install in `updater_install.go`, UI in `lib/update.js` + `UpdateModal.svelte` + the pill in
   `TitleBar`. Flow: `StartLauncherDownload` (event `launcher-download`) → `.new` + `.new.verified` →
@@ -331,8 +331,9 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
    picked in edit mode.
 4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
    find info by name).
-5. Small: hotkey list entries (see Hotkeys), «Found on <site> · date» / «Edited» in the game page details, refresh
-   README screenshots (`docs/tools/screenshots/make.ps1`, the mock needs the new UI states).
+5. ✅ **DONE — Small game-page polish:** hotkey reference, update-discovery and note-edit dates, originating
+   list/position and neighbouring-game navigation. README screenshots remain for the release
+   (`docs/tools/screenshots/make.ps1`); mock data includes the new dates.
 
 **Ideas, not agreed (don't start without the owner):** a dense list view like mockup B (title, status, version,
 engine, played, last played, size; sortable headers).
@@ -444,3 +445,27 @@ servers and Edge profiles. The 48 stats checks cover exact mock totals, navigati
 late replies, lock/panic, errors/retries, calendar changes, languages, narrow layout and editor omission;
 35 find checks include preview omission and the original search/save flow. Vet/test/build passed on Windows.
 Mock tests are not real-library or real-game acceptance tests.
+
+### Game-page dates and list navigation (2026-11-07)
+
+`Game.UpdateFoundAt` / `update_found_at` records discovery of the currently flagged version/source.
+`applySourceVersion` preserves it on identical rechecks, replaces it for a different version/source and
+clears it with the update flag; accepting metadata also clears it. Legacy unknown dates remain zero until
+an update is observed again. `Game.NotesUpdatedAt` / `notes_updated_at` is owned by the SQLite UPSERT:
+only a text change (including clearing a note) updates it, never a favourite/rating/editor metadata save.
+Relink copies a duplicate's original note/date together. Both columns migrate with ALTER TABLE and read
+with COALESCE; old unknown dates are omitted in the UI. GameDetail formats dates with Intl and explicit
+language/calendar dependencies.
+
+`App.gameList` snapshots source-list IDs and its label context when opening from a grid, shelf or sidebar
+collection. Neighbour arrows keep that order, exclude games no longer in visibleGames, stop at either end
+and record ordinary history entries. History retains this context, search text and sort; translated labels
+react to language changes. Changes to status/favourites do not reshuffle the captured list mid-browse.
+Hero/statistics/direct opens have no list context. The row is hidden in editor/metadata preview.
+
+`docs/tools/screenshots/test-game-page.cjs` checks dates, note saves, update acceptance, F1/settings,
+editor hotkeys, list order, boundaries, history, search, collections and hidden membership. Run with the
+same UI_PORT/CDP_PORT setup as test-find/test-stats. Mock screenshots include the full 1016px window and
+an equivalent 1016px main-area crop for comparison with game-page.png. The existing app has a sidebar,
+larger typography/spacing and a metadata panel; at a 1016px full window the columns stack. The new row,
+update date and note footer follow the board's placement. README images are intentionally unchanged.

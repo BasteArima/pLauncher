@@ -676,5 +676,15 @@
   "find.reason_different": "Different title",
   "find.updated": "updated {date}",
   "sessions.summary": "{count} sessions · longest {duration}",
-  "find.hint": "Find the game by name or paste a page link to add its cover, description and details."
+  "find.hint": "Find the game by name or paste a page link to add its cover, description and details.",
+  "hk.history": "Back / forward in history",
+  "hk.mouse_buttons": "Mouse 4 / 5",
+  "hk.g_edit": "Editing and preview",
+  "hk.edit_save": "Save in edit mode",
+  "hk.edit_cancel": "Cancel edit mode",
+  "hk.preview_back": "Back from game preview",
+  "detail.notes_edited": "Edited {date}",
+  "detail.list_position": "{n} of {total}",
+  "detail.previous_game": "Previous game",
+  "detail.next_game": "Next game"
 }

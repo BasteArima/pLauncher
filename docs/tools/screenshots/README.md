@@ -87,3 +87,17 @@ and 900 pixels (the native minimum window width): single-line headings, alignmen
 clipping and both tab actions. Screenshots are `out/find-header-*.png`; results are
 `out/metadata-layout-checks.json`. Responsive sizing follows the card's container
 width because GameDetail changes between one and two columns as the window resizes.
+
+## Game-page polish regression
+
+Run `node docs/tools/screenshots/test-game-page.cjs` against the same dedicated server/Edge setup
+(`UI_PORT` / `CDP_PORT` supported). It checks originating lists, sort order, neighbour boundaries,
+Alt/mouse history, search restoration, sidebar/shelf order, hidden membership, localized dates,
+note saves, update acceptance and the shared F1/settings reference. Editor Ctrl+S/Esc are exercised;
+preview Esc/Backspace are covered by test-find.cjs.
+
+Outputs: `out/game-page-checks.json` and `out/game-page-*.png`. `game-page-mockup-width.png` is a full
+1016px window; `game-page-main.png` is the 1016px main-area crop for comparison with
+`docs/design/game-page.png`. The new labels/controls follow the board. Existing differences remain:
+the app sidebar, larger typography/spacing and metadata panel; a 1016px full window stacks the columns.
+These are mock-library checks, not real-game acceptance. This does not regenerate README images.

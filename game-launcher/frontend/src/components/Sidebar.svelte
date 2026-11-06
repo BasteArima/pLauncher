@@ -181,7 +181,7 @@
                                      on:dragstart={(e) => { onGameDragStart(g); try { e.dataTransfer.setData('text/plain', g.id); } catch (_) {} }}
                                      on:contextmenu={(e) => onGameContext(g, e)}
                                      class="group w-full flex items-center rounded-md transition-colors {$selection.has(g.id) ? 'bg-indigo-900 text-white ring-1 ring-inset ring-indigo-400/50' : selectedId === g.id ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}">
-                                    <button on:click={(e) => (e.ctrlKey || e.metaKey || $selecting) ? toggleSelected(g.id) : onSelect(g)}
+                                    <button on:click={(e) => (e.ctrlKey || e.metaKey || $selecting) ? toggleSelected(g.id) : onSelect(g, group)}
                                             class="flex-1 min-w-0 flex items-center gap-2.5 px-2 h-8 text-[13px] text-left">
                                         <span class="w-5 h-5 rounded overflow-hidden bg-slate-800 shrink-0 flex items-center justify-center">
                                             {#if g.cover_path}

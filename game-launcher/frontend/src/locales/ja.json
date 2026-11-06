@@ -676,5 +676,15 @@
   "find.reason_different": "異なるタイトル",
   "find.updated": "更新日 {date}",
   "sessions.summary": "{count} 回 · 最長 {duration}",
-  "find.hint": "ゲーム名で検索するかページのリンクを貼り付けて、カバー、説明、詳細を追加します。"
+  "find.hint": "ゲーム名で検索するかページのリンクを貼り付けて、カバー、説明、詳細を追加します。",
+  "hk.history": "履歴を戻る / 進む",
+  "hk.mouse_buttons": "マウス 4 / 5",
+  "hk.g_edit": "編集とプレビュー",
+  "hk.edit_save": "編集を保存",
+  "hk.edit_cancel": "編集をキャンセル",
+  "hk.preview_back": "ゲームのプレビューから戻る",
+  "detail.notes_edited": "編集日 {date}",
+  "detail.list_position": "{n} / {total}",
+  "detail.previous_game": "前のゲーム",
+  "detail.next_game": "次のゲーム"
 }

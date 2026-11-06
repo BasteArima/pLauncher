@@ -6,6 +6,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Game-page navigation shows the originating list and position, with previous/next arrows that preserve
+  its order and participate in back/forward history. Search text and sort are restored with history.
+- Update notices show when the version was discovered; repeated checks retain that date. Personal notes
+  show their last text-edit date. Both dates persist in the library and use localized formatting.
 - Play-session recording survives launcher closure, keeps 30-second recovery checkpoints and preserves
   existing total playtime. Sessions follow game deletion, relink merges and backups. Added privacy-aware
   statistics queries. Game pages now show eight weeks of activity, session count, longest session and the
@@ -31,6 +35,8 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 - «Remove from Continue playing» in the game menu. Finished and dropped games no longer show there.
 
 ### Changed
+- F1 and Settings now document history navigation, mouse side buttons, editor save/cancel and returning
+  from a found-game preview. Added translations in all 11 languages.
 - A simpler lavender p on graphite is now the application icon, matching the flat redesign.
 - New look: flat dark theme, Inter font, line icons instead of emoji, wide cards by default (tall ones in view
   options). Hovering a card shows Play, favorite and menu buttons.

@@ -676,5 +676,15 @@
   "find.reason_different": "Farklı başlık",
   "find.updated": "güncellendi: {date}",
   "sessions.summary": "{count} oturum · en uzun: {duration}",
-  "find.hint": "Kapak, açıklama ve ayrıntıları eklemek için oyunu adıyla arayın veya sayfa bağlantısını yapıştırın."
+  "find.hint": "Kapak, açıklama ve ayrıntıları eklemek için oyunu adıyla arayın veya sayfa bağlantısını yapıştırın.",
+  "hk.history": "Geçmişte geri / ileri",
+  "hk.mouse_buttons": "Fare 4 / 5",
+  "hk.g_edit": "Düzenleme ve önizleme",
+  "hk.edit_save": "Düzenlemeyi kaydet",
+  "hk.edit_cancel": "Düzenlemeyi iptal et",
+  "hk.preview_back": "Oyun önizlemesinden dön",
+  "detail.notes_edited": "Düzenlendi: {date}",
+  "detail.list_position": "{n} / {total}",
+  "detail.previous_game": "Önceki oyun",
+  "detail.next_game": "Sonraki oyun"
 }

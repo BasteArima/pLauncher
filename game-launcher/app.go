@@ -437,6 +437,7 @@ func (a *App) updateGameMetadata(gameID, url string, folderVersion bool) error {
 	targetGame.UpdateAvailable = false
 	targetGame.UpdateVersion = ""
 	targetGame.UpdateSource = ""
+	targetGame.UpdateFoundAt = 0
 
 	// 6. Сохраняем обновленную игру обратно в БД
 	if err := a.repo.SaveGame(a.ctx, targetGame); err != nil {
@@ -506,30 +507,40 @@ func (a *App) checkSourceAt(g *models.Game, idx int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	g.LastCheckedAt = time.Now().Unix()
+	return applySourceVersion(g, idx, parsed.Version, time.Now().Unix()), nil
+}
+
+// Дату обнаружения сохраняем при повторной проверке той же версии и площадки.
+func applySourceVersion(g *models.Game, idx int, version string, now int64) bool {
+	src := &g.Sources[idx]
+	g.LastCheckedAt = now
 
 	// Preview возвращает удалённые картинки; при проверке используем исключительно версию.
-	newVer := strings.TrimSpace(parsed.Version)
+	newVer := strings.TrimSpace(version)
 	if newVer == "" {
-		return false, nil // версию не удалось определить (напр. Steam) — не трогаем
+		return false // версию не удалось определить (напр. Steam) — не трогаем
 	}
 	if src.LastVersion == "" {
 		src.LastVersion = newVer // первая проверка — фиксируем базу без флага
-		return false, nil
+		return false
 	}
 	if normVersion(newVer) != normVersion(src.LastVersion) {
+		if !g.UpdateAvailable || g.UpdateFoundAt == 0 || g.UpdateSource != src.Source || normVersion(g.UpdateVersion) != normVersion(newVer) {
+			g.UpdateFoundAt = now
+		}
 		g.UpdateAvailable = true
 		g.UpdateVersion = newVer
 		g.UpdateSource = src.Source
-		return true, nil
+		return true
 	}
 	// версия совпала с базой: снимаем флаг, если он стоял из-за этой же площадки
 	if g.UpdateSource == src.Source {
 		g.UpdateAvailable = false
 		g.UpdateVersion = ""
 		g.UpdateSource = ""
+		g.UpdateFoundAt = 0
 	}
-	return false, nil
+	return false
 }
 
 // gameByID достаёт игру из БД по ID.

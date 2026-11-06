@@ -614,10 +614,42 @@
     }
 
     // --- Действия с играми ---
-    async function selectGame(game) {
+    // Снимок порядка исходного списка; удалённые/скрытые игры отсекаются при чтении.
+    let gameList = null;
+    $: listGames = gameList ? gameList.ids.map(id => visibleGames.find(g => g.id === id)).filter(Boolean) : [];
+    $: listIndex = selectedGame ? listGames.findIndex(g => g.id === selectedGame.id) : -1;
+    $: gameListTitle = ($langStore, listTitle(gameList, visibleCollections));
+    function listTitle(list, cols) {
+        if (!list) return '';
+        if (list.shelf) {
+            const s = list.shelf;
+            if (s.type === 'collection') return cols.find(c => c.id === s.collectionId)?.name || '';
+            if (s.type === 'tag') return s.tag;
+            return tr('shelf.' + s.type);
+        }
+        const labels = [];
+        if (list.c) labels.push(list.c === '__uncat' ? tr('nav.uncategorized') : cols.find(c => c.id === list.c)?.name);
+        if (list.q) labels.push(tr('view.search') + ': ' + list.q);
+        if (list.f && list.f !== 'all') labels.push(tr(list.f.startsWith('status:') ? 'status.' + list.f.slice(7)
+            : ({ favorites: 'nav.favorites', updates: 'nav.updates', nocover: 'nav.no_cover', missing: 'missing.nav' })[list.f]));
+        if (list.t?.inc.length || list.t?.exc.length) labels.push(tr('view.tags'));
+        return labels.filter(Boolean).join(' · ') || tr('nav.all_games');
+    }
+    function selectFromList(game, items, context) {
+        selectGame(game, { ...context, ids: items.map(g => g.id) });
+    }
+    function selectFromGrid(game) {
+        selectFromList(game, filteredGames, { c: activeCollection, f: activeFilter, t: tagFilter, q: searchQuery.trim() });
+    }
+    function stepGame(dir) {
+        const next = listGames[listIndex + dir];
+        if (listIndex >= 0 && next) selectGame(next, gameList);
+    }
+    async function selectGame(game, origin = null) {
         clearInfoPreview();
         if (!selectedGame && mainEl) libScroll = mainEl.scrollTop;
         const other = !selectedGame || selectedGame.id !== game.id;
+        gameList = origin || (selectedGame?.id === game.id ? gameList : null);
         selectedGame = game;
         isEditing = false;
         originalGameSnapshot = JSON.stringify(game);
@@ -626,6 +658,7 @@
     async function closeGame() {
         clearInfoPreview();
         const wasOpen = !!selectedGame;
+        gameList = null;
         selectedGame = null;
         isEditing = false;
         if (wasOpen) { await tick(); if (mainEl) mainEl.scrollTop = libScroll; onMainScroll(); }
@@ -861,7 +894,7 @@
     let navStack = [];
     let navPos = -1;
     let navApplying = false;
-    $: navKey = JSON.stringify({ v: mainView, g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: tagFilter });
+    $: navKey = JSON.stringify({ v: mainView, g: selectedGame ? selectedGame.id : '', f: activeFilter, c: activeCollection, t: tagFilter, q: searchQuery, sort: sortBy, list: selectedGame ? gameList : null });
     $: recordNav(navKey);
     function recordNav(key) {
         if (navApplying || navStack[navPos] === key) return;
@@ -879,8 +912,10 @@
         mainView = st.v || 'library';
         refreshCalendar();
         activeFilter = st.f; activeCollection = st.c; tagFilter = st.t || emptyTags();
+        searchQuery = st.q || '';
+        if (st.sort) sortBy = st.sort;
         const g = st.g ? visibleGames.find(x => x.id === st.g) : null;
-        if (g) selectGame(g); else closeGame();
+        if (g) selectGame(g, st.list || null); else closeGame();
         await tick();
         if (mainView === 'stats' && !selectedGame) restoreStatsScroll();
         navApplying = false;
@@ -1100,7 +1135,7 @@
                  {noCoverCount} {draggingGame}
                  {scanning} {checkingUpdates}
                  onFilter={applyFilter}
-                 onSelect={selectGame}
+                 onSelect={(g, group) => selectFromList(g, group.items, { c: group.key })}
                  onPlay={playGame}
                  onScan={scanOrAddFolder}
                  onAddGame={addSingleGame}
@@ -1125,10 +1160,21 @@
             {/if}
             {#if selectedGame}
                 <div class="animate-fade-in relative z-10">
-                    <button on:click={closeGame} title="Esc" class:hidden={isEditing || !!gameInfoPreview}
-                            class="mb-5 h-9 px-3 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
-                        {$t("detail.back")}
-                    </button>
+                    <div class="mb-5 flex items-center gap-3 min-w-0" class:hidden={isEditing || !!gameInfoPreview}>
+                        <button on:click={closeGame} title="Esc"
+                                class="h-9 shrink-0 px-3 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                            {$t("detail.back")}
+                        </button>
+                        {#if listIndex >= 0}
+                            <span data-game-list class="text-xs text-slate-500 truncate flex-1" title={gameListTitle}>{gameListTitle} · {$t('detail.list_position', { n: listIndex + 1, total: listGames.length })}</span>
+                            <div class="flex gap-2 shrink-0">
+                                <button data-game-prev on:click={() => stepGame(-1)} disabled={listIndex === 0} title={$t('detail.previous_game')} aria-label={$t('detail.previous_game')}
+                                        class="h-8 w-8 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none"><Icon name="chevron-right" size={16} class="rotate-180"/></button>
+                                <button data-game-next on:click={() => stepGame(1)} disabled={listIndex === listGames.length - 1} title={$t('detail.next_game')} aria-label={$t('detail.next_game')}
+                                        class="h-8 w-8 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none"><Icon name="chevron-right" size={16}/></button>
+                            </div>
+                        {/if}
+                    </div>
 
                     {#if isEditing}
                         <GameEditor bind:game={selectedGame} {supportedSources} dirty={editDirty} onSave={saveEdit} onCancel={cancelEdit}/>
@@ -1206,19 +1252,19 @@
                                         </h3>
                                         <ViewControls bind:sortBy/>
                                     </div>
-                                    <GameGrid class="mb-9" items={shelf.items} onOpen={selectGame} onPlay={playGame}
+                                    <GameGrid class="mb-9" items={shelf.items} onOpen={(g) => selectFromList(g, shelf.items, { shelf: { type: shelf.type, tag: shelf.tag, collectionId: shelf.collectionId } })} onPlay={playGame}
                                               onToggleFav={toggleFavorite} onDrag={onGameDragStart} onContext={gameCtx}/>
                                 {/if}
                             {:else}
                                 <div on:contextmenu={(e) => openCtx(e, shelfMenuItems(shelf))}>
-                                    <Shelf title={shelf.title} items={shelf.items} onOpen={selectGame} onPlay={playGame} onToggleFav={toggleFavorite}
+                                    <Shelf title={shelf.title} items={shelf.items} onOpen={(g) => selectFromList(g, shelf.items, { shelf: { type: shelf.type, tag: shelf.tag, collectionId: shelf.collectionId } })} onPlay={playGame} onToggleFav={toggleFavorite}
                                            onDrag={onGameDragStart} onContext={gameCtx}/>
                                 </div>
                             {/if}
                         {/each}
                     {/if}
                 {:else}
-                    <GameGrid items={filteredGames} onOpen={selectGame} onPlay={playGame}
+                    <GameGrid items={filteredGames} onOpen={selectFromGrid} onPlay={playGame}
                               onToggleFav={toggleFavorite} onDrag={onGameDragStart} onContext={gameCtx}/>
                     {#if filteredGames.length === 0 && games.length}
                         <div class="flex flex-col items-center justify-center py-24 text-slate-500 animate-fade-in">

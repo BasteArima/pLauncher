@@ -13,7 +13,7 @@
                 {#each group.keys as [keys, label]}
                     <div class="flex items-center justify-between gap-3 text-sm">
                         <span class="text-slate-300">{$t(label)}</span>
-                        <kbd class="shrink-0 font-mono text-xs text-slate-200 bg-white/5 ring-1 ring-white/10 rounded px-1.5 py-0.5">{keys}</kbd>
+                        <kbd class="shrink-0 font-mono text-xs text-slate-200 bg-white/5 ring-1 ring-white/10 rounded px-1.5 py-0.5">{keys.startsWith('hk.') ? $t(keys) : keys}</kbd>
                     </div>
                 {/each}
                 {#if group.title === 'hk.g_privacy' && panicLabel}

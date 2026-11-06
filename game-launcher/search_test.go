@@ -38,7 +38,7 @@ func TestFindInfoUnconfiguredAndLocked(t *testing.T) {
 
 func TestFindInfoPreviewApplyAndUpdateIsolation(t *testing.T) {
 	a := newTestApp(t)
-	g := &models.Game{ID: "find", Title: "Original", FolderPath: filepath.Join(t.TempDir(), "MoonlitHarbor_v0.3"), ExecPath: "Game.exe", CoverPath: "covers/old.png", Images: []string{"covers/old-shot.png"}, Tags: []string{"Manual"}, Engine: "Unity", Status: "playing", Rating: 4, Notes: "Private", Favorite: true, TimePlayed: 42, UpdateAvailable: true, UpdateVersion: "old", UpdateSource: "F95zone"}
+	g := &models.Game{ID: "find", Title: "Original", FolderPath: filepath.Join(t.TempDir(), "MoonlitHarbor_v0.3"), ExecPath: "Game.exe", CoverPath: "covers/old.png", Images: []string{"covers/old-shot.png"}, Tags: []string{"Manual"}, Engine: "Unity", Status: "playing", Rating: 4, Notes: "Private", Favorite: true, TimePlayed: 42, UpdateAvailable: true, UpdateVersion: "old", UpdateSource: "F95zone", UpdateFoundAt: 123}
 	if err := a.repo.SaveGame(a.ctx, g); err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestFindInfoPreviewApplyAndUpdateIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 	saved, _ := a.gameByID(g.ID)
-	if saved.Title != "Moonlit Harbor" || saved.Version != "0.3" || saved.Notes != g.Notes || saved.Status != g.Status || saved.Rating != g.Rating || !saved.Favorite || saved.TimePlayed != 42 || saved.ExecPath != g.ExecPath || saved.Engine != "Unity" || saved.UpdateAvailable || saved.UpdateVersion != "" || saved.UpdateSource != "" || !reflect.DeepEqual(saved.Tags, []string{"Manual", "Novel"}) {
+	if saved.Title != "Moonlit Harbor" || saved.Version != "0.3" || saved.Notes != g.Notes || saved.Status != g.Status || saved.Rating != g.Rating || !saved.Favorite || saved.TimePlayed != 42 || saved.ExecPath != g.ExecPath || saved.Engine != "Unity" || saved.UpdateAvailable || saved.UpdateVersion != "" || saved.UpdateSource != "" || saved.UpdateFoundAt != 0 || saved.NotesUpdatedAt != before.NotesUpdatedAt || !reflect.DeepEqual(saved.Tags, []string{"Manual", "Novel"}) {
 		t.Fatalf("%+v", saved)
 	}
 	if len(saved.Sources) != 1 || saved.Sources[0].URL != link || saved.Sources[0].LastVersion != "" {

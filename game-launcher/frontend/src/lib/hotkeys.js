@@ -7,9 +7,16 @@ export const HOTKEY_GROUPS = [
         ['Enter', 'hk.open'],
         ['Ctrl+Enter', 'hk.play'],
         ['Esc / Backspace', 'hk.back'],
+        ['Alt+← / Alt+→', 'hk.history'],
+        ['hk.mouse_buttons', 'hk.history'],
         ['F5', 'hk.scan'],
         ['Ctrl+,', 'hk.settings'],
         ['F1', 'hk.help'],
+    ] },
+    { title: 'hk.g_edit', keys: [
+        ['Ctrl+S', 'hk.edit_save'],
+        ['Esc', 'hk.edit_cancel'],
+        ['Esc / Backspace', 'hk.preview_back'],
     ] },
     { title: 'hk.g_sel', keys: [
         ['Ctrl+Click', 'hk.sel_toggle'],

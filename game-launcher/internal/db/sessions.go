@@ -240,6 +240,13 @@ func (r *SQLiteRepo) SaveRelink(ctx context.Context, g *models.Game, duplicateID
 	if n == 0 {
 		return fmt.Errorf("relink target not found")
 	}
+	// Перенос заметки не является правкой: сохраняем исходную дату до общего UPSERT.
+	if duplicateID != "" {
+		_, err := tx.ExecContext(ctx, `UPDATE games SET notes=(SELECT notes FROM games WHERE id=?), notes_updated_at=COALESCE((SELECT notes_updated_at FROM games WHERE id=?),0) WHERE id=? AND COALESCE(notes,'')='' AND EXISTS(SELECT 1 FROM games WHERE id=? AND COALESCE(notes,'')!='')`, duplicateID, duplicateID, g.ID, duplicateID)
+		if err != nil {
+			return err
+		}
+	}
 	if err := saveGame(ctx, tx, g); err != nil {
 		return err
 	}

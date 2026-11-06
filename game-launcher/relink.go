@@ -238,6 +238,7 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 		}
 		if g.Notes == "" {
 			g.Notes = dup.Notes
+			g.NotesUpdatedAt = dup.NotesUpdatedAt
 		}
 		if g.ExecPath == "" {
 			g.ExecPath = dup.ExecPath

@@ -39,6 +39,8 @@ type Game struct {
 	Rating int    `json:"rating"` // 0 — без оценки, 1..5 звёзд
 	Notes  string `json:"notes"`  // заметки игрока (спойлеры прячутся в интерфейсе)
 
+	NotesUpdatedAt int64 `json:"notes_updated_at"` // UNIX-время изменения текста заметки
+
 	// Источники и проверка обновлений
 	Sources         []GameSource `json:"sources"`          // ссылки по площадкам {площадка→url}
 	PrimarySource   string       `json:"primary_source"`   // площадка для авто-проверки обновлений
@@ -46,6 +48,8 @@ type Game struct {
 	UpdateVersion   string       `json:"update_version"`   // найденная новая версия (для бейджа)
 	UpdateSource    string       `json:"update_source"`    // площадка, где найдено обновление
 	LastCheckedAt   int64        `json:"last_checked_at"`  // UNIX-время последней проверки обновлений
+
+	UpdateFoundAt int64 `json:"update_found_at"` // UNIX-время обнаружения текущего обновления
 
 	// Размер папки игры на диске (считается в фоне, пишется только через SetGameSize)
 	SizeBytes     int64 `json:"size_bytes"`

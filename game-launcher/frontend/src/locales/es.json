@@ -676,5 +676,15 @@
   "find.reason_different": "Título diferente",
   "find.updated": "actualizado el {date}",
   "sessions.summary": "{count} sesiones · la más larga: {duration}",
-  "find.hint": "Busca el juego por nombre o pega un enlace para añadir su portada, descripción y detalles."
+  "find.hint": "Busca el juego por nombre o pega un enlace para añadir su portada, descripción y detalles.",
+  "hk.history": "Atrás / adelante en el historial",
+  "hk.mouse_buttons": "Ratón 4 / 5",
+  "hk.g_edit": "Edición y vista previa",
+  "hk.edit_save": "Guardar edición",
+  "hk.edit_cancel": "Cancelar edición",
+  "hk.preview_back": "Volver de la vista previa",
+  "detail.notes_edited": "Editado el {date}",
+  "detail.list_position": "{n} de {total}",
+  "detail.previous_game": "Juego anterior",
+  "detail.next_game": "Juego siguiente"
 }
