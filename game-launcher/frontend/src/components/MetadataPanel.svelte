@@ -47,11 +47,16 @@
     const checkSource = (platform) => runCheck(() => CheckSourceUpdate(game.id, platform));
 </script>
 
-<div class="rounded-2xl border p-5 {prominent ? 'bg-indigo-950 border-indigo-800 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
-    {#if prominent}
-        <h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>
-        <p class="text-sm text-indigo-100/80 mt-1 mb-3">{$t('find.hint')}</p>
-    {/if}
+<div class="rounded-2xl border p-5 {prominent ? 'bg-slate-900/60 border-white/10 p-6 mb-9' : 'bg-slate-900/60 border-white/5'}">
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+        {#if prominent}<h3 class="text-xl font-bold text-white">{$t('meta.find_title')}</h3>{/if}
+        <div class="flex gap-1 p-1 rounded-xl bg-slate-950 ml-auto" role="group" aria-label={$t('meta.find_title')}>
+            <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
+                    class="px-3 py-2 text-sm rounded-lg transition {tab === 'name' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
+            <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
+                    class="px-3 py-2 text-sm rounded-lg transition {tab === 'link' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_link')}</button>
+        </div>
+    </div>
     <div class="flex items-center gap-2 mb-3 relative {prominent ? 'hidden' : ''}">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">{$t("meta.title")}</h3>
         <button on:click={() => showSources = !showSources} title={$t("meta.sources")}
@@ -91,12 +96,6 @@
             {checking ? $t('meta.checking') : $t('meta.check_updates')}
         </button>
     {/if}
-    <div class="flex gap-1 border-b border-white/10 mb-4" role="group" aria-label={$t('meta.find_title')}>
-        <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
-                class="px-3 py-2 text-sm border-b-2 transition {tab === 'name' ? 'border-indigo-400 text-white' : 'border-transparent text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
-        <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
-                class="px-3 py-2 text-sm border-b-2 transition {tab === 'link' ? 'border-indigo-400 text-white' : 'border-transparent text-slate-400 hover:text-white'}">{$t('find.tab_link')}</button>
-    </div>
     <div class:hidden={tab !== 'name'}><FindByName {game} {onPreview}/></div>
     <div class:hidden={tab !== 'link'}>
     <div class="flex gap-3">

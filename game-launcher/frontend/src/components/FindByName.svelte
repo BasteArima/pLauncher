@@ -1,6 +1,6 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
-    import { t, tr } from '../i18n.js';
+    import { t, tr, langStore } from '../i18n.js';
     import { SuggestSearchName, SearchGameInfo, OpenURL } from '../../wailsjs/go/main/App.js';
     import { lsJSON, lsSet, mediaSrc } from '../lib/util.js';
     import { showToast } from '../lib/ui.js';
@@ -9,11 +9,24 @@
 
     export let game;
     export let onPreview = async (hit, version) => {};
-    const sites = ['Steam', 'F95zone', 'VNDB'];
+    const sites = ['F95zone', 'Steam', 'VNDB'];
     const stored = lsJSON('plauncher_find_sources', sites);
     let sources = Array.isArray(stored) ? sites.filter(s => stored.includes(s)) : sites;
     let query = '';
     let version = '';
+    let searchedQuery = '';
+    const normVersion = value => (value || '').toLowerCase().trim().replace(/^v/, '');
+    const normTitle = value => (value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/^(the|a) /, '');
+    function reason(hit) {
+        if (version && normVersion(version) === normVersion(hit.version)) return 'version';
+        if (normTitle(searchedQuery) === normTitle(hit.title)) return 'title';
+        return hit.score < 0.5 ? 'different' : '';
+    }
+    function updated(value, lang) {
+        if (!value) return '';
+        const date = new Date(typeof value === 'number' ? value * 1000 : value);
+        return Number.isNaN(date.getTime()) ? '' : tr('find.updated', { date: new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric' }).format(date) });
+    }
     let touched = false;
     let searching = false;
     let choosing = '';
@@ -41,6 +54,7 @@
         if (!query.trim() || !sources.length || searching || choosing) return;
         const ticket = ++request;
         searching = true;
+        searchedQuery = query.trim();
         result = null;
         try {
             const found = await SearchGameInfo(query.trim(), sources, game.id);
@@ -72,36 +86,38 @@
             {searching ? $t('find.searching') : $t('find.search')}
         </button>
     </form>
-    {#if version}<p class="text-xs text-slate-400 mt-2">{$t('find.folder_version', { version })}</p>{/if}
     <div class="flex flex-wrap items-center gap-2 mt-3" role="group" aria-label={$t('find.sources')}>
+        <span class="text-xs text-slate-400">{$t('find.search_on')}</span>
         {#each sites as site}
             <button type="button" data-find-source={site} aria-pressed={sources.includes(site)} on:click={() => toggle(site)} disabled={searching || !!choosing}
-                    class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs transition-colors disabled:opacity-60 {sources.includes(site) ? 'border-indigo-500/50 bg-indigo-900/50 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white'}">
-                {#if sources.includes(site)}<Icon name="check" size={12}/>{/if}{site}
+                    class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs transition-colors disabled:opacity-60 {sources.includes(site) ? 'border-transparent bg-indigo-900 text-indigo-100' : 'border-white/10 text-slate-400 hover:text-white'}">
+                {site}
             </button>
         {/each}
+        <span class="text-xs text-slate-500">{$t('find.link_only')}</span>
     </div>
     {#if !sources.length}<p class="text-xs text-slate-400 mt-2">{$t('find.select_source')}</p>{/if}
-    <p class="text-xs text-slate-500 mt-3 leading-relaxed">{$t('find.link_only')}</p>
+    <p class="text-xs text-slate-400 mt-4" data-find-summary>{version ? $t('find.folder_version', { version }) : $t('find.folder_name')}{#if result} · {$t('find.matches', { count: result.hits.length })}{/if}</p>
     <div aria-live="polite" aria-busy={searching || !!choosing}>
         {#if searching}
             <p class="text-sm text-slate-400 mt-5 flex items-center gap-2"><Icon name="refresh" size={16} class="animate-spin"/>{$t('find.searching')}</p>
         {:else if result}
-            <div class="mt-4 divide-y divide-white/5" data-find-results>
+            <div class="mt-2 flex flex-col gap-2" data-find-results>
                 {#each result.hits as hit (hit.url)}
-                    <div class="group flex items-center gap-3 py-3">
-                        <div class="w-16 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center text-slate-600">
+                    <div data-find-card class="group flex flex-wrap sm:flex-nowrap items-center gap-4 p-3 border rounded-xl {hit.best ? 'border-indigo-500/30 bg-slate-800/50' : 'border-white/10'}">
+                        <div class="w-[136px] aspect-video shrink-0 rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center text-slate-600">
                             {#if hit.thumb}<img src={mediaSrc(hit.thumb)} alt="" loading="lazy" decoding="async" on:error={e => e.target.style.visibility = 'hidden'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'cover')}"/>
                             {:else}<Icon name="image" size={24}/>{/if}
                         </div>
                         <div class="min-w-0 flex-1">
-                            {#if hit.best}<div data-find-best class="text-xs text-indigo-300 mb-1 flex items-center gap-1"><Icon name="check" size={13}/>{$t('find.best')}</div>{/if}
+
                             <div class="text-sm font-semibold text-white break-words">{hit.title}</div>
-                            <div class="text-xs text-slate-400 mt-1 break-words">{[hit.source, hit.author, hit.version, hit.year].filter(Boolean).join(' · ')}</div>
+                            <div class="text-xs text-slate-400 mt-1 break-words">{[hit.source, hit.version, hit.author, hit.engine, updated(hit.updated_at, $langStore)].filter(Boolean).join(' · ')}</div>
+                            {#if reason(hit)}<p data-find-reason class="text-xs mt-1 {reason(hit) === 'different' ? 'text-slate-400' : 'text-emerald-400'}">{$t('find.reason_' + reason(hit), { version })}</p>{/if}
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            <button data-hit-url={hit.url} on:click={() => choose(hit)} disabled={!!choosing}
-                                    class="max-w-[120px] px-3 py-2 rounded-lg text-xs font-semibold text-indigo-100 border border-indigo-500/40 hover:bg-indigo-900/60 disabled:opacity-50">
+                            <button data-find-best={hit.best || undefined} data-hit-url={hit.url} on:click={() => choose(hit)} disabled={!!choosing}
+                                    class="max-w-[120px] px-3 py-2 rounded-lg text-xs font-semibold border {hit.best ? 'bg-white text-slate-950 border-white hover:bg-slate-200' : 'text-slate-200 border-white/10 hover:bg-white/5'} disabled:opacity-50">
                                 {choosing === hit.url ? $t('find.loading_preview') : $t('find.use')}
                             </button>
                             <button type="button" data-hit-source-url={hit.url} on:click={() => openSource(hit.url)}

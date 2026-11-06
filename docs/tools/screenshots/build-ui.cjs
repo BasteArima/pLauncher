@@ -55,7 +55,7 @@ const mock = `(function () {
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   const results = ['Steam', 'F95zone', 'VNDB'].flatMap((source, i) => [0, 1].map(j => ({
     source, url: source === 'VNDB' ? 'https://vndb.org/v' + (1 + j) : source === 'Steam' ? 'https://store.steampowered.com/app/' + (1 + j) + '/' : 'https://f95zone.to/threads/' + (1 + j) + '/',
-    title: j ? 'Moonlit Harbor: Afterlight' : 'Moonlit Harbor', author: 'Harbor Studio', version: source === 'F95zone' ? '0.3' : '', year: '2026',
+    title: j ? 'Moonlit Harbor: Afterlight' : 'Moonlit Harbor', author: 'Harbor Studio', version: source === 'F95zone' ? '0.3' : '', year: '2026', engine: "Ren'Py", updated_at: '2026-10-30',
     thumb: location.origin + '/media/covers/g01.svg', score: j ? 0.45 - i * 0.02 : 0.96 - i * 0.18, best: i === 0 && j === 0,
   }))).sort((a, b) => b.score - a.score);
   const previewData = url => ({

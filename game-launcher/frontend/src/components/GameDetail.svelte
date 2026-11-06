@@ -250,9 +250,6 @@
             {/if}
         </section>
 
-        {#if !preview}
-            <GameSessions {game} {visibleGames} scopeKey={sessionScopeKey} revision={sessionRevision} {calendar}/>
-        {/if}
         <section class="order-4" class:hidden={!!preview}>
             <div class="flex items-center gap-3 mb-3">
                 <h3 class="{sectionTitle} !mb-0 flex-1">{$t('detail.notes')}</h3>
@@ -419,5 +416,8 @@
                 {/if}
             </div>
         </section>
+        {#if !preview}
+            <GameSessions {game} {visibleGames} scopeKey={sessionScopeKey} revision={sessionRevision} {calendar}/>
+        {/if}
     </aside>
 </div>

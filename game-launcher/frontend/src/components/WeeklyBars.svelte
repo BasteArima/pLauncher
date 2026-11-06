@@ -4,6 +4,7 @@
     export let weeks = [];
     export let zone = 'UTC';
     export let label = '';
+    export let compact = false;
     let picked = null;
     $: maximum = Math.max(1, ...weeks.map(w => w.seconds));
     $: { weeks; picked = null; }
@@ -16,7 +17,7 @@
     }
 </script>
 
-<div class="weekly-chart" data-week-chart={weeks.length}>
+<div class="weekly-chart" class:compact data-week-chart={weeks.length}>
     <div class="overflow-x-auto pt-1 pb-1">
         <div class:year={weeks.length > 8}>
             <div class="bars" role="group" aria-label={label}>
@@ -29,17 +30,20 @@
                     </button>
                 {/each}
             </div>
-            <div class="months" aria-hidden="true">
+            {#if !compact}<div class="months" aria-hidden="true">
                 {#each weeks as week, i}
                     <span><span class="month-label">{i === 0 || (weeks.length <= 8 ? i === weeks.length - 1 : statsMonth(week.start, $langStore, zone) !== statsMonth(weeks[i - 1].start, $langStore, zone)) ? statsMonth(week.start, $langStore, zone) : ''}</span></span>
                 {/each}
-            </div>
+            </div>{/if}
         </div>
     </div>
-    <p data-week-tooltip class="text-xs text-slate-400 mt-2 min-h-[2rem]" aria-live="polite">{picked ? description(picked, $langStore, zone) : $t('stats.chart_hint')}</p>
+    {#if !compact || picked}<p data-week-tooltip class="text-xs text-slate-400 mt-2 min-h-[2rem]" aria-live="polite">{picked ? description(picked, $langStore, zone) : $t('stats.chart_hint')}</p>{/if}
 </div>
 
 <style>
+    .compact { position: relative; }
+    .compact .bars { height: 64px; border-bottom: 0; gap: 7px; }
+    .compact [data-week-tooltip] { position: absolute; bottom: 100%; left: 0; right: 0; padding: 8px; background: #24232b; border-radius: 6px; z-index: 10; pointer-events: none; }
     .bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; height: 132px; border-bottom: 1px solid rgba(255,255,255,.12); }
     .year { min-width: 560px; }
     .bar-slot { height: 100%; display: flex; align-items: flex-end; justify-content: center; min-width: 0; border-radius: 3px 3px 0 0; }
