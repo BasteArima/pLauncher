@@ -17,12 +17,12 @@ func TestPersonalFieldsRoundTrip(t *testing.T) {
 	defer repo.Close()
 	ctx := context.Background()
 
-	g := &models.Game{ID: "g1", Title: "Test", FolderPath: "D:/Games/Test", Status: "playing", Rating: 4, Notes: "save before day 23", CoverZoom: 1.5}
+	g := &models.Game{ID: "g1", Title: "Test", FolderPath: "D:/Games/Test", Status: "playing", Rating: 4, Notes: "save before day 23", CoverZoom: 1.5, CoverPosTall: "30% 60%", CoverZoomTall: 2}
 	if err := repo.SaveGame(ctx, g); err != nil {
 		t.Fatal(err)
 	}
 	got := mustGet(t, repo, "g1")
-	if got.Status != "playing" || got.Rating != 4 || got.Notes != "save before day 23" || got.CoverZoom != 1.5 {
+	if got.Status != "playing" || got.Rating != 4 || got.Notes != "save before day 23" || got.CoverZoom != 1.5 || got.CoverPosTall != "30% 60%" || got.CoverZoomTall != 2 {
 		t.Fatalf("read back %q/%d/%q", got.Status, got.Rating, got.Notes)
 	}
 

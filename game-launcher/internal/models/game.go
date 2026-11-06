@@ -23,6 +23,8 @@ type Game struct {
 	CoverFit       string   `json:"cover_fit"`        // object-fit обложки: cover|contain|fill (пусто = cover)
 	CoverPos       string   `json:"cover_pos"`        // object-position обложки, напр. "50% 20%" (пусто = центр)
 	CoverZoom      float64  `json:"cover_zoom"`       // приближение обложки в карточках (0 или 1 — без зума, до 3)
+	CoverPosTall   string   `json:"cover_pos_tall"`   // своя точка фокуса для вертикальной карточки (пусто = как у широкой)
+	CoverZoomTall  float64  `json:"cover_zoom_tall"`  // свой зум для вертикальной карточки (действует, только если задана CoverPosTall)
 	Images         []string `json:"images"`           // Локальные пути к скриншотам
 	Tags           []string `json:"tags"`             // Жанры/теги (RPG, Ren'Py, и т.п.)
 	ExecPath       string   `json:"exec_path"`        // Путь к исполняемому файлу (.exe)

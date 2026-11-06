@@ -12,7 +12,7 @@
     export let onContext = null;     // (game, event) => ... ПКМ
 
     $: cover = mediaSrc(game.cover_path);
-    $: coverCss = coverStyle(game);
+    $: coverCss = coverStyle(game, $cardShape);
     // Тип файла запуска для бейджа: EXE, HTML, BAT, JAR…
     $: launchName = (game.exec_path || '').split(/[\\/]/).pop();
     $: launchExt = launchName.includes('.') ? launchName.split('.').pop().toUpperCase().slice(0, 8) : '▶';

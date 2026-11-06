@@ -78,7 +78,7 @@ The app is fully working. Done so far:
   confirm, Ctrl+S = save), cover kept apart from screenshots in the strip, screenshots reorder by HTML5 drag, «Use as cover»,
   image files dropped onto the window while editing become screenshots (`handleNativeDrop`). Cover block: live wide/tall card
   previews (drag = pan, wheel = zoom) + Horizontal/Vertical/Zoom sliders. `Game.CoverZoom` (DB `cover_zoom`, 0/1 = none, max 3)
-  is applied by `coverStyle()` in `lib/util.js` as `transform: scale()` with `transform-origin` = the cover position.
+  is applied by `coverStyle()` in `lib/util.js` as `transform: scale()` with `transform-origin` = the cover position. The tall card has its own frame (`cover_pos_tall`/`cover_zoom_tall`, used once `cover_pos_tall` is set, otherwise it follows the wide one); `coverStyle(g, shape)`, the editor detaches it on the first edit and offers «Same as wide». Fit mode is shared.
   **Continue playing** (`recentlyPlayed`) skips finished/dropped games and ones hidden via the menu item «Remove from Continue
   playing» (localStorage `plauncher_continue_hidden`: id → last_launched_at at hide time; launching again brings it back).
   Navigation history like a browser (`navStack` in App: game + filter/collection/tag): mouse back/forward, Alt+←/→.

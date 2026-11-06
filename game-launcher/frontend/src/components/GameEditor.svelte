@@ -38,29 +38,56 @@
     function useAsCover(path) { game.cover_path = path; sel = 'cover'; }
 
     $: fit = game.cover_fit || 'cover';
-    $: pos = coverPosXY(game);
-    $: zoom = coverZoom(game);
-    const setPos = (x, y) => { game.cover_pos = `${Math.round(x)}% ${Math.round(y)}%`; };
-    const setZoom = (z) => { game.cover_zoom = Math.round(Math.max(1, Math.min(COVER_ZOOM_MAX, z)) * 100) / 100; };
-    function resetCover() { game.cover_pos = ''; game.cover_zoom = 0; }
+    // Кадровка у широкой и вертикальной карточки независимая. active — какую сейчас правят
+    // ползунки (выбирается кнопками или просто касанием превью).
+    let active = 'wide';
+    $: pos = coverPosXY(game, active);
+    $: zoom = coverZoom(game, active);
+    $: tallOwn = !!game.cover_pos_tall;
+    // Пока у вертикальной нет своей кадровки, она повторяет широкую. Перед первой правкой
+    // любой из них вертикальная получает копию — дальше они меняются каждая сама по себе.
+    function detachTall() {
+        if (game.cover_pos_tall) return;
+        const p = coverPosXY(game, 'tall');
+        game.cover_pos_tall = `${p.x}% ${p.y}%`;
+        game.cover_zoom_tall = coverZoom(game, 'tall');
+    }
+    function setPos(x, y) {
+        detachTall();
+        const v = `${Math.round(x)}% ${Math.round(y)}%`;
+        if (active === 'tall') game.cover_pos_tall = v; else game.cover_pos = v;
+    }
+    function setZoom(z) {
+        detachTall();
+        const v = Math.round(Math.max(1, Math.min(COVER_ZOOM_MAX, z)) * 100) / 100;
+        if (active === 'tall') game.cover_zoom_tall = v; else game.cover_zoom = v;
+    }
+    function resetCover() { game.cover_pos = ''; game.cover_zoom = 0; game.cover_pos_tall = ''; game.cover_zoom_tall = 0; }
+    function tallLikeWide() { game.cover_pos_tall = ''; game.cover_zoom_tall = 0; }
     const clamp = (v) => Math.max(0, Math.min(100, v));
 
     // Тянуть превью: картинка едет за курсором (точка фокуса смещается в обратную сторону)
     let dragging = false;
-    function dragStart(e) {
-        if (fit === 'fill' || e.button !== 0) return;
+    function dragStart(e, shape) {
+        if (e.button !== 0) return;
+        active = shape;
+        if (fit === 'fill') return;
         e.preventDefault();
         const r = e.currentTarget.getBoundingClientRect();
-        const start = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+        const p = coverPosXY(game, shape);
+        const start = { x: e.clientX, y: e.clientY, px: p.x, py: p.y };
         dragging = true;
-        const k = 1 / zoom;                            // при зуме картинка «тяжелее» — двигаем медленнее
+        const k = 1 / coverZoom(game, shape);          // при зуме картинка «тяжелее» — двигаем медленнее
         const move = (ev) => setPos(clamp(start.px - (ev.clientX - start.x) / r.width * 100 * k),
                                     clamp(start.py - (ev.clientY - start.y) / r.height * 100 * k));
         const up = () => { dragging = false; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
         window.addEventListener('mousemove', move);
         window.addEventListener('mouseup', up);
     }
-    function wheel(e) { if (fit !== 'fill') setZoom(zoom - e.deltaY * 0.0015); }
+    function wheel(e, shape) {
+        active = shape;
+        if (fit !== 'fill') setZoom(coverZoom(game, shape) - e.deltaY * 0.0015);
+    }
 
     // --- Скриншоты: добавить, удалить, порядок перетаскиванием ---
     async function addScreenshots() {
@@ -233,16 +260,27 @@
                         <button on:click={selectCover} class="h-8 rounded-md text-xs text-slate-100 bg-slate-800 border border-white/10 hover:bg-slate-700">{$t('edit.replace')}</button>
                         <button on:click={removeCover} class="h-8 rounded-md text-xs text-rose-200 border border-rose-800/60 hover:bg-rose-950/50">{$t('cover.remove')}</button>
                     </div>
-                    {#each [['aspect-video w-72', 'edit.wide_card'], ['aspect-[3/4] w-36', 'edit.tall_card']] as pv}
+                    {#each [['aspect-video w-72', 'edit.wide_card', 'wide'], ['aspect-[3/4] w-36', 'edit.tall_card', 'tall']] as pv}
                         <div class="flex flex-col gap-1.5">
-                            <!-- Как в библиотеке: тянуть — сдвинуть, колесо — приблизить -->
-                            <div class="relative {pv[0]} rounded-xl overflow-hidden bg-slate-950 ring-1 ring-white/10 select-none {fit === 'fill' ? '' : dragging ? 'cursor-grabbing' : 'cursor-grab'}"
-                                 on:mousedown={dragStart} on:wheel|preventDefault|nonpassive={wheel} role="img" aria-label={$t(pv[1])}>
-                                <img src={mediaSrc(game.cover_path)} alt="" draggable="false" style={coverStyle(game)} class="absolute inset-0 w-full h-full pointer-events-none"/>
+                            <!-- Как в библиотеке: тянуть — сдвинуть, колесо — приблизить; выделена та, что правят ползунки -->
+                            <div class="relative {pv[0]} rounded-xl overflow-hidden bg-slate-950 select-none {active === pv[2] ? 'ring-2 ring-indigo-400' : 'ring-1 ring-white/10 hover:ring-white/30'} {fit === 'fill' ? 'cursor-pointer' : dragging ? 'cursor-grabbing' : 'cursor-grab'}"
+                                 on:mousedown={(e) => dragStart(e, pv[2])} on:wheel|preventDefault|nonpassive={(e) => wheel(e, pv[2])} role="img" aria-label={$t(pv[1])}>
+                                <img src={mediaSrc(game.cover_path)} alt="" draggable="false" style={coverStyle(game, pv[2])} class="absolute inset-0 w-full h-full pointer-events-none"/>
                             </div>
-                            <span class="text-xs text-slate-500">{$t(pv[1])}</span>
+                            <span class="text-xs {active === pv[2] ? 'text-indigo-300' : 'text-slate-500'}">{$t(pv[1])}</span>
                         </div>
                     {/each}
+                </div>
+
+                <!-- Какую карточку правят ползунки -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="flex gap-0.5 p-0.5 rounded-lg bg-slate-950 border border-white/10" role="group" aria-label={$t('edit.cover')}>
+                        <button on:click={() => active = 'wide'} class={segBtn(active === 'wide')}>{$t('edit.wide_card')}</button>
+                        <button on:click={() => active = 'tall'} class={segBtn(active === 'tall')}>{$t('edit.tall_card')}</button>
+                    </div>
+                    {#if active === 'tall' && tallOwn}
+                        <button on:click={tallLikeWide} class="h-7 px-2.5 rounded-md text-xs text-slate-400 hover:text-white">{$t('edit.tall_same')}</button>
+                    {/if}
                 </div>
 
                 <div class="grid grid-cols-[104px_minmax(0,1fr)_52px] gap-x-3 gap-y-2.5 items-center max-w-xl">

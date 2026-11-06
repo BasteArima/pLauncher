@@ -9,21 +9,27 @@ export function mediaSrc(p) {
 // CSS object-fit/object-position обложки игры
 // Кадрирование обложки в карточках: режим (cover/contain/fill), точка фокуса и приближение.
 // Зум — scale с центром в точке фокуса, так что увеличивается именно выбранная часть картинки.
-export function coverStyle(g) {
-    const pos = (g && g.cover_pos) || '50% 20%';
+// shape — форма карточки: 'wide' (16:9, ещё герой) или 'tall' (3:4). У вертикальной своя кадровка
+// (cover_pos_tall + cover_zoom_tall); пока она не задана, вертикальная берёт кадровку широкой.
+export const COVER_ZOOM_MAX = 3;
+function coverFrame(g, shape) {
+    const own = shape === 'tall' && g && g.cover_pos_tall;
+    const pos = (own ? g.cover_pos_tall : g && g.cover_pos) || '50% 20%';
+    const z = +(own ? g.cover_zoom_tall : g && g.cover_zoom) || 1;
+    return { pos, zoom: Math.max(1, Math.min(COVER_ZOOM_MAX, z)) };
+}
+export function coverStyle(g, shape = 'wide') {
+    const { pos, zoom } = coverFrame(g, shape);
     const fit = (g && g.cover_fit) || 'cover';
-    const zoom = coverZoom(g);
     return `object-fit:${fit};object-position:${pos}` + (zoom > 1 && fit !== 'fill' ? `;transform:scale(${zoom});transform-origin:${pos}` : '');
 }
-export const COVER_ZOOM_MAX = 3;
-export function coverZoom(g) {
-    const z = +(g && g.cover_zoom) || 1;
-    return Math.max(1, Math.min(COVER_ZOOM_MAX, z));
+export function coverZoom(g, shape = 'wide') {
+    return coverFrame(g, shape).zoom;
 }
 
-export function coverPosXY(g) {
-    const p = ((g && g.cover_pos) || '50% 20%').split(' ');
-    return { x: parseInt(p[0]) || 50, y: parseInt(p[1]) || 20 };
+export function coverPosXY(g, shape = 'wide') {
+    const p = coverFrame(g, shape).pos.split(' ');
+    return { x: parseInt(p[0]) || 0, y: parseInt(p[1]) || 0 };
 }
 
 export function fmtPlaytime(min) {

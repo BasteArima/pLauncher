@@ -213,6 +213,8 @@ export namespace models {
 	    cover_fit: string;
 	    cover_pos: string;
 	    cover_zoom: number;
+	    cover_pos_tall: string;
+	    cover_zoom_tall: number;
 	    images: string[];
 	    tags: string[];
 	    exec_path: string;
@@ -251,6 +253,8 @@ export namespace models {
 	        this.cover_fit = source["cover_fit"];
 	        this.cover_pos = source["cover_pos"];
 	        this.cover_zoom = source["cover_zoom"];
+	        this.cover_pos_tall = source["cover_pos_tall"];
+	        this.cover_zoom_tall = source["cover_zoom_tall"];
 	        this.images = source["images"];
 	        this.tags = source["tags"];
 	        this.exec_path = source["exec_path"];
