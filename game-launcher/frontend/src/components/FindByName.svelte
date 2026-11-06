@@ -1,7 +1,7 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     import { t, tr } from '../i18n.js';
-    import { SuggestSearchName, SearchGameInfo } from '../../wailsjs/go/main/App.js';
+    import { SuggestSearchName, SearchGameInfo, OpenURL } from '../../wailsjs/go/main/App.js';
     import { lsJSON, lsSet, mediaSrc } from '../lib/util.js';
     import { showToast } from '../lib/ui.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
@@ -49,6 +49,10 @@
             if (alive && request === ticket) showToast(tr('toast.error', { err }), 'error');
         } finally { if (alive && request === ticket) searching = false; }
     }
+    async function openSource(url) {
+        try { await OpenURL(url); }
+        catch (err) { if (alive) showToast(tr('toast.error', { err }), 'error'); }
+    }
     async function choose(hit) {
         if (choosing) return;
         choosing = hit.url;
@@ -95,10 +99,17 @@
                             <div class="text-sm font-semibold text-white break-words">{hit.title}</div>
                             <div class="text-xs text-slate-400 mt-1 break-words">{[hit.source, hit.author, hit.version, hit.year].filter(Boolean).join(' · ')}</div>
                         </div>
-                        <button data-hit-url={hit.url} on:click={() => choose(hit)} disabled={!!choosing}
-                                class="shrink-0 max-w-[120px] px-3 py-2 rounded-lg text-xs font-semibold text-indigo-100 border border-indigo-500/40 hover:bg-indigo-900/60 disabled:opacity-50">
-                            {choosing === hit.url ? $t('find.loading_preview') : $t('find.use')}
-                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button data-hit-url={hit.url} on:click={() => choose(hit)} disabled={!!choosing}
+                                    class="max-w-[120px] px-3 py-2 rounded-lg text-xs font-semibold text-indigo-100 border border-indigo-500/40 hover:bg-indigo-900/60 disabled:opacity-50">
+                                {choosing === hit.url ? $t('find.loading_preview') : $t('find.use')}
+                            </button>
+                            <button type="button" data-hit-source-url={hit.url} on:click={() => openSource(hit.url)}
+                                    title={`${$t('detail.update_open')} — ${hit.source}`} aria-label={`${$t('detail.update_open')} — ${hit.source}`}
+                                    class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 border border-white/10 hover:bg-white/5 hover:text-white transition-colors">
+                                <Icon name="external" size={16}/>
+                            </button>
+                        </div>
                     </div>
                 {:else}
                     <p data-find-empty class="text-sm text-slate-400 py-4">{$t('find.empty')}</p>

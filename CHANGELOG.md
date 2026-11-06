@@ -9,6 +9,7 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 - Find game info by name across F95zone, Steam and VNDB: folder-name suggestions, source toggles, ranked
   results and a read-only preview before saving. Search and paste-link tabs share the metadata panel;
   dismissing the large prompt keeps the compact panel available. Preview images respect privacy blur.
+  Results also let you open the source page directly in your browser.
   Added VNDB URL parsing, remote-image metadata previews and localized errors.
 - Play status for every game (playing, want to play, finished, dropped), a 5-star rating and personal notes, where
   `||text||` stays hidden as a spoiler until clicked. Status chips above the grid filter by status.
