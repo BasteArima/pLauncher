@@ -331,10 +331,11 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
    picked in edit mode.
 4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
    find info by name).
-5. **List view** (mockup B): dense table — title, status, version, engine, played, last played, size; sortable
-   headers; a third option in `ViewOptions` next to grid/shelves.
-6. Small: hotkey list entries (see Hotkeys), «Found on <site> · date» / «Edited» in the game page details, refresh
+5. Small: hotkey list entries (see Hotkeys), «Found on <site> · date» / «Edited» in the game page details, refresh
    README screenshots (`docs/tools/screenshots/make.ps1`, the mock needs the new UI states).
+
+**Ideas, not agreed (don't start without the owner):** a dense list view like mockup B (title, status, version,
+engine, played, last played, size; sortable headers).
 
 ## Working agreements (for any agent)
 
