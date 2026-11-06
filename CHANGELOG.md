@@ -6,6 +6,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Multiple launch files, backend foundation: primary labels and up to eight additional files, bounded
+  candidate discovery, localized labels/errors, availability checks and primary-only playtime accounting.
+  Additional tools/documents open without sessions or recent-play changes. Relink/backup preserve paths,
+  labels and merge overflow. Editor and combined Play-menu controls are pending step 2.
 - Game-page navigation shows the originating list and position, with previous/next arrows that preserve
   its order and participate in back/forward history. Search text and sort are restored with history.
 - Update notices show when the version was discovered; repeated checks retain that date. Personal notes

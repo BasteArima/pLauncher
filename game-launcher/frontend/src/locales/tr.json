@@ -686,5 +686,17 @@
   "detail.notes_edited": "Düzenlendi: {date}",
   "detail.list_position": "{n} / {total}",
   "detail.previous_game": "Önceki oyun",
-  "detail.next_game": "Sonraki oyun"
+  "detail.next_game": "Sonraki oyun",
+  "err.launch.invalid_path": "Başlatma dosyası yolu boş olamaz veya geçersiz karakter içeremez.",
+  "err.launch.duplicate": "Bu dosya zaten listede: {path}",
+  "err.launch.limit": "En fazla {n} ek dosya ekleyebilirsiniz. Yenilerini eklemeden önce fazla kayıtları kaldırın.",
+  "err.launch.search": "{path} içinde başlatma dosyaları aranamadı.",
+  "err.launch.select": "Dosya seçim penceresi açılamadı.",
+  "err.launch.unlisted": "Bu dosya artık kayıtlı listede değil. Oyunu kaydedin veya yeniden yükleyin.",
+  "err.launch.missing": "Başlatma dosyası bulunamadı: {path}",
+  "err.launch.access": "Dosyaya erişilemiyor: {path}",
+  "err.launch.unsupported": "Bu yol desteklenen bir başlatma dosyası değil: {path}",
+  "err.launch.failed": "Dosya açılamadı: {path}",
+  "launch.label_settings": "Ayarlar",
+  "launch.label_walkthrough": "Çözüm rehberi"
 }

@@ -686,5 +686,17 @@
   "detail.notes_edited": "Edited {date}",
   "detail.list_position": "{n} of {total}",
   "detail.previous_game": "Previous game",
-  "detail.next_game": "Next game"
+  "detail.next_game": "Next game",
+  "err.launch.invalid_path": "A launch file path cannot be empty or contain an invalid character.",
+  "err.launch.duplicate": "This launch file is already listed: {path}",
+  "err.launch.limit": "You can add up to {n} additional launch files. Remove excess entries before adding more.",
+  "err.launch.search": "Could not search for launch files in {path}.",
+  "err.launch.select": "Could not open the file selection dialog.",
+  "err.launch.unlisted": "This file is no longer in the saved launch list. Save or reload the game.",
+  "err.launch.missing": "Launch file not found: {path}",
+  "err.launch.access": "Cannot access launch file: {path}",
+  "err.launch.unsupported": "This path is not a supported launch file: {path}",
+  "err.launch.failed": "Could not open launch file: {path}",
+  "launch.label_settings": "Settings",
+  "launch.label_walkthrough": "Walkthrough"
 }

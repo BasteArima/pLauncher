@@ -686,5 +686,17 @@
   "detail.notes_edited": "Zmieniono {date}",
   "detail.list_position": "{n} z {total}",
   "detail.previous_game": "Poprzednia gra",
-  "detail.next_game": "Następna gra"
+  "detail.next_game": "Następna gra",
+  "err.launch.invalid_path": "Ścieżka pliku nie może być pusta ani zawierać nieprawidłowego znaku.",
+  "err.launch.duplicate": "Ten plik jest już na liście: {path}",
+  "err.launch.limit": "Możesz dodać do {n} dodatkowych plików. Usuń nadmiarowe wpisy przed dodaniem kolejnych.",
+  "err.launch.search": "Nie udało się wyszukać plików w {path}.",
+  "err.launch.select": "Nie udało się otworzyć okna wyboru pliku.",
+  "err.launch.unlisted": "Tego pliku nie ma już na zapisanej liście. Zapisz lub odśwież grę.",
+  "err.launch.missing": "Nie znaleziono pliku startowego: {path}",
+  "err.launch.access": "Brak dostępu do pliku: {path}",
+  "err.launch.unsupported": "Ta ścieżka nie jest obsługiwanym plikiem startowym: {path}",
+  "err.launch.failed": "Nie udało się otworzyć pliku: {path}",
+  "launch.label_settings": "Ustawienia",
+  "launch.label_walkthrough": "Poradnik"
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"game-launcher/internal/apperr"
+	"game-launcher/internal/launchfiles"
 	"game-launcher/internal/models"
 	"game-launcher/internal/scanner"
 
@@ -196,6 +197,8 @@ func (a *App) FindMissingGames() ([]MissingGame, error) {
 // после переезда) — она сливается в эту игру: время суммируется, членство
 // в коллекциях переносится, дубликат удаляется.
 func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
+	a.sessionsMu.Lock()
+	defer a.sessionsMu.Unlock()
 	if a.repo == nil {
 		return nil, errNoDataDir()
 	}
@@ -222,7 +225,15 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 
 	oldFolder := g.FolderPath
 	g.FolderPath = newPath
-	g.ExecPath = rebaseExe(oldFolder, g.ExecPath, newPath)
+	for i := range g.LaunchFiles {
+		g.LaunchFiles[i].Path = launchfiles.RebaseExtra(oldFolder, g.LaunchFiles[i].Path, newPath)
+	}
+	oldExec := g.ExecPath
+	g.ExecPath = rebaseExe(oldFolder, oldExec, newPath)
+	if launchfiles.Key(g.ExecPath) != launchfiles.Key(launchfiles.RebaseExtra(oldFolder, oldExec, newPath)) {
+		g.ExecLabel = ""
+	}
+	launchfiles.Consolidate(g)
 	if g.Engine == "" {
 		g.Engine = scanner.DetectEngine(newPath)
 	}
@@ -240,9 +251,7 @@ func (a *App) RelinkGame(id, newPath string) (*models.Game, error) {
 			g.Notes = dup.Notes
 			g.NotesUpdatedAt = dup.NotesUpdatedAt
 		}
-		if g.ExecPath == "" {
-			g.ExecPath = dup.ExecPath
-		}
+
 	}
 
 	duplicateID := ""

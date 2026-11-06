@@ -686,5 +686,17 @@
   "detail.notes_edited": "Editado el {date}",
   "detail.list_position": "{n} de {total}",
   "detail.previous_game": "Juego anterior",
-  "detail.next_game": "Juego siguiente"
+  "detail.next_game": "Juego siguiente",
+  "err.launch.invalid_path": "La ruta de un archivo no puede estar vacía ni contener un carácter no válido.",
+  "err.launch.duplicate": "Este archivo ya está en la lista: {path}",
+  "err.launch.limit": "Puedes añadir hasta {n} archivos adicionales. Elimina las entradas sobrantes antes de añadir más.",
+  "err.launch.search": "No se pudieron buscar archivos en {path}.",
+  "err.launch.select": "No se pudo abrir el diálogo de selección de archivos.",
+  "err.launch.unlisted": "Este archivo ya no está en la lista guardada. Guarda o recarga el juego.",
+  "err.launch.missing": "Archivo de inicio no encontrado: {path}",
+  "err.launch.access": "No se puede acceder al archivo: {path}",
+  "err.launch.unsupported": "Esta ruta no es un archivo de inicio compatible: {path}",
+  "err.launch.failed": "No se pudo abrir el archivo: {path}",
+  "launch.label_settings": "Configuración",
+  "launch.label_walkthrough": "Guía"
 }

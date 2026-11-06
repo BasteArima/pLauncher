@@ -10,7 +10,18 @@ import (
 )
 
 // Controller отвечает за взаимодействие с файловой системой ОС и процессами
-type Controller struct{}
+type Controller struct {
+	// command is injectable for tests so OS document openers never run there.
+	command   func(string, ...string) *exec.Cmd
+	associate func(string, string) error
+}
+
+func (c *Controller) cmd(name string, args ...string) *exec.Cmd {
+	if c.command != nil {
+		return c.command(name, args...)
+	}
+	return exec.Command(name, args...)
+}
 
 // NewController создает новый экземпляр контроллера
 func NewController() *Controller {
@@ -44,23 +55,25 @@ func (c *Controller) OpenFolder(folderPath string) error {
 
 // LaunchAssociated opens an untracked file through the OS association. Direct
 // executables are launched by the durable monitor in monitor.go.
-func (c *Controller) LaunchAssociated(exePath, folderPath string) error {
-	// Остальные форматы (html/swf/jar/qsp/rags/lnk/bat…, на macOS — .app) открываем
-	// ассоциированным приложением. Процесс отсоединяется, поэтому время игры для них
-	// не учитывается (last_launched_at всё равно проставляется на стороне app.go).
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/C", "start", "", "/D", folderPath, exePath)
-	case "darwin":
-		cmd = exec.Command("open", exePath)
-	default:
-		cmd = exec.Command("xdg-open", exePath)
+func (c *Controller) LaunchAssociated(path, folder string) error {
+	if c.associate != nil {
+		return c.associate(path, folder)
 	}
-	cmd.Dir = folderPath
+	return openAssociated(path, folder)
+}
+
+// LaunchUntracked uses the same dispatch without a session monitor or library writes.
+func (c *Controller) LaunchUntracked(path, folder string) error {
+	if !CanTrack(path) {
+		return c.LaunchAssociated(path, folder)
+	}
+	cmd := c.cmd(path)
+	cmd.Dir = folder
+	detachUtility(cmd)
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("couldn't launch %s: %w", exePath, err)
+		return err
 	}
+	go cmd.Wait()
 	return nil
 }
 
@@ -72,7 +85,7 @@ func isDirectExecutable(path, ext string) bool {
 		return ext == ".exe" || ext == ".com"
 	}
 	switch ext {
-	case ".app", ".html", ".htm", ".swf", ".jar", ".qsp", ".rags", ".love", ".url", ".exe":
+	case ".pdf", ".txt", ".app", ".html", ".htm", ".swf", ".jar", ".qsp", ".rags", ".love", ".url", ".exe":
 		return false
 	}
 	info, err := os.Stat(path)

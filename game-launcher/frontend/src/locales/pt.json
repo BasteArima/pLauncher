@@ -686,5 +686,17 @@
   "detail.notes_edited": "Editado em {date}",
   "detail.list_position": "{n} de {total}",
   "detail.previous_game": "Jogo anterior",
-  "detail.next_game": "Próximo jogo"
+  "detail.next_game": "Próximo jogo",
+  "err.launch.invalid_path": "O caminho do arquivo não pode estar vazio nem conter um caractere inválido.",
+  "err.launch.duplicate": "Este arquivo já está na lista: {path}",
+  "err.launch.limit": "Você pode adicionar até {n} arquivos extras. Remova as entradas excedentes antes de adicionar mais.",
+  "err.launch.search": "Não foi possível buscar arquivos em {path}.",
+  "err.launch.select": "Não foi possível abrir a seleção de arquivos.",
+  "err.launch.unlisted": "Este arquivo não está mais na lista salva. Salve ou recarregue o jogo.",
+  "err.launch.missing": "Arquivo de inicialização não encontrado: {path}",
+  "err.launch.access": "Não foi possível acessar o arquivo: {path}",
+  "err.launch.unsupported": "Este caminho não é um arquivo de inicialização compatível: {path}",
+  "err.launch.failed": "Não foi possível abrir o arquivo: {path}",
+  "launch.label_settings": "Configurações",
+  "launch.label_walkthrough": "Detonado"
 }

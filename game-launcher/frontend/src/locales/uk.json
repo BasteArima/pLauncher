@@ -686,5 +686,17 @@
   "detail.notes_edited": "Змінено {date}",
   "detail.list_position": "{n} із {total}",
   "detail.previous_game": "Попередня гра",
-  "detail.next_game": "Наступна гра"
+  "detail.next_game": "Наступна гра",
+  "err.launch.invalid_path": "Шлях до файлу запуску не може бути порожнім або містити недопустимий символ.",
+  "err.launch.duplicate": "Цей файл уже є у списку: {path}",
+  "err.launch.limit": "Можна додати до {n} додаткових файлів. Видаліть зайві записи перед додаванням нових.",
+  "err.launch.search": "Не вдалося знайти файли запуску в {path}.",
+  "err.launch.select": "Не вдалося відкрити діалог вибору файлу.",
+  "err.launch.unlisted": "Цього файлу вже немає у збереженому списку. Збережіть або перезавантажте дані гри.",
+  "err.launch.missing": "Файл запуску не знайдено: {path}",
+  "err.launch.access": "Немає доступу до файлу: {path}",
+  "err.launch.unsupported": "Цей шлях не є підтримуваним файлом запуску: {path}",
+  "err.launch.failed": "Не вдалося відкрити файл: {path}",
+  "launch.label_settings": "Налаштування",
+  "launch.label_walkthrough": "Проходження"
 }

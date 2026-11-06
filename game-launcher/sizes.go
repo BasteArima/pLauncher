@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"game-launcher/internal/launchfiles"
 	"game-launcher/internal/models"
 	"game-launcher/internal/scanner"
 )
@@ -172,7 +173,7 @@ func (a *App) DetectLaunchFiles(ids []string) (int, error) {
 		if exe == "" {
 			return false
 		}
-		g.ExecPath = exe
+		launchfiles.SetDetectedPrimary(g, exe)
 		return true
 	})
 }

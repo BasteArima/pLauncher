@@ -93,6 +93,10 @@ func (a *App) recoverSessions() error {
 func (a *App) launchTracked(gameID, exe, folder string) error {
 	a.sessionsMu.Lock()
 	defer a.sessionsMu.Unlock()
+	return a.launchTrackedLocked(gameID, exe, folder)
+}
+
+func (a *App) launchTrackedLocked(gameID, exe, folder string) error {
 	if a.repo == nil || a.isLocked() {
 		return nil
 	}

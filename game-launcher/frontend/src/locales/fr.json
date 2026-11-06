@@ -686,5 +686,17 @@
   "detail.notes_edited": "Modifié le {date}",
   "detail.list_position": "{n} sur {total}",
   "detail.previous_game": "Jeu précédent",
-  "detail.next_game": "Jeu suivant"
+  "detail.next_game": "Jeu suivant",
+  "err.launch.invalid_path": "Le chemin ne peut pas être vide ni contenir un caractère non valide.",
+  "err.launch.duplicate": "Ce fichier figure déjà dans la liste : {path}",
+  "err.launch.limit": "Vous pouvez ajouter jusqu’à {n} fichiers supplémentaires. Retirez les entrées excédentaires avant d’en ajouter.",
+  "err.launch.search": "Impossible de rechercher les fichiers dans {path}.",
+  "err.launch.select": "Impossible d’ouvrir la boîte de sélection de fichier.",
+  "err.launch.unlisted": "Ce fichier ne figure plus dans la liste enregistrée. Enregistrez ou rechargez le jeu.",
+  "err.launch.missing": "Fichier de lancement introuvable : {path}",
+  "err.launch.access": "Impossible d’accéder au fichier : {path}",
+  "err.launch.unsupported": "Ce chemin ne correspond pas à un fichier de lancement pris en charge : {path}",
+  "err.launch.failed": "Impossible d’ouvrir le fichier : {path}",
+  "launch.label_settings": "Paramètres",
+  "launch.label_walkthrough": "Soluce"
 }

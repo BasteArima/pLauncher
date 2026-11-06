@@ -686,5 +686,17 @@
   "detail.notes_edited": "Bearbeitet am {date}",
   "detail.list_position": "{n} von {total}",
   "detail.previous_game": "Vorheriges Spiel",
-  "detail.next_game": "Nächstes Spiel"
+  "detail.next_game": "Nächstes Spiel",
+  "err.launch.invalid_path": "Der Dateipfad darf nicht leer sein oder ein ungültiges Zeichen enthalten.",
+  "err.launch.duplicate": "Diese Datei ist bereits aufgelistet: {path}",
+  "err.launch.limit": "Bis zu {n} zusätzliche Dateien sind erlaubt. Entferne überzählige Einträge, bevor du weitere hinzufügst.",
+  "err.launch.search": "Dateien in {path} konnten nicht gesucht werden.",
+  "err.launch.select": "Der Dateiauswahldialog konnte nicht geöffnet werden.",
+  "err.launch.unlisted": "Diese Datei ist nicht mehr in der gespeicherten Liste. Speichere oder lade das Spiel neu.",
+  "err.launch.missing": "Startdatei nicht gefunden: {path}",
+  "err.launch.access": "Kein Zugriff auf die Datei: {path}",
+  "err.launch.unsupported": "Dieser Pfad ist keine unterstützte Startdatei: {path}",
+  "err.launch.failed": "Datei konnte nicht geöffnet werden: {path}",
+  "launch.label_settings": "Einstellungen",
+  "launch.label_walkthrough": "Komplettlösung"
 }

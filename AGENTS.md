@@ -308,7 +308,8 @@ Polish / convenience:
 6. ✅ **DONE — Auto-detect engine** from folder contents (`scanner.DetectEngine`, 13 engines:
    Ren'Py/Unity/Unreal/Godot/RPG Maker/Game Maker/Construct/Wolf RPG/KiriKiri/TyranoBuilder/Flash/QSP/HTML).
    Runs on scan/drop, fills `Game.Engine` only when empty, backfills existing games on re-scan.
-7. **Multiple executables per game** (game / config / walkthrough) with a quick-launch menu.
+7. **Multiple launch files**: backend done (primary + eight extras, labels, discovery, untracked extras, relink/backup);
+   editor and combined Play menu remain step 2. See `docs/specs/launch-files.md`.
 8. ✅ **DONE — Relink moved games** (see "Current state").
 9. ✅ **DONE — Backup/export library** (zip). NOT done: a "library health" dashboard (no cover / no
    description / no exe as actionable lists).
@@ -327,8 +328,9 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 2. ✅ **DONE — Play sessions + Stats tab.** Durable recording, game-page Sessions and the sidebar Statistics
    view are implemented. Real-library acceptance remains manual; headless UI checks use fictional data.
    Full spec: [`docs/specs/play-sessions-stats.md`](docs/specs/play-sessions-stats.md).
-3. **Multiple launch files** (#7 above): main file ★ + extra ones (config, walkthrough) in a menu next to Play;
-   picked in edit mode.
+3. **Multiple launch files** (#7 above): step 1 backend is implemented. Step 2 remains: editor list and
+   Play / chevron / favourite; always-visible chevron combines file rows with every old ellipsis action.
+   Specification and confirmed decisions: [`docs/specs/launch-files.md`](docs/specs/launch-files.md).
 4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
    find info by name).
 5. ✅ **DONE — Small game-page polish:** hotkey reference, update-discovery and note-edit dates, originating
@@ -469,3 +471,33 @@ same UI_PORT/CDP_PORT setup as test-find/test-stats. Mock screenshots include th
 an equivalent 1016px main-area crop for comparison with game-page.png. The existing app has a sidebar,
 larger typography/spacing and a metadata panel; at a 1016px full window the columns stack. The new row,
 update date and note footer follow the board's placement. README images are intentionally unchanged.
+
+### Multiple launch files — backend (2026-11-07)
+
+`Game.ExecPath` stays primary; `ExecLabel` and `LaunchFiles []{path,label}` store its optional label and
+ordered extras. SQLite adds `exec_label/launch_files` via ALTER TABLE and COALESCE reads. SaveGame validates
+normalized path identity (case-insensitive on Windows), blank/NUL paths, duplicates and eight-extra capacity
+under a writer transaction. Missing files are valid saved references. Relink merges atomically, preserving
+survivor labels/order and overflow; overflow lists can be edited/reduced, not extended with new paths.
+Legacy nil extras preserve saved data; send `[]` to clear. Do not put the primary in the extras array.
+
+`internal/launchfiles` handles inference, validation, rebasing/consolidation and bounded discovery (root +
+two levels, 10k entries, 200 candidates, 5 seconds, partial-result reason). It skips symlinks/assets, allows
+hinted documents in docs, and never executes candidates. Scanner/DetectLaunchFiles consolidate a detected
+primary already present among extras, keeping its label. Extra relink paths retain missing targets;
+only the primary keeps best-executable fallback. A changed primary fallback clears the old path's label.
+
+New App methods: `FindLaunchFileCandidates`, `GetLaunchFileAvailability`, `GetLaunchFileLabel`,
+`SelectLaunchFile`, `LaunchGameFile`. Labels return translation keys for automatic text; explicit labels
+stay literal. Calls guard unconfigured/locked state and suppress late locked results. Legacy Launch routes
+through saved-list membership and primary-only accounting; caller working directories are ignored.
+Direct extras detach and reap without a session monitor, timestamp or restart blocker. Primary dispatch
+keeps durable monitoring; PDF/TXT use OS associations even with exec bits. Windows uses ShellExecute,
+without cmd interpolation. UpdateGame/RelinkGame serialize with launch role resolution through sessionsMu.
+
+The UI is still step 2: it must build star swaps/first-add promotion in a draft and save the complete list.
+Backend saves of an empty primary never promote an extra. See the spec's confirmed combined-menu rules.
+Bindings are regenerated. Mock APIs and fixtures are wired through build-ui.cjs/launch-files-fixture.cjs.
+Windows vet/test/build and 39 headless game-page regression checks passed with fictional data. Tests use
+harmless detached helpers and fake document openers. Linux/macOS packages were compiled only; native dialogs,
+real document associations, Windows ACL denial, real games/library and the new interface remain untested.

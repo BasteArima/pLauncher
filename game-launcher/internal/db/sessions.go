@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"game-launcher/internal/launchfiles"
 	"game-launcher/internal/models"
 )
 
@@ -247,6 +248,22 @@ func (r *SQLiteRepo) SaveRelink(ctx context.Context, g *models.Game, duplicateID
 			return err
 		}
 	}
+	var duplicate *models.Game
+	if duplicateID != "" {
+		rows, err := tx.QueryContext(ctx, `SELECT `+gameColumns+` FROM games WHERE id=?`, duplicateID)
+		if err != nil {
+			return err
+		}
+		duplicates, err := scanGames(rows)
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if len(duplicates) > 0 {
+			duplicate = duplicates[0]
+		}
+	}
+	launchfiles.Merge(g, duplicate)
 	if err := saveGame(ctx, tx, g); err != nil {
 		return err
 	}

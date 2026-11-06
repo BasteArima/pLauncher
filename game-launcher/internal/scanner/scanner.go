@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"game-launcher/internal/db"
+	"game-launcher/internal/launchfiles"
 	"game-launcher/internal/models"
 )
 
@@ -93,7 +94,7 @@ func (s *Scanner) ScanFolder(ctx context.Context, rootPath string) (int, error) 
 			}
 			if existing.ExecPath == "" {
 				if exe := FindBestExecutable(gameFolderPath); exe != "" {
-					existing.ExecPath = exe
+					launchfiles.SetDetectedPrimary(existing, exe)
 					changed = true
 				}
 			}

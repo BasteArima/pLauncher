@@ -686,5 +686,17 @@
   "detail.notes_edited": "Изменено {date}",
   "detail.list_position": "{n} из {total}",
   "detail.previous_game": "Предыдущая игра",
-  "detail.next_game": "Следующая игра"
+  "detail.next_game": "Следующая игра",
+  "err.launch.invalid_path": "Путь к файлу запуска не может быть пустым или содержать недопустимый символ.",
+  "err.launch.duplicate": "Этот файл запуска уже есть в списке: {path}",
+  "err.launch.limit": "Можно добавить не более {n} дополнительных файлов. Удалите лишние записи перед добавлением новых.",
+  "err.launch.search": "Не удалось найти файлы запуска в {path}.",
+  "err.launch.select": "Не удалось открыть диалог выбора файла.",
+  "err.launch.unlisted": "Этого файла больше нет в сохранённом списке запуска. Сохраните или перезагрузите данные игры.",
+  "err.launch.missing": "Файл запуска не найден: {path}",
+  "err.launch.access": "Нет доступа к файлу запуска: {path}",
+  "err.launch.unsupported": "Этот путь не является поддерживаемым файлом запуска: {path}",
+  "err.launch.failed": "Не удалось открыть файл запуска: {path}",
+  "launch.label_settings": "Настройки",
+  "launch.label_walkthrough": "Прохождение"
 }

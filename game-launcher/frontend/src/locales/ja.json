@@ -686,5 +686,17 @@
   "detail.notes_edited": "編集日 {date}",
   "detail.list_position": "{n} / {total}",
   "detail.previous_game": "前のゲーム",
-  "detail.next_game": "次のゲーム"
+  "detail.next_game": "次のゲーム",
+  "err.launch.invalid_path": "起動ファイルのパスを空にしたり、無効な文字を含めたりすることはできません。",
+  "err.launch.duplicate": "このファイルはすでに登録されています: {path}",
+  "err.launch.limit": "追加ファイルは {n} 個までです。追加する前に上限を超えた項目を削除してください。",
+  "err.launch.search": "{path} で起動ファイルを検索できませんでした。",
+  "err.launch.select": "ファイル選択ダイアログを開けませんでした。",
+  "err.launch.unlisted": "このファイルは保存済みの一覧にありません。ゲームを保存または再読み込みしてください。",
+  "err.launch.missing": "起動ファイルが見つかりません: {path}",
+  "err.launch.access": "ファイルにアクセスできません: {path}",
+  "err.launch.unsupported": "このパスは対応する起動ファイルではありません: {path}",
+  "err.launch.failed": "ファイルを開けませんでした: {path}",
+  "launch.label_settings": "設定",
+  "launch.label_walkthrough": "攻略"
 }

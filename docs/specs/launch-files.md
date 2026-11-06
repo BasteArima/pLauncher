@@ -1,6 +1,6 @@
 # Spec: multiple launch files
 
-Status: **step 1 — backend in progress** (2026-11-07). Owner decisions are recorded below.
+Status: **step 1 — backend implemented and verified on Windows** (2026-11-07).
 Step 2 (interface) is not part of this delivery.
 Design reference: [A2 · Game page](../design/game-page.png), interpreted using
 [the design README](../design/README.md): the small dropdown beside Play and the Launch files list in Details.
@@ -90,7 +90,7 @@ game page, without counting time spent in a guide or settings utility as playtim
 
 ## Backend
 
-### Existing behavior and integration points
+### Baseline behavior and integration points
 
 - `App.Launch(gameID, exePath, folderPath)` guards unconfigured/locked state and missing folders, then calls
   `launchTracked`. Direct files use the detached session monitor; associated files use `LaunchAssociated`
@@ -165,7 +165,7 @@ LaunchFiles []LaunchFile `json:"launch_files"` // additional files only, in disp
 
 ### Launching and availability
 
-Suggested App contracts, with exact DTO names to settle in implementation:
+Implemented App contracts (DTO details below):
 
 - `FindLaunchFileCandidates(gameID)` reads the saved game folder and returns candidate rows and any
   incomplete-result indication. It neither edits the game nor starts a process.
@@ -249,6 +249,44 @@ Suggested App contracts, with exact DTO names to settle in implementation:
 - `go vet ./...`, `go test ./...` and `game-launcher/build.ps1` pass; regenerate bindings and pass locale
   checks. Record which OS dispatch paths were actually executed. Native dialog/association behavior and
   the built exe on the real library remain explicit manual acceptance items unless actually tested.
+
+## Step 1 delivery
+
+Implemented in `launch_files.go` and `internal/launchfiles`, with generated Wails bindings:
+
+- `FindLaunchFileCandidates(gameID)` returns `Candidates { files, incomplete, reason }`. `FileInfo` contains
+  `path`, `name`, `relative_path`, `label`, `label_key`, `primary`, `availability`. Discovery rows are suggestions;
+  their role/availability fields are not saved-file checks. Reasons are `entries`, `candidates`, `time`, `unreadable`.
+- `GetLaunchFileAvailability(gameID)` returns saved files, primary first, with `available`, `missing`,
+  `unavailable` or `unsupported`. `SelectLaunchFile(gameID)` opens the picker from the saved folder.
+- `GetLaunchFileLabel(path)` returns `launch.label_settings`, `launch.label_walkthrough` or an empty key.
+  Render explicit `label` first, otherwise translate `label_key`, otherwise use `name`. Walkthrough wins for
+  mixed hints. Custom text is never translated; automatic text is never persisted in a label field.
+- `LaunchGameFile(gameID, path)` and legacy `Launch` use the saved path's role and working directory.
+  Direct extras detach without a monitor; associated files use ShellExecute on Windows and open/xdg-open
+  on macOS/Linux. PDF/TXT remain association-based even with executable bits. No shell filename interpolation.
+- `UpdateGame` commits the entire draft. Step 2 must construct star swaps and first-add promotion in that
+  draft; saving an empty primary deliberately does not promote an existing extra. A missing/null extras array
+  from an older caller preserves the stored list; an explicit empty array clears it.
+- Relink merges files in the same transaction as existing totals/collections/session transfer. If the primary
+  fallback selects a different executable, its old custom label is cleared; matching extra labels can follow
+  the selected path. Extra paths never use that fallback. Merge overflow survives ordinary saves and backup.
+- New errors and automatic labels exist in all 11 locales. UI components are unchanged. `build-ui.cjs` wires
+  `launch-files-fixture.cjs`, including multi-file data, missing files, capacity, delayed/error/partial discovery
+  controls (`window.__launchFilesMock`, `?shot=launch`) and all new API stubs; no real files are opened.
+
+Verification performed on **Windows/amd64**: `go vet ./...`, `go test ./...`, `wails generate module`,
+`build.ps1`, the packaged-exe `TestBuiltMonitorEntry` smoke check, mock build/syntax check and all 39
+existing headless Edge game-page checks passed. Backend
+coverage includes old/NULL migrations, round trips, label swaps/removal, duplicate/capacity rejection,
+relink overflow/rollback, old/new backup imports, bounded discovery and symlink exclusion, locked/unconfigured
+and late-lock requests, failed starts and extra-launch accounting isolation. Real harmless helper processes
+exercise Windows direct dispatch and survival after parent exit; association openers are fakes.
+
+Linux/amd64 and macOS/amd64 launcher, discovery and DB test packages were cross-compiled, **not executed**.
+The POSIX unreadable-root permission test is skipped on Windows; Windows ACL denial was not exercised.
+Native file dialogs, installed document associations and the owner's real library/games remain manual checks.
+Step 2 editor/menu/Details acceptance and visual comparison are pending; no README images were refreshed.
 
 ## Decisions
 

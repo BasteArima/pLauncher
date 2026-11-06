@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"game-launcher/internal/launchfiles"
 	"game-launcher/internal/models"
 
 	_ "modernc.org/sqlite" // Анонимный импорт для регистрации драйвера
@@ -136,6 +137,8 @@ func (r *SQLiteRepo) initSchema() error {
 	r.db.Exec(`ALTER TABLE games ADD COLUMN notes_updated_at INTEGER DEFAULT 0;`)
 	r.db.Exec(`ALTER TABLE games ADD COLUMN update_found_at INTEGER DEFAULT 0;`)
 
+	r.db.Exec(`ALTER TABLE games ADD COLUMN exec_label TEXT DEFAULT '';`)
+	r.db.Exec(`ALTER TABLE games ADD COLUMN launch_files TEXT DEFAULT '[]';`)
 	return r.initSessions()
 }
 
@@ -144,7 +147,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 	var games []*models.Game
 	for rows.Next() {
 		var g models.Game
-		var langsJSON, imagesJSON, tagsJSON, sourcesJSON string
+		var langsJSON, imagesJSON, tagsJSON, sourcesJSON, launchFilesJSON string
 		var favorite, updateAvailable int
 
 		err := rows.Scan(
@@ -154,7 +157,7 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 			&g.Author, &g.Engine,
 			&sourcesJSON, &g.PrimarySource, &updateAvailable, &g.UpdateVersion, &g.UpdateSource, &g.LastCheckedAt,
 			&g.SizeBytes, &g.SizeCheckedAt,
-			&g.Status, &g.Rating, &g.Notes, &g.CoverZoom, &g.CoverPosTall, &g.CoverZoomTall, &g.NotesUpdatedAt, &g.UpdateFoundAt,
+			&g.Status, &g.Rating, &g.Notes, &g.CoverZoom, &g.CoverPosTall, &g.CoverZoomTall, &g.NotesUpdatedAt, &g.UpdateFoundAt, &g.ExecLabel, &launchFilesJSON,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("row read error: %w", err)
@@ -164,6 +167,12 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 		json.Unmarshal([]byte(imagesJSON), &g.Images)
 		json.Unmarshal([]byte(tagsJSON), &g.Tags)
 		json.Unmarshal([]byte(sourcesJSON), &g.Sources)
+		g.LaunchFiles = []models.LaunchFile{}
+		if launchFilesJSON != "" && launchFilesJSON != "null" {
+			if err := json.Unmarshal([]byte(launchFilesJSON), &g.LaunchFiles); err != nil {
+				return nil, fmt.Errorf("invalid launch files for %s: %w", g.ID, err)
+			}
+		}
 		g.Favorite = favorite != 0
 		g.UpdateAvailable = updateAvailable != 0
 
@@ -173,11 +182,46 @@ func scanGames(rows *sql.Rows) ([]*models.Game, error) {
 }
 
 // gameColumns — единый список колонок для SELECT (порядок важен для scanGames).
-const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, COALESCE(status, ''), COALESCE(rating, 0), COALESCE(notes, ''), COALESCE(cover_zoom, 0), COALESCE(cover_pos_tall, ''), COALESCE(cover_zoom_tall, 0), COALESCE(notes_updated_at, 0), COALESCE(update_found_at, 0)`
+const gameColumns = `id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, COALESCE(status, ''), COALESCE(rating, 0), COALESCE(notes, ''), COALESCE(cover_zoom, 0), COALESCE(cover_pos_tall, ''), COALESCE(cover_zoom_tall, 0), COALESCE(notes_updated_at, 0), COALESCE(update_found_at, 0), COALESCE(exec_label, ''), COALESCE(launch_files, '[]')`
 
 // SaveGame добавляет новую игру или обновляет существующую (UPSERT)
 func (r *SQLiteRepo) SaveGame(ctx context.Context, g *models.Game) error {
-	return saveGame(ctx, r.db, g)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// Acquire the writer lock before reading capacity/legacy fields.
+	if _, err := tx.ExecContext(ctx, `UPDATE games SET id=id WHERE id=?`, g.ID); err != nil {
+		return err
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT `+gameColumns+` FROM games WHERE id=?`, g.ID)
+	if err != nil {
+		return err
+	}
+	oldGames, err := scanGames(rows)
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	var old *models.Game
+	if len(oldGames) != 0 {
+		old = oldGames[0]
+	}
+	// Older clients omit the new array. An explicit [] clears it.
+	if old != nil && g.LaunchFiles == nil {
+		g.LaunchFiles = old.LaunchFiles
+		if g.ExecPath == old.ExecPath && g.ExecLabel == "" {
+			g.ExecLabel = old.ExecLabel
+		}
+	}
+	if err := launchfiles.Validate(g, old, true); err != nil {
+		return err
+	}
+	if err := saveGame(ctx, tx, g); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 type gameWriter interface {
@@ -185,6 +229,16 @@ type gameWriter interface {
 }
 
 func saveGame(ctx context.Context, writer gameWriter, g *models.Game) error {
+	if err := launchfiles.Validate(g, nil, false); err != nil {
+		return err
+	}
+	if g.ExecPath == "" {
+		g.ExecLabel = ""
+	}
+	if g.LaunchFiles == nil {
+		g.LaunchFiles = []models.LaunchFile{}
+	}
+	launchJSON, _ := json.Marshal(g.LaunchFiles)
 	// SQLite не умеет хранить массивы (слайсы), поэтому сериализуем их в JSON.
 	// Это стандартный подход, который не нагружает сборщик мусора (GC).
 	langsJSON, _ := json.Marshal(g.Languages)
@@ -202,8 +256,8 @@ func saveGame(ctx context.Context, writer gameWriter, g *models.Game) error {
 
 	// Дату заметки определяем атомарно по сохранённому тексту, игнорируя старую дату из UI.
 	query := `
-	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, status, rating, notes, cover_zoom, cover_pos_tall, cover_zoom_tall, notes_updated_at, update_found_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = '' THEN 0 ELSE COALESCE(NULLIF(?, 0), unixepoch()) END, ?)
+	INSERT INTO games (id, title, description, version, languages, cover_path, images, tags, exec_path, folder_path, favorite, time_played, added_at, last_launched_at, cover_fit, cover_pos, author, engine, sources, primary_source, update_available, update_version, update_source, last_checked_at, size_bytes, size_checked_at, status, rating, notes, cover_zoom, cover_pos_tall, cover_zoom_tall, notes_updated_at, update_found_at, exec_label, launch_files)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = '' THEN 0 ELSE COALESCE(NULLIF(?, 0), unixepoch()) END, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
 		description=excluded.description,
@@ -213,6 +267,8 @@ func saveGame(ctx context.Context, writer gameWriter, g *models.Game) error {
 		images=excluded.images,
 		tags=excluded.tags,
 		exec_path=excluded.exec_path,
+		exec_label=excluded.exec_label,
+		launch_files=excluded.launch_files,
 		folder_path=excluded.folder_path,
 		favorite=excluded.favorite,
 		cover_fit=excluded.cover_fit,
@@ -245,7 +301,7 @@ func saveGame(ctx context.Context, writer gameWriter, g *models.Game) error {
 		g.Author, g.Engine,
 		string(sourcesJSON), g.PrimarySource, updateAvailable, g.UpdateVersion, g.UpdateSource, g.LastCheckedAt,
 		g.SizeBytes, g.SizeCheckedAt,
-		g.Status, g.Rating, g.Notes, g.CoverZoom, g.CoverPosTall, g.CoverZoomTall, g.Notes, g.NotesUpdatedAt, g.UpdateFoundAt,
+		g.Status, g.Rating, g.Notes, g.CoverZoom, g.CoverPosTall, g.CoverZoomTall, g.Notes, g.NotesUpdatedAt, g.UpdateFoundAt, g.ExecLabel, string(launchJSON),
 	)
 
 	if err != nil {

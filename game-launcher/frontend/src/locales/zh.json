@@ -686,5 +686,17 @@
   "detail.notes_edited": "编辑于 {date}",
   "detail.list_position": "{n} / {total}",
   "detail.previous_game": "上一个游戏",
-  "detail.next_game": "下一个游戏"
+  "detail.next_game": "下一个游戏",
+  "err.launch.invalid_path": "启动文件路径不能为空或包含无效字符。",
+  "err.launch.duplicate": "此文件已在列表中：{path}",
+  "err.launch.limit": "最多可添加 {n} 个附加文件。添加前请删除超出的条目。",
+  "err.launch.search": "无法在 {path} 中查找启动文件。",
+  "err.launch.select": "无法打开文件选择对话框。",
+  "err.launch.unlisted": "此文件已不在保存的启动列表中。请保存或重新加载游戏。",
+  "err.launch.missing": "找不到启动文件：{path}",
+  "err.launch.access": "无法访问文件：{path}",
+  "err.launch.unsupported": "此路径不是受支持的启动文件：{path}",
+  "err.launch.failed": "无法打开文件：{path}",
+  "launch.label_settings": "设置",
+  "launch.label_walkthrough": "攻略"
 }

@@ -29,7 +29,7 @@ type App struct {
 	mu           sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
 	repo         db.GameRepository
 	scanner      *scanner.Scanner
-	launcher     *launcher.Controller
+	launcher     fileLauncher
 	dataDir      string // абсолютный путь к папке с данными (БД + обложки)
 	priv         privacyState
 	live         bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
@@ -341,13 +341,8 @@ func (a *App) ScanLocalFolder(rootPath string) (int, error) {
 
 // Launch запускает игру
 func (a *App) Launch(gameID string, exePath string, folderPath string) error {
-	if a.repo == nil || a.isLocked() {
-		return nil
-	}
-	if folderMissing(folderPath) {
-		return apperr.New("app.folder_missing", apperr.P{"path": folderPath}, "game folder not found: %s", folderPath)
-	}
-	return a.launchTracked(gameID, exePath, folderPath)
+	// Legacy signature; working directory and tracking role come from the saved game.
+	return a.LaunchGameFile(gameID, exePath)
 }
 
 // OpenFolder просто открывает папку с игрой в проводнике
@@ -845,8 +840,18 @@ func (a *App) SearchGames(query string) ([]*models.Game, error) {
 
 // UpdateGame сохраняет вручную отредактированную игру в БД
 func (a *App) UpdateGame(game models.Game) error {
-	// Wails автоматически конвертирует JSON-объект из JS в структуру models.Game
-	return a.repo.SaveGame(a.ctx, &game)
+	a.sessionsMu.Lock()
+	defer a.sessionsMu.Unlock()
+	if a.repo == nil || a.isLocked() {
+		return nil
+	}
+	if err := a.repo.SaveGame(a.ctx, &game); err != nil {
+		if apperr.Code(err) != "" {
+			return err
+		}
+		return apperr.New("app.library_save", nil, "couldn't save game: %w", err)
+	}
+	return nil
 }
 
 // SelectCoverImage открывает системное окно для выбора локальной картинки
@@ -1033,7 +1038,7 @@ func (a *App) SelectExecutable(startDir string) (string, error) {
 		Filters: []runtime.FileFilter{
 			{
 				DisplayName: "Файлы запуска (exe, bat, html, swf, jar, qsp, py, love, app, sh…)",
-				Pattern:     "*.exe;*.bat;*.cmd;*.lnk;*.html;*.htm;*.swf;*.jar;*.qsp;*.rags;*.url;*.py;*.pyw;*.love;*.app;*.sh;*.msi;*.appimage;*.x86_64;*.x86",
+				Pattern:     "*.pdf;*.txt;*.exe;*.bat;*.cmd;*.lnk;*.html;*.htm;*.swf;*.jar;*.qsp;*.rags;*.url;*.py;*.pyw;*.love;*.app;*.sh;*.msi;*.appimage;*.x86_64;*.x86",
 			},
 			{
 				DisplayName: "Все файлы (*.*)",

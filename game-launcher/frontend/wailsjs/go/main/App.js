@@ -78,6 +78,10 @@ export function FindExecutables(arg1) {
   return window['go']['main']['App']['FindExecutables'](arg1);
 }
 
+export function FindLaunchFileCandidates(arg1) {
+  return window['go']['main']['App']['FindLaunchFileCandidates'](arg1);
+}
+
 export function FindMissingGames() {
   return window['go']['main']['App']['FindMissingGames']();
 }
@@ -116,6 +120,14 @@ export function GetGames() {
 
 export function GetIgnoredPaths() {
   return window['go']['main']['App']['GetIgnoredPaths']();
+}
+
+export function GetLaunchFileAvailability(arg1) {
+  return window['go']['main']['App']['GetLaunchFileAvailability'](arg1);
+}
+
+export function GetLaunchFileLabel(arg1) {
+  return window['go']['main']['App']['GetLaunchFileLabel'](arg1);
 }
 
 export function GetLauncherDownload() {
@@ -168,6 +180,10 @@ export function IsConfigured() {
 
 export function Launch(arg1, arg2, arg3) {
   return window['go']['main']['App']['Launch'](arg1, arg2, arg3);
+}
+
+export function LaunchGameFile(arg1, arg2) {
+  return window['go']['main']['App']['LaunchGameFile'](arg1, arg2);
 }
 
 export function Lock() {
@@ -284,6 +300,10 @@ export function SelectExecutable(arg1) {
 
 export function SelectFolder() {
   return window['go']['main']['App']['SelectFolder']();
+}
+
+export function SelectLaunchFile(arg1) {
+  return window['go']['main']['App']['SelectLaunchFile'](arg1);
 }
 
 export function SelectRelinkFolder(arg1) {
