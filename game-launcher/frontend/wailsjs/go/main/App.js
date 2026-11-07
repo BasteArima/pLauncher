@@ -26,6 +26,14 @@ export function ApplyLauncherUpdate(arg1) {
   return window['go']['main']['App']['ApplyLauncherUpdate'](arg1);
 }
 
+export function ApplySmartGameInfo(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ApplySmartGameInfo'](arg1, arg2, arg3, arg4);
+}
+
+export function BeginSmartSearch() {
+  return window['go']['main']['App']['BeginSmartSearch']();
+}
+
 export function CancelLauncherDownload() {
   return window['go']['main']['App']['CancelLauncherDownload']();
 }
@@ -324,6 +332,10 @@ export function SetPin(arg1, arg2) {
 
 export function StartLauncherDownload() {
   return window['go']['main']['App']['StartLauncherDownload']();
+}
+
+export function StopSmartSearch(arg1) {
+  return window['go']['main']['App']['StopSmartSearch'](arg1);
 }
 
 export function SuggestSearchName(arg1) {

@@ -718,5 +718,17 @@
   "launch.add_selected": "Добавить выбранные",
   "launch.missing": "Файл не найден",
   "launch.unavailable": "Файл недоступен",
-  "launch.unsupported": "Неподдерживаемый объект"
+  "launch.unsupported": "Неподдерживаемый объект",
+  "smart.nolaunch": "Нет файла запуска",
+  "smart.nosource": "Нет ссылки на сайт",
+  "smart.nolaunch_title": "Нет файла запуска · {n}",
+  "smart.nosource_title": "Нет ссылки на сайт · {n}",
+  "smart.nolaunch_text": "Найдите главный файл для игр без него. Пропавшие сохранённые пути исправьте в редакторе.",
+  "smart.nosource_text": "Поиск по выбранным сайтам. Автоматически применяются только уверенные совпадения названия.",
+  "smart.nolaunch_action": "Найти файлы запуска",
+  "smart.nosource_action": "Найти по названию",
+  "smart.launch_summary": "Найдено {n} из {m}",
+  "smart.search_progress": "{n} из {m}",
+  "smart.search_stop": "Остановить",
+  "smart.search_summary": "Применено {n}, нужен ручной выбор {m}, ошибок {k}"
 }

@@ -348,6 +348,7 @@ export namespace models {
 	    size_bytes: number;
 	    size_checked_at: number;
 	    folder_missing: boolean;
+	    launch_missing: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Game(source);
@@ -392,6 +393,7 @@ export namespace models {
 	        this.size_bytes = source["size_bytes"];
 	        this.size_checked_at = source["size_checked_at"];
 	        this.folder_missing = source["folder_missing"];
+	        this.launch_missing = source["launch_missing"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

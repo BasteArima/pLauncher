@@ -126,3 +126,18 @@ Outputs stay in git-ignored `out/`: launch-files-checks.json, launch-files-right
 screenshots and launch-files-comparison.png. The comparison retains the reference cards' relative sizes,
 insets and gaps while scaling the reference column from 266px to the app capture's 340px width; no app CSS
 is overridden. See the feature spec for the remaining differences. It needs Pillow, like convert.py.
+
+## Smart-list regression
+
+Run `node docs/tools/screenshots/test-smart-lists.cjs` with the same UI_PORT/CDP_PORT setup.
+`?shot=smart` contains an empty primary, a missing nonempty primary, a missing folder, one confident
+name match, one manual match, one site failure and a hidden game that must never enter the batch.
+`window.__smartMock` exposes delay/saveDelay, search timestamps, applied IDs, detection IDs and fixture games.
+The scenario checks visible scope, found N of M, persisted source preferences, sequential pacing,
+progress after navigation, cached manual results, site errors, stop during search/apply, lock with fast
+unlock, panic, immediate restart, no selected sites, empty list removal and EN/RU/narrow layout.
+Outputs: `out/smart-lists-checks.json` and `out/smart-lists-*.png`. Keep all other test-*.cjs passing.
+These mocks never contact a search site, open a native dialog or execute a launch file.
+
+All CDP regression scripts emulate an active, focused tab so headless Edge does not suspend menu-focus
+animation frames when Windows treats the hidden test browser as a background window.

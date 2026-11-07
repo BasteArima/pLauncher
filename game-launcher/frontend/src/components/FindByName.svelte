@@ -2,16 +2,16 @@
     import { onMount, onDestroy } from 'svelte';
     import { t, tr, langStore } from '../i18n.js';
     import { SuggestSearchName, SearchGameInfo, OpenURL } from '../../wailsjs/go/main/App.js';
-    import { lsJSON, lsSet, mediaSrc } from '../lib/util.js';
+    import { lsSet, mediaSrc } from '../lib/util.js';
     import { showToast } from '../lib/ui.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import Icon from './Icon.svelte';
+    import { searchResults, searchSources } from '../lib/smartLists.js';
 
     export let game;
     export let onPreview = async (hit, version) => {};
     const sites = ['F95zone', 'Steam', 'VNDB'];
-    const stored = lsJSON('plauncher_find_sources', sites);
-    let sources = Array.isArray(stored) ? sites.filter(s => stored.includes(s)) : sites;
+    let sources = searchSources();
     let query = '';
     let version = '';
     let searchedQuery = '';
@@ -33,6 +33,11 @@
     let result = null;
     let alive = true;
     let request = 0;
+    let cached = null;
+    $: if ($searchResults[game.id] && $searchResults[game.id] !== cached && !touched && !searching && !choosing) {
+        cached = $searchResults[game.id];
+        query = searchedQuery = cached.query; version = cached.version; result = cached.result;
+    }
     $: lsSet('plauncher_find_sources', JSON.stringify(sources));
 
     onMount(async () => {

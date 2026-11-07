@@ -70,7 +70,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     }
   };
   try {
-    await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
+    await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true }); await send('Network.enable');
     await send('Emulation.setTimezoneOverride', { timezoneId: 'UTC' });
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await load();

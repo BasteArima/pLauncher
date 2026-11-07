@@ -13,6 +13,7 @@
         RemoveGame,
         UpdateGame,
         CheckAllUpdates,
+        DetectLaunchFiles,
         IsConfigured,
         RelinkGame,
         SelectRelinkFolder,
@@ -42,6 +43,7 @@
     import { showHero, homeView, ctxGameId, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
     import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
+    import { noLaunch, noSource, smartSearch, findMissingSources, stopSmartSearch, reconcileSearchVisibility } from './lib/smartLists.js';
     import SmartBanner from './components/SmartBanner.svelte';
     import Statistics from './components/Statistics.svelte';
     import { calendarState } from './lib/statistics.js';
@@ -179,6 +181,7 @@
         pinPrompt = null;
     }
     function onLocked() {
+        stopSmartSearch(true);
         locked = true;
         privacyEpoch++; gamesRequest++;
         showHidden = false;
@@ -193,6 +196,7 @@
         await loadCustomLocales();
     }
     function onPanic() {
+        stopSmartSearch(true);
         privacyEpoch++; gamesRequest++;
         showHidden = false;
         discreet.set(true);              // вернувшись, обложки будут размыты
@@ -203,7 +207,7 @@
     }
     // Показать/спрятать скрытые коллекции (Ctrl+Shift+H). При заданном PIN — спросить его.
     function toggleHidden() {
-        if (showHidden) { showHidden = false; return; }
+        if (showHidden) { stopSmartSearch(true); showHidden = false; return; }
         if (privacy && privacy.has_pin) pinPrompt = { onSuccess: () => { pinPrompt = null; showHidden = true; } };
         else showHidden = true;
     }
@@ -235,6 +239,7 @@
     $: hiddenCols = collections.filter(c => c.hidden);
     $: hiddenIds = new Set(hiddenCols.flatMap(c => buildCol(c, games).items.map(g => g.id)));
     $: visibleGames = showHidden || !hiddenIds.size ? games : games.filter(g => !hiddenIds.has(g.id));
+    $: reconcileSearchVisibility(visibleGames);
     $: visibleCollections = showHidden ? collections : collections.filter(c => !c.hidden);
     $: sessionScopeKey = JSON.stringify([privacyEpoch, showHidden, visibleGames.map(g => g.id).sort()]);
     $: if (selectedGame && !visibleGames.some(g => g.id === selectedGame.id)) closeGame();
@@ -256,12 +261,30 @@
         if (activeFilter === 'updates') return g.update_available;
         if (activeFilter === 'nocover') return !g.cover_path;
         if (activeFilter === 'missing') return g.folder_missing;
+        if (activeFilter === 'nolaunch') return noLaunch(g);
+        if (activeFilter === 'nosource') return noSource(g);
         if (activeFilter.startsWith('status:')) return (g.status || '') === activeFilter.slice(7);
         return true;
     }), sortBy);
     $: allGamesSorted = sortGames(visibleGames, sortBy);
     $: updatesGames = visibleGames.filter(g => g.update_available);
     $: missingGames = visibleGames.filter(g => g.folder_missing);
+    $: noLaunchGames = visibleGames.filter(noLaunch);
+    $: noSourceGames = visibleGames.filter(noSource);
+    let detectingSmart = false;
+    async function detectMissingLaunch() {
+        const ids = noLaunchGames.map(g => g.id);
+        if (!ids.length || detectingSmart) return;
+        const epoch = privacyEpoch;
+        detectingSmart = true;
+        try {
+            const n = await DetectLaunchFiles(ids);
+            if (epoch !== privacyEpoch) return;
+            await loadGames();
+            showToast(tr('smart.launch_summary', { n, m: ids.length }), 'success');
+        } catch (err) { if (epoch === privacyEpoch) showToast(tr('toast.error', { err }), 'error'); }
+        finally { detectingSmart = false; }
+    }
     $: noCoverCount = visibleGames.filter(g => !g.cover_path).length;
     // Умные списки: плашка с объяснением и общим действием ($langStore — пересчёт при смене языка)
     $: noCoverWithLink = visibleGames.filter(g => !g.cover_path && primaryUrl(g));
@@ -273,6 +296,15 @@
             tone: 'info', title: tr('smart.nocover_title', { n: noCoverCount }),
             text: noCoverWithLink.length ? tr('smart.nocover_text_links', { n: noCoverWithLink.length }) : tr('smart.nocover_text'),
             action: noCoverWithLink.length ? tr('smart.nocover_action') : '', onAction: () => bulkReparse(noCoverWithLink, loadGames) }
+        : activeFilter === 'nolaunch' ? {
+            tone: 'info', title: tr('smart.nolaunch_title', { n: noLaunchGames.length }), text: tr('smart.nolaunch_text'),
+            action: tr('smart.nolaunch_action'), busy: detectingSmart || !noLaunchGames.length, onAction: detectMissingLaunch }
+        : activeFilter === 'nosource' ? {
+            tone: 'info', title: tr('smart.nosource_title', { n: noSourceGames.length }),
+            text: $smartSearch?.active ? tr('smart.search_progress', { n: $smartSearch.done, m: $smartSearch.total }) : tr('smart.nosource_text'),
+            action: $smartSearch?.active ? tr('smart.search_stop') : tr('smart.nosource_action'),
+            busy: !$smartSearch?.active && !noSourceGames.length,
+            onAction: () => $smartSearch?.active ? stopSmartSearch() : findMissingSources(noSourceGames, () => visibleGames, loadGames) }
         : activeFilter === 'missing' ? {
             tone: 'danger', title: tr('smart.missing_title', { n: missingGames.length }), text: tr('smart.missing_text'),
             action: tr('smart.missing_action'), onAction: () => showRelink = true }
@@ -318,6 +350,8 @@
         : activeFilter === 'updates' ? tr('nav.updates')
         : activeFilter === 'nocover' ? tr('nav.no_cover')
         : activeFilter === 'missing' ? tr('missing.nav')
+        : activeFilter === 'nolaunch' ? tr('smart.nolaunch')
+        : activeFilter === 'nosource' ? tr('smart.nosource')
         : activeFilter.startsWith('status:') ? tr('status.' + activeFilter.slice(7))
         : tr('nav.all_games'));
 
@@ -366,6 +400,7 @@
     }
     // Скрыть коллекцию / вернуть в библиотеку (из контекстного меню)
     async function toggleHiddenCol(col) {
+        stopSmartSearch(true);
         const hidden = !col.hidden;
         collections = collections.map(c => c.id === col.id ? { ...c, hidden } : c);
         await persistCollections();
@@ -631,7 +666,7 @@
         if (list.c) labels.push(list.c === '__uncat' ? tr('nav.uncategorized') : cols.find(c => c.id === list.c)?.name);
         if (list.q) labels.push(tr('view.search') + ': ' + list.q);
         if (list.f && list.f !== 'all') labels.push(tr(list.f.startsWith('status:') ? 'status.' + list.f.slice(7)
-            : ({ favorites: 'nav.favorites', updates: 'nav.updates', nocover: 'nav.no_cover', missing: 'missing.nav' })[list.f]));
+            : ({ favorites: 'nav.favorites', updates: 'nav.updates', nocover: 'nav.no_cover', missing: 'missing.nav', nolaunch: 'smart.nolaunch', nosource: 'smart.nosource' })[list.f]));
         if (list.t?.inc.length || list.t?.exc.length) labels.push(tr('view.tags'));
         return labels.filter(Boolean).join(' · ') || tr('nav.all_games');
     }
@@ -1080,6 +1115,7 @@
     });
 
     onDestroy(() => {
+        stopSmartSearch(true);
         OnFileDropOff();
         window.removeEventListener('resize', onWindowResize);
         window.removeEventListener('focus', onWindowFocus);
@@ -1134,6 +1170,7 @@
                  favoritesCount={favoriteGames.length}
                  updatesCount={updatesGames.length}
                  missingCount={missingGames.length}
+                 noLaunchCount={noLaunchGames.length} noSourceCount={noSourceGames.length}
                  {isHome} {activeFilter} {activeCollection}
                  onOpenCollection={openCollection}
                  selectedId={selectedGame ? selectedGame.id : ''}

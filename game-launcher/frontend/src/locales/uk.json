@@ -718,5 +718,17 @@
   "launch.add_selected": "Додати вибрані",
   "launch.missing": "Файл не знайдено",
   "launch.unavailable": "Файл недоступний",
-  "launch.unsupported": "Непідтримуваний об’єкт"
+  "launch.unsupported": "Непідтримуваний об’єкт",
+  "smart.nolaunch": "Немає файлу запуску",
+  "smart.nosource": "Немає посилання на сайт",
+  "smart.nolaunch_title": "Немає файлу запуску · {n}",
+  "smart.nosource_title": "Немає посилання на сайт · {n}",
+  "smart.nolaunch_text": "Знайдіть головний файл для ігор без нього. Зниклі збережені шляхи виправте в редакторі.",
+  "smart.nosource_text": "Пошук на вибраних сайтах. Автоматично застосовуються лише впевнені збіги назви.",
+  "smart.nolaunch_action": "Знайти файли запуску",
+  "smart.nosource_action": "Знайти за назвою",
+  "smart.launch_summary": "Знайдено {n} із {m}",
+  "smart.search_progress": "{n} із {m}",
+  "smart.search_stop": "Зупинити",
+  "smart.search_summary": "Застосовано {n}, потрібен ручний вибір {m}, помилок {k}"
 }

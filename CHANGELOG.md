@@ -6,6 +6,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Smart lists for missing primary launch files and absent source links, scoped to visible games.
+  Detect launch files fills only empty primary paths. Bulk name lookup uses saved search sites,
+  applies only confident exact-title matches, and retains other results for manual choice. Progress
+  survives navigation; Stop, lock and panic cancel pending application. All eleven languages supported.
 - Multiple launch files: primary labels and up to eight additional files, bounded candidate discovery,
   availability checks and primary-only playtime accounting. An always-visible menu beside Play combines
   launch files and game actions; Details opens individual files. The editor supports primary swaps, labels,

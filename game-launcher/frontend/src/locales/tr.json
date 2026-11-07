@@ -718,5 +718,17 @@
   "launch.add_selected": "Seçilenleri ekle",
   "launch.missing": "Dosya bulunamadı",
   "launch.unavailable": "Dosyaya erişilemiyor",
-  "launch.unsupported": "Desteklenmeyen hedef"
+  "launch.unsupported": "Desteklenmeyen hedef",
+  "smart.nolaunch": "Başlatma dosyası yok",
+  "smart.nosource": "Kaynak bağlantısı yok",
+  "smart.nolaunch_title": "Başlatma dosyası yok · {n}",
+  "smart.nosource_title": "Kaynak bağlantısı yok · {n}",
+  "smart.nolaunch_text": "Ana dosyası olmayan oyunlar için dosya bulun. Eksik kayıtlı yolları düzenleyicide düzeltin.",
+  "smart.nosource_text": "Seçili sitelerde arama yapılır. Yalnızca başlığı tam eşleşen güvenilir sonuçlar uygulanır.",
+  "smart.nolaunch_action": "Başlatma dosyalarını bul",
+  "smart.nosource_action": "Ada göre ara",
+  "smart.launch_summary": "{m} oyundan {n} bulundu",
+  "smart.search_progress": "{n} / {m}",
+  "smart.search_stop": "Durdur",
+  "smart.search_summary": "Uygulanan {n}, elle seçim gereken {m}, hata {k}"
 }

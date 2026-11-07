@@ -718,5 +718,17 @@
   "launch.add_selected": "Dodaj wybrane",
   "launch.missing": "Nie znaleziono pliku",
   "launch.unavailable": "Plik niedostępny",
-  "launch.unsupported": "Nieobsługiwany obiekt"
+  "launch.unsupported": "Nieobsługiwany obiekt",
+  "smart.nolaunch": "Brak pliku uruchamiania",
+  "smart.nosource": "Brak linku do źródła",
+  "smart.nolaunch_title": "Brak pliku uruchamiania · {n}",
+  "smart.nosource_title": "Brak linku do źródła · {n}",
+  "smart.nolaunch_text": "Znajdź plik główny dla gier bez niego. Brakujące zapisane ścieżki popraw w edytorze.",
+  "smart.nosource_text": "Szukaj w wybranych serwisach. Automatycznie stosowane są tylko pewne wyniki z dokładnie pasującym tytułem.",
+  "smart.nolaunch_action": "Znajdź pliki uruchamiania",
+  "smart.nosource_action": "Szukaj po nazwie",
+  "smart.launch_summary": "Znaleziono {n} z {m}",
+  "smart.search_progress": "{n} z {m}",
+  "smart.search_stop": "Zatrzymaj",
+  "smart.search_summary": "Zastosowano {n}, wybór ręczny {m}, błędy {k}"
 }

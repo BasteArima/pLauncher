@@ -718,5 +718,17 @@
   "launch.add_selected": "添加所选文件",
   "launch.missing": "找不到文件",
   "launch.unavailable": "无法访问文件",
-  "launch.unsupported": "不支持的目标"
+  "launch.unsupported": "不支持的目标",
+  "smart.nolaunch": "无启动文件",
+  "smart.nosource": "无来源链接",
+  "smart.nolaunch_title": "无启动文件 · {n}",
+  "smart.nosource_title": "无来源链接 · {n}",
+  "smart.nolaunch_text": "为没有主文件的游戏查找主文件。请在编辑器中修复已保存但丢失的路径。",
+  "smart.nosource_text": "在所选网站上搜索。仅自动应用标题完全匹配且可信的结果。",
+  "smart.nolaunch_action": "查找启动文件",
+  "smart.nosource_action": "按名称搜索",
+  "smart.launch_summary": "已找到 {n}，共 {m}",
+  "smart.search_progress": "{n} / {m}",
+  "smart.search_stop": "停止",
+  "smart.search_summary": "已应用 {n}，需手动选择 {m}，错误 {k}"
 }

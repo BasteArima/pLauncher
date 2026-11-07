@@ -55,7 +55,7 @@ The app is fully working. Done so far:
   Inter Variable bundled via `@fontsource-variable/inter` (no network fonts); cards: caption under the cover, shape
   `cardShape` wide 16:9 (default) / tall 3:4 in `lib/view.js` (`cardWidth` = `cardSize` × 1.45 for wide; toggle in
   `LibraryTools`), Epic-style hover (♡/⋯ top, big Play bottom, dark scrim). Smart lists (`activeFilter` updates / nocover /
-  missing) open like any list with a `SmartBanner` (one action for all: check updates, fill in from saved links via
+  missing / nolaunch / nosource) open like any list with a `SmartBanner` (one action for all: check updates, fill in from saved links via
   `bulkReparse`, look for moved folders). Hero is off by default (key `plauncher_hero`). Game page (`GameDetail`): media
   viewer + thumbnail strip left, play card right (stats, version, update, edit/ignore/remove), description + tags, collections,
   details; a game with no cover/description/links shows `MetadataPanel prominent` («Find game info») right under the media.
@@ -331,8 +331,9 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 3. ✅ **DONE — Multiple launch files** (#7 above): backend and editor list implemented;
    Play / chevron / favourite, with the always-visible chevron combining file rows and all old ellipsis actions.
    Specification and confirmed decisions: [`docs/specs/launch-files.md`](docs/specs/launch-files.md).
-4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
-   find info by name).
+4. ✅ **DONE — More smart lists**: «No launch file» and «No source link», with visible-library detection
+   and sequential confident name lookup, progress/Stop and privacy cancellation.
+   Delivery notes: [`docs/specs/smart-lists.md`](docs/specs/smart-lists.md).
 5. ✅ **DONE — Small game-page polish:** hotkey reference, update-discovery and note-edit dates, originating
    list/position and neighbouring-game navigation. README screenshots remain for the release
    (`docs/tools/screenshots/make.ps1`); mock data includes the new dates.
@@ -529,3 +530,22 @@ no actual files launch. Windows vet/test/build and 201 headless assertions passe
 the spec records the remaining typography/spacing, card-inset, update-wrap and Details-order differences.
 No private editor mockup exists; the new block follows GameEditor. Native dialogs, document associations,
 Linux/macOS UI and the owner's real library/games still require manual acceptance. README images are unchanged.
+
+### More smart lists (2026-11-07)
+
+`Game.LaunchMissing` is computed in normalizeGames for GetGames/SearchGames, never persisted.
+It excludes missing folders; DetectLaunchFiles still fills only empty primaries. `nolaunch` and
+`nosource` are ordinary App filters using visibleGames, with sidebar counts and SmartBanner actions.
+`lib/smartLists.js` owns the sequential queue, one-second pacing and in-memory manual-result cache;
+FindByName/MetadataPanel restore that cache. Search sites come from plauncher_find_sources.
+Go's parser.ConfidentSearchURL reuses ranking normalization; Best plus exact title is required,
+and conflicting confident identities are rejected. Existing tied exact hits are intentionally manual.
+BeginSmartSearch/StopSmartSearch/ApplySmartGameInfo guard metadata application with a run token.
+Privacy cancellation and DB commits share a mutex; per-application media folders isolate downloads.
+Never replace this with only a frontend late-response check: an in-flight parse can still save.
+Leaving the view continues the queue; privacy/scope removal stops it and clears cached results.
+See docs/specs/smart-lists.md for counting semantics, tests and acceptance limits. The mock's
+smart-lists-fixture.cjs and test-smart-lists.cjs exercise the batch without external sites or games.
+
+Windows validation: vet/test/build.ps1 and all six headless scripts passed (293 assertions, including
+43 smart-list checks). Live services, real library/native window and Linux/macOS remain untested.

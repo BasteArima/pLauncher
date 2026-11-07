@@ -147,10 +147,13 @@ func (a *App) applyHotkey(p privacyStored) error {
 
 // onPanic — нажата кнопка паники: спрятать окно (и заблокировать), повторно — вернуть.
 func (a *App) onPanic() {
+	a.smartSearch.mu.Lock()
 	a.priv.mu.Lock()
 	wasHidden := a.priv.panicHidden
 	a.priv.panicHidden = !wasHidden
 	a.priv.mu.Unlock()
+	a.cancelSmartSearchLocked()
+	a.smartSearch.mu.Unlock()
 
 	if wasHidden {
 		runtime.WindowShow(a.ctx)
@@ -185,9 +188,14 @@ func (a *App) showFromSecondInstance() {
 }
 
 func (a *App) setLocked(v bool) {
+	a.smartSearch.mu.Lock()
 	a.priv.mu.Lock()
 	a.priv.locked = v
 	a.priv.mu.Unlock()
+	if v {
+		a.cancelSmartSearchLocked()
+	}
+	a.smartSearch.mu.Unlock()
 	if v {
 		a.emit("privacy-locked")
 	}

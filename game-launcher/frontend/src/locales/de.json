@@ -718,5 +718,17 @@
   "launch.add_selected": "Auswahl hinzufügen",
   "launch.missing": "Datei nicht gefunden",
   "launch.unavailable": "Datei nicht verfügbar",
-  "launch.unsupported": "Nicht unterstütztes Ziel"
+  "launch.unsupported": "Nicht unterstütztes Ziel",
+  "smart.nolaunch": "Keine Startdatei",
+  "smart.nosource": "Kein Quellenlink",
+  "smart.nolaunch_title": "Keine Startdatei · {n}",
+  "smart.nosource_title": "Kein Quellenlink · {n}",
+  "smart.nolaunch_text": "Hauptdateien für Spiele ohne Startdatei suchen. Fehlende gespeicherte Pfade im Editor korrigieren.",
+  "smart.nosource_text": "Suche auf den ausgewählten Seiten. Nur sichere Treffer mit genau passendem Titel werden übernommen.",
+  "smart.nolaunch_action": "Startdateien suchen",
+  "smart.nosource_action": "Nach Namen suchen",
+  "smart.launch_summary": "{n} von {m} gefunden",
+  "smart.search_progress": "{n} von {m}",
+  "smart.search_stop": "Stoppen",
+  "smart.search_summary": "Übernommen {n}, manuelle Auswahl nötig {m}, Fehler {k}"
 }

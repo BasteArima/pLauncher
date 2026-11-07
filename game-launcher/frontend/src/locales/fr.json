@@ -718,5 +718,17 @@
   "launch.add_selected": "Ajouter la sélection",
   "launch.missing": "Fichier introuvable",
   "launch.unavailable": "Fichier inaccessible",
-  "launch.unsupported": "Cible non prise en charge"
+  "launch.unsupported": "Cible non prise en charge",
+  "smart.nolaunch": "Aucun fichier de lancement",
+  "smart.nosource": "Aucun lien source",
+  "smart.nolaunch_title": "Aucun fichier de lancement · {n}",
+  "smart.nosource_title": "Aucun lien source · {n}",
+  "smart.nolaunch_text": "Recherchez un fichier principal pour les jeux qui n’en ont pas. Corrigez les chemins manquants dans l’éditeur.",
+  "smart.nosource_text": "Recherche sur les sites sélectionnés. Seules les correspondances fiables au titre exact sont appliquées.",
+  "smart.nolaunch_action": "Trouver les fichiers de lancement",
+  "smart.nosource_action": "Rechercher par nom",
+  "smart.launch_summary": "{n} sur {m} trouvés",
+  "smart.search_progress": "{n} sur {m}",
+  "smart.search_stop": "Arrêter",
+  "smart.search_summary": "Appliqués : {n}, choix manuel : {m}, erreurs : {k}"
 }

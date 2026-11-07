@@ -20,7 +20,7 @@
     };
 </script>
 
-<div class="flex items-center gap-4 flex-wrap rounded-xl border px-5 py-4 mb-6 animate-fade-in {TONES[tone]}">
+<div data-smart-banner class="flex items-center gap-4 flex-wrap rounded-xl border px-5 py-4 mb-6 animate-fade-in {TONES[tone]}">
     <div class="flex-1 min-w-[260px]">
         <div class="font-semibold">{title}</div>
         {#if text}<div class="text-sm opacity-80 mt-0.5">{text}</div>{/if}

@@ -718,5 +718,17 @@
   "launch.add_selected": "Añadir seleccionados",
   "launch.missing": "Archivo no encontrado",
   "launch.unavailable": "Archivo no disponible",
-  "launch.unsupported": "Destino no compatible"
+  "launch.unsupported": "Destino no compatible",
+  "smart.nolaunch": "Sin archivo de inicio",
+  "smart.nosource": "Sin enlace de origen",
+  "smart.nolaunch_title": "Sin archivo de inicio · {n}",
+  "smart.nosource_title": "Sin enlace de origen · {n}",
+  "smart.nolaunch_text": "Busca un archivo principal para los juegos que no lo tengan. Corrige las rutas ausentes en el editor.",
+  "smart.nosource_text": "Busca en los sitios seleccionados. Solo se aplican coincidencias fiables con el título exacto.",
+  "smart.nolaunch_action": "Buscar archivos de inicio",
+  "smart.nosource_action": "Buscar por nombre",
+  "smart.launch_summary": "Encontrados {n} de {m}",
+  "smart.search_progress": "{n} de {m}",
+  "smart.search_stop": "Detener",
+  "smart.search_summary": "Aplicados {n}, selección manual {m}, errores {k}"
 }

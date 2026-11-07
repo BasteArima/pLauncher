@@ -136,7 +136,8 @@ Unit-test the scoring on fixed inputs.
 
 ## Out of scope (later)
 
-- Bulk «Find all by name» in the «No cover» smart list (auto-apply only confident single matches).
+- Bulk lookup for «No source link» is now implemented; see [smart-lists.md](smart-lists.md).
+  Adding this action to «No cover» remains outside this flow.
 - Search on Pornolab / Erotorrent / Island (Cloudflare/login).
 - Using `SuggestSearchName` for titles at scan time.
 

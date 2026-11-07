@@ -102,10 +102,11 @@ const mock = `(function () {
     },
   };
   Object.assign(impl, (${require('./launch-files-fixture.cjs').toString()})({ games, priv, params, saveGame: impl.UpdateGame }));
+  Object.assign(impl, (${require('./smart-lists-fixture.cjs').toString()})({ games, collections, priv, params, impl }));
   const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve().then(() => { controls.calls.push({ name, args }); return impl[name]?.(...args); }).then(value => JSON.parse(JSON.stringify(value ?? null))) });
   window.go = { main: { App } };
   const events = {};
-  window.__mockEmit = (name, ...args) => { if (name === 'privacy-locked') priv.locked = true; (events[name] || []).forEach(fn => fn(...args)); };
+  window.__mockEmit = (name, ...args) => { if (name === 'privacy-locked') priv.locked = true; if (name === 'privacy-locked' || name === 'privacy-panic') impl.StopSmartSearch(0); (events[name] || []).forEach(fn => fn(...args)); };
   window.runtime = new Proxy({}, { get: (_, name) => name === 'EventsOnMultiple' ? (event, fn) => { (events[event] ||= []).push(fn); return () => {}; } : () => {} });
 
   // Сценарии съёмки

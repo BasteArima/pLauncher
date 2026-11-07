@@ -78,7 +78,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const setInput = (selector, value) => evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   const find = async () => { await click('[data-launch-find]'); await wait(visible('[data-launch-candidates]')); await wait('!document.querySelector("[data-launch-candidates] [role=status]")'); };
   try {
-    await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
+    await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true }); await send('Network.enable');
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1500, deviceScaleFactor: 1, mobile: false });
     await load('launch'); await openGame('g01');
     const original = await game('g01');

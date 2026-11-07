@@ -5,6 +5,7 @@
     import { showToast } from '../lib/ui.js';
     import Icon from './Icon.svelte';
     import FindByName from './FindByName.svelte';
+    import { searchResults } from '../lib/smartLists.js';
     import { clickOutside } from '../lib/util.js';
     import { OpenURL, CheckGameUpdates, CheckSourceUpdate } from '../../wailsjs/go/main/App.js';
 
@@ -17,14 +18,14 @@
 
     export let onPreview = async (hit, version) => {};
     export let onDismiss = () => {};
-    let tab = prominent ? 'name' : 'link';
+    let tab = prominent || $searchResults[game?.id] ? 'name' : 'link';
     let parseUrl = '';
     let showSources = false;
     let checking = false;
 
     // При переключении на другую игру очищаем инпут парсера
     let lastId = game && game.id;
-    $: if (game && game.id !== lastId) { lastId = game.id; parseUrl = ''; tab = prominent ? 'name' : 'link'; }
+    $: if (game && game.id !== lastId) { lastId = game.id; parseUrl = ''; tab = prominent || $searchResults[game.id] ? 'name' : 'link'; }
 
     $: activeSources = (game.sources || []).filter(s => s.url);
 

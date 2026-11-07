@@ -51,7 +51,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   };
   const check = (name, actual, expected = true) => { assert.deepEqual(actual, expected, name); checks.push(name); };
   try {
-    await send('Runtime.enable'); await send('Page.enable');
+    await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true });
     for (const mode of ['detail', 'find']) {
       await send('Emulation.setDeviceMetricsOverride', {width:1440,height:1000,deviceScaleFactor:1,mobile:false});
       await send('Page.navigate', {url:origin+'/?shot='+mode});

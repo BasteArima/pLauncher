@@ -13,6 +13,8 @@
     export let favoritesCount = 0;
     export let updatesCount = 0;
     export let missingCount = 0;
+    export let noLaunchCount = 0;
+    export let noSourceCount = 0;
     export let noCoverCount = 0;           // игры без обложки (ещё не спарсены)
     export let isHome = true;
     export let statisticsActive = false;
@@ -83,9 +85,9 @@
     const canPlay = (g) => g.exec_path && !g.folder_missing;
     const toolBtn = 'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50';
     const sectionCls = 'px-2.5 mb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider';
-    $: hasSmart = updatesCount || noCoverCount || missingCount;
+    $: hasSmart = updatesCount || noCoverCount || missingCount || noLaunchCount || noSourceCount;
     // Системные строки «Все игры» и «Избранное»: подсвечены, пока не открыта коллекция или умный список
-    $: allActive = !statisticsActive && !activeCollection && !['updates', 'nocover', 'missing', 'favorites'].includes(activeFilter);
+    $: allActive = !statisticsActive && !activeCollection && !['updates', 'nocover', 'missing', 'favorites', 'nolaunch', 'nosource'].includes(activeFilter);
     $: favActive = !statisticsActive && !activeCollection && activeFilter === 'favorites';
 </script>
 
@@ -234,6 +236,14 @@
                         <span class="ml-auto text-xs text-slate-500">{noCoverCount}</span>
                     </button>
                 {/if}
+                {#each [{ id: 'nolaunch', n: noLaunchCount, icon: 'play' }, { id: 'nosource', n: noSourceCount, icon: 'external' }] as list}
+                    {#if list.n}
+                        <button data-smart-list={list.id} on:click={() => onFilter(list.id)} class={navCls(activeFilter === list.id && !activeCollection)}>
+                            <Icon name={list.icon} size={16}/><span>{$t('smart.' + list.id)}</span>
+                            <span class="ml-auto text-xs text-slate-500">{list.n}</span>
+                        </button>
+                    {/if}
+                {/each}
                 {#if missingCount}
                     <button on:click={() => onFilter('missing')} class={navCls(activeFilter === 'missing' && !activeCollection)} title={$t('missing.nav_hint')}>
                         <svg class="w-4 h-4 shrink-0 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v3m0 3h.01"/></svg> {$t('missing.nav')}

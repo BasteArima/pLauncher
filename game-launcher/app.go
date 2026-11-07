@@ -33,6 +33,7 @@ type App struct {
 	dataDir      string // абсолютный путь к папке с данными (БД + обложки)
 	priv         privacyState
 	live         bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
+	smartSearch  smartSearchState
 	upd          updateState
 }
 
@@ -308,6 +309,7 @@ func (a *App) normalizeGames(games []*models.Game) []*models.Game {
 			g.Images[i] = a.mediaRel(img)
 		}
 		g.FolderMissing = folderMissing(g.FolderPath)
+		g.LaunchMissing = !g.FolderMissing && launchFileMissing(g.ExecPath)
 	}
 	return games
 }
@@ -371,6 +373,10 @@ func (a *App) UpdateGameMetadata(gameID string, url string) error {
 }
 
 func (a *App) updateGameMetadata(gameID, url string, folderVersion bool) error {
+	return a.updateGameMetadataContext(a.ctx, gameID, url, folderVersion, "", func(g *models.Game) error { return a.repo.SaveGame(a.ctx, g) })
+}
+
+func (a *App) updateGameMetadataContext(ctx context.Context, gameID, url string, folderVersion bool, saveDir string, save func(*models.Game) error) error {
 	targetGame, err := a.gameByID(gameID)
 	if err != nil {
 		return err
@@ -383,14 +389,21 @@ func (a *App) updateGameMetadata(gameID, url string, folderVersion bool) error {
 	}
 
 	// 3. Скачиваем данные в подпапку обложек внутри папки данных
-	saveDir := filepath.Join(a.dataDir, "covers", targetGame.ID)
-	parsedData, err := p.Parse(a.ctx, url, saveDir)
+	if saveDir == "" {
+		saveDir = filepath.Join(a.dataDir, "covers", targetGame.ID)
+	}
+	parsedData, err := p.Parse(ctx, url, saveDir)
 	// Не публикуем и не сохраняем результат, если приложение заблокировали во время запроса.
 	if a.isLocked() {
 		return nil
 	}
 	if err != nil {
 		return gameInfoParseErr(err)
+	}
+	// Preserve edits made while parsing; a removed game must not be resurrected.
+	targetGame, err = a.gameByID(gameID)
+	if err != nil {
+		return err
 	}
 	// 4. Обновляем поля игры новыми данными
 	if parsedData.Title != "" {
@@ -435,7 +448,10 @@ func (a *App) updateGameMetadata(gameID, url string, folderVersion bool) error {
 	targetGame.UpdateFoundAt = 0
 
 	// 6. Сохраняем обновленную игру обратно в БД
-	if err := a.repo.SaveGame(a.ctx, targetGame); err != nil {
+	if ctx.Err() != nil {
+		return nil
+	}
+	if err := save(targetGame); err != nil {
 		return apperr.New("app.library_save", nil, "couldn't save game info: %w", err)
 	}
 	return nil

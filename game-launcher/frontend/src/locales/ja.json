@@ -718,5 +718,17 @@
   "launch.add_selected": "選択したファイルを追加",
   "launch.missing": "ファイルが見つかりません",
   "launch.unavailable": "ファイルにアクセスできません",
-  "launch.unsupported": "未対応の対象です"
+  "launch.unsupported": "未対応の対象です",
+  "smart.nolaunch": "起動ファイルなし",
+  "smart.nosource": "配信元リンクなし",
+  "smart.nolaunch_title": "起動ファイルなし · {n}",
+  "smart.nosource_title": "配信元リンクなし · {n}",
+  "smart.nolaunch_text": "メインファイルのないゲームのファイルを検索します。保存済みのパスが見つからない場合は編集画面で修正してください。",
+  "smart.nosource_text": "選択したサイトを検索します。タイトルが完全に一致する確実な結果のみ自動適用します。",
+  "smart.nolaunch_action": "起動ファイルを検索",
+  "smart.nosource_action": "名前で検索",
+  "smart.launch_summary": "{m} 件中 {n} 件を検出",
+  "smart.search_progress": "{n} / {m}",
+  "smart.search_stop": "停止",
+  "smart.search_summary": "適用 {n}、手動選択が必要 {m}、エラー {k}"
 }

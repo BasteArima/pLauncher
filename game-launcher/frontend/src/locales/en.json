@@ -718,5 +718,17 @@
   "launch.add_selected": "Add selected",
   "launch.missing": "File not found",
   "launch.unavailable": "File unavailable",
-  "launch.unsupported": "Unsupported target"
+  "launch.unsupported": "Unsupported target",
+  "smart.nolaunch": "No launch file",
+  "smart.nosource": "No source link",
+  "smart.nolaunch_title": "No launch file · {n}",
+  "smart.nosource_title": "No source link · {n}",
+  "smart.nolaunch_text": "Find a primary file for games without one. Repair missing saved paths in the editor.",
+  "smart.nosource_text": "Search using your selected sites. Only confident exact-title matches are applied.",
+  "smart.nolaunch_action": "Find launch files",
+  "smart.nosource_action": "Find by name",
+  "smart.launch_summary": "Found {n} of {m}",
+  "smart.search_progress": "{n} of {m}",
+  "smart.search_stop": "Stop",
+  "smart.search_summary": "Applied {n}, manual choice needed {m}, errors {k}"
 }

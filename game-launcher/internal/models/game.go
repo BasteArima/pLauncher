@@ -65,4 +65,5 @@ type Game struct {
 
 	// Вычисляемое поле (в БД не хранится): папки игры нет на диске (перемещена/удалена).
 	FolderMissing bool `json:"folder_missing"`
+	LaunchMissing bool `json:"launch_missing"` // Computed on read, never stored.
 }
