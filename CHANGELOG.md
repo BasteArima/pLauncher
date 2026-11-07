@@ -5,61 +5,45 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-07
+
 ### Added
-- Smart lists for missing primary launch files and absent source links, scoped to visible games.
-  Detect launch files fills only empty primary paths. Bulk name lookup uses saved search sites,
-  applies only confident exact-title matches, and retains other results for manual choice. Progress
-  survives navigation; Stop, lock and panic cancel pending application. All eleven languages supported.
-- Multiple launch files: primary labels and up to eight additional files, bounded candidate discovery,
-  availability checks and primary-only playtime accounting. An always-visible menu beside Play combines
-  launch files and game actions; Details opens individual files. The editor supports primary swaps, labels,
-  removal, Add and checkbox discovery with save/discard. Additional tools/documents do not affect sessions
-  or recent play. Relink/backup preserve paths, labels and merge overflow. All eleven languages are supported.
-- Game-page navigation shows the originating list and position, with previous/next arrows that preserve
-  its order and participate in back/forward history. Search text and sort are restored with history.
-- Update notices show when the version was discovered; repeated checks retain that date. Personal notes
-  show their last text-edit date. Both dates persist in the library and use localized formatting.
-- Play-session recording survives launcher closure, keeps 30-second recovery checkpoints and preserves
-  existing total playtime. Sessions follow game deletion, relink merges and backups. Added privacy-aware
-  statistics queries. Game pages now show eight weeks of activity, session count, longest session and the
-  latest five launches, including interrupted recovery markers.
-- Statistics in the sidebar: all-time/month/week hours, 52 weeks of activity, top games by period, statuses,
-  engines, cached disk usage and library-information counts. Hidden collections are excluded until revealed;
-  period and scroll position survive opening a game and returning. All 11 languages are supported.
-- Find game info by name across F95zone, Steam and VNDB: folder-name suggestions, source toggles, ranked
-  results and a read-only preview before saving. Search and paste-link tabs share the metadata panel;
-  dismissing the large prompt keeps the compact panel available. Preview images respect privacy blur.
-  Results also let you open the source page directly in your browser.
-  Added VNDB URL parsing, remote-image metadata previews and localized errors.
-- Play status for every game (playing, want to play, finished, dropped), a 5-star rating and personal notes, where
+- **Find game info by name.** pLauncher takes the folder name, searches F95zone, Steam and VNDB, ranks the matches
+  and shows why it likes each one. Preview a match before saving it. VNDB links can now be pasted too.
+- **Play sessions and statistics.** Every session is recorded, even if you close the launcher while playing.
+  The game page shows the last eight weeks; the new **Statistics** view shows hours this week, this month and all
+  time, a year of weekly activity, top games, statuses, engines and disk usage.
+- **Several launch files per game.** Keep the config tool and the walkthrough next to the game: they open from the
+  menu beside Play, and only the main file counts as playtime. Pick them in edit mode or let pLauncher find them
+  in the game folder.
+- **Play status, rating and notes:** playing / want to play / finished / dropped, 5 stars, and private notes where
   `||text||` stays hidden as a spoiler until clicked. Status chips above the grid filter by status.
-- Filter by several tags at once: all of them or any of them, and exclude tags you don't want to see.
-- Edit mode looks like the game page itself. Unsaved changes are marked, Esc cancels and Ctrl+S saves. Screenshots
-  can be reordered by dragging, any screenshot can become the cover, and images dropped onto the window are added
-  as screenshots.
-- Covers can be zoomed and framed separately for wide and tall cards, by dragging and scrolling over a live preview
-  or with sliders.
-- Smart lists (updates, no cover, folder not found) with one button that handles the whole list.
+- **Smart lists** for what needs attention: updates, no cover, no launch file, no source link and missing folders,
+  each with one button for the whole list. «No source link» looks every game up by name and fills in only the
+  confident matches, leaving the rest for you to pick.
+- Update notices show when the new version was found; notes show when they were last edited.
+- The game page shows which list you came from (`Playing · 2 of 12`) with arrows to the previous and next game.
 - Back and forward like in a browser: mouse side buttons or Alt+←/→. A «Back to top» button in long lists.
+- Filter by several tags at once (all of them or any of them) and exclude the ones you don't want to see.
+- Edit mode looks like the game page itself: unsaved changes are marked, Esc cancels and Ctrl+S saves. Screenshots
+  can be reordered by dragging, any of them can become the cover, and image files dropped onto the window are added.
+- Covers can be zoomed and framed separately for wide and tall cards.
 - «Remove from Continue playing» in the game menu. Finished and dropped games no longer show there.
 
 ### Changed
-- F1 and Settings now document history navigation, mouse side buttons, editor save/cancel and returning
-  from a found-game preview. Added translations in all 11 languages.
-- A simpler lavender p on graphite is now the application icon, matching the flat redesign.
-- New look: flat dark theme, Inter font, line icons instead of emoji, wide cards by default (tall ones in view
-  options). Hovering a card shows Play, favorite and menu buttons.
-- Title bar with search on the right. The sidebar starts with «Scan folders», then Collections with «All games» and
-  «Favorites» at the top; clicking a collection opens it as a grid.
-- The library opens as a grid with chips and a «Tags» menu. Shelves, card shape and size are in the view options
-  popover, and the big hero banner is off by default.
-- The game page has a media viewer with the cover first, a play card with stats, status and rating, update and site
-  links, and collections in the details. Games without info show a «Find game info» block.
-- Context menus open where you click and flip near window edges.
+- **New look:** a flat dark theme, the Inter font, line icons instead of emoji and a new application icon.
+  The library opens as a grid of wide cards (tall ones are in the view options); shelves and the big hero banner
+  are optional.
+- Search moved to the title bar. The sidebar starts with «Scan folders» and «Statistics», then Collections;
+  clicking a collection opens it as a grid.
+- The game page has a media viewer with the cover first and a play card with stats, status, rating, updates and
+  sites. Games without info show a «Find game info» block.
+- Context menus open where you click. F1 lists the new shortcuts.
 
 ### Fixed
-- The «Size» tile on the game page lines up with «Played» and «Last played».
 - Scrolling a large library is smooth again (blur effects no longer run on every card).
+- Holding a screenshot no longer gets the window stuck in drag-and-drop mode.
+- Full-screen screenshots are no longer smaller than in the gallery.
 
 ## [1.1.0] - 2026-11-05
 
@@ -98,6 +82,7 @@ Erotorrent, Island of Pleasure and Steam, update tracking, a Steam-style library
 PIN lock, panic button, hidden collections), bulk actions, backup and restore, self-update, 11 languages.
 See the [release notes](https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0).
 
-[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0
