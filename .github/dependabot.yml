@@ -16,6 +16,9 @@ updates:
     groups:
       go:
         update-types: [minor, patch]
+    ignore:
+      # Wails обновляем вручную вместе с CLI (версии модуля и CLI должны совпадать) и проверкой сборки
+      - dependency-name: "github.com/wailsapp/wails/v2"
 
   # Фронтенд на Svelte 3 / Vite / Tailwind 3: мажорные версии ломают сборку, их обновляем вручную
   - package-ecosystem: npm
