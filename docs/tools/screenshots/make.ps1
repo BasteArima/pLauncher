@@ -2,7 +2,10 @@
 # Нужны: собранный фронтенд (game-launcher\frontend\dist — build.ps1 или vite build),
 # Node.js, Python с Pillow (pip install pillow) и Microsoft Edge.
 param(
-    [string[]]$Shots = @('home', 'detail', 'discreet', 'bulk', 'settings'),
+    [ValidateSet('home','detail','discreet','bulk','settings','find','stats','launch','editor','smart')]
+    [string[]]$Shots = @('home', 'detail', 'discreet', 'bulk', 'settings', 'find', 'stats', 'launch', 'editor', 'smart'),
+    [int]$Port = 5393,
+    [int]$CDPPort = 9336,
     [switch]$NoConvert
 )
 $ErrorActionPreference = 'Stop'
@@ -24,35 +27,48 @@ function Stop-Edge {
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 }
 function Shoot([string]$url, [string]$file, [string]$size) {
-    Remove-Item $file -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $file -ErrorAction SilentlyContinue
     $args = @('--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', "--user-data-dir=$profileDir",
-        "--window-size=$size", '--virtual-time-budget=6000', "--screenshot=$file", $url)
+        '--disable-background-timer-throttling', '--disable-renderer-backgrounding', "--remote-debugging-port=$CDPPort", 'about:blank')
     Start-Process -FilePath $edge -ArgumentList $args -WindowStyle Hidden | Out-Null
-    $i = 0; while (-not (Test-Path $file) -and $i -lt 60) { Start-Sleep -Milliseconds 300; $i++ }
-    Start-Sleep -Milliseconds 500
-    Stop-Edge
-    if (-not (Test-Path $file)) { throw "не удалось снять $file" }
+    try {
+        node (Join-Path $dir 'capture-readme.cjs') $url $file $size $CDPPort
+        if ($LASTEXITCODE -ne 0) { throw "Screenshot verification failed: $url" }
+    } finally { Stop-Edge }
     '{0,-12} {1,6:N0} KB' -f (Split-Path -Leaf $file), ((Get-Item $file).Length / 1KB)
+}
+
+# Do not attach to an unrelated service/browser when a default port is occupied.
+foreach ($number in @($Port, $CDPPort)) {
+    if (Get-NetTCPConnection -State Listen -LocalPort $number -ErrorAction SilentlyContinue) {
+        throw "Port $number is busy; choose -Port / -CDPPort for this run"
+    }
 }
 
 Push-Location $dir
 try {
     node art.cjs
+    if ($LASTEXITCODE -ne 0) { throw "Artwork generation failed" }
     node build-ui.cjs
+    if ($LASTEXITCODE -ne 0) { throw "Mock UI build failed" }
     New-Item -ItemType Directory -Force $png | Out-Null
 
     # Интерфейс с моком Wails отдаётся с localhost (пути /media/… абсолютные)
-    $server = Start-Process python -ArgumentList '-m', 'http.server', '5393' -WorkingDirectory (Join-Path $out 'ui') -PassThru -WindowStyle Hidden
+    $server = Start-Process python -ArgumentList '-m', 'http.server', $Port, '--bind', '127.0.0.1' -WorkingDirectory (Join-Path $out 'ui') -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 1
     try {
-        foreach ($s in $Shots) { Shoot "http://localhost:5393/?shot=$s" (Join-Path $png "$s.png") '1440,900' }
+        foreach ($s in $Shots) {
+            $size = if ($s -in @('detail','editor')) { '1440,1500' } elseif ($s -in @('find','stats','launch')) { '1440,1100' } else { '1440,900' }
+            Shoot "http://127.0.0.1:$Port/?shot=$s&readme=1" (Join-Path $png "$s.png") $size
+        }
     } finally { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
 
     $banner = 'file:///' + ((Join-Path $dir 'banner.html') -replace '\\', '/')
     Shoot $banner (Join-Path $png 'banner.png') '1280,640'
 
     if (-not $NoConvert) {
-        python convert.py $png $images
+        python convert.py $png $images @Shots banner
+        if ($LASTEXITCODE -ne 0) { throw "Image conversion failed" }
     }
 } finally {
     Stop-Edge

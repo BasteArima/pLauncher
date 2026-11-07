@@ -8,10 +8,13 @@ import sys
 from PIL import Image
 
 src, dst = sys.argv[1], sys.argv[2]
+selected = set(sys.argv[3:])
 for name in sorted(os.listdir(src)):
     if not name.endswith('.png'):
         continue
     base = name[:-4]
+    if selected and base not in selected:
+        continue
     im = Image.open(os.path.join(src, name)).convert('RGB')
     im.save(os.path.join(dst, base + '.webp'), 'WEBP', quality=90 if base == 'banner' else 88, method=6)
     if base == 'banner':

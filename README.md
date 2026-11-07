@@ -25,7 +25,7 @@ Which of the forty folders called `Game` was it, anyway?
 no telemetry. And if someone walks in, one keypress hides it all.
 
 <p align="center">
-  <img src="docs/images/home.webp" alt="Library home: hero banner, favorites and continue-playing shelves" width="100%">
+  <img src="docs/images/home.webp" alt="Library grid with play statuses, updates, collections and filters" width="100%">
 </p>
 
 ## Features
@@ -54,7 +54,7 @@ cover and up to 15 screenshots.
 | Steam (official API) | *more are welcome, see [Contributing](#contributing)* |
 
 <p align="center">
-  <img src="docs/images/detail.webp" alt="Game page with an update badge, tags and screenshots" width="100%">
+  <img src="docs/images/detail.webp" alt="Game page with update discovery date, notes, launch files and play sessions" width="100%">
 </p>
 
 ### ⬆️ Update tracking
@@ -90,6 +90,26 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
 <p align="center">
   <img src="docs/images/bulk.webp" alt="Selection mode with the bulk actions bar" width="100%">
 </p>
+
+<details>
+<summary>More views: search, statistics, launch files and smart lists</summary>
+
+<p>Find game info by name across F95zone, Steam and VNDB, then review a match before saving.</p>
+<img src="docs/images/find.webp" alt="Search-by-name results with source metadata and match reasons" width="100%">
+
+<p>Statistics for the visible library: playtime totals, weekly activity and top games.</p>
+<img src="docs/images/stats.webp" alt="Library statistics with weekly activity and top games" width="100%">
+
+<p>The menu beside Play combines launch files and game actions. Only the primary file records playtime.</p>
+<img src="docs/images/launch.webp" alt="Combined Play dropdown with a starred primary file, configuration tool and walkthrough" width="100%">
+
+<p>Edit the primary file and labels, or find additional files in the game folder.</p>
+<img src="docs/images/editor.webp" alt="Game editor with launch-file labels, primary stars and checkbox discovery" width="100%">
+
+<p>Smart lists find missing launch files and search for source links, with progress and a Stop button.</p>
+<img src="docs/images/smart.webp" alt="No source link smart list during a bulk name search, with progress and Stop" width="100%">
+
+</details>
 
 ## Download
 

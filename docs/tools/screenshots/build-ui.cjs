@@ -120,7 +120,9 @@ const mock = `(function () {
     if (shot === 'detail' || shot === 'find') { card('g01').click(); await sleep(600); }
     if (shot === 'discreet') { key('h', { ctrlKey: true, code: 'KeyH' }); await sleep(400); }
     if (shot === 'bulk') {
+      document.querySelector('button[aria-label="View options"]').click(); await sleep(80);
       [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Select').click(); await sleep(200);
+      document.querySelector('button[aria-label="View options"]').click(); await sleep(80);
       // Выбираем в сетке «All games» (последние экземпляры карточек) и прокручиваем к ней
       const last = (id) => [...document.querySelectorAll('[data-game-id="' + id + '"]')].pop();
       for (const id of ['g02', 'g04', 'g06', 'g10']) { last(id).click(); await sleep(80); }
@@ -132,6 +134,38 @@ const mock = `(function () {
     if (shot === 'settings') {
       key(',', { ctrlKey: true }); await sleep(300);
       [...document.querySelectorAll('.fixed button')].find(b => b.textContent.includes('Privacy')).click(); await sleep(400);
+    }
+    if (params.has('readme')) {
+      const waitFor = async test => { for (let i=0;i<100;i++) { if (test()) return; await sleep(50); } throw Error('README scenario timed out: '+shot); };
+      const clickText = (text, scope='body') => [...document.querySelectorAll(scope+' button')].find(b=>b.textContent.trim()===text).click();
+      if (shot === 'find') {
+        controls.failedSource = ''; document.querySelector('[data-find-search]').click();
+        await waitFor(()=>document.querySelectorAll('[data-find-card]').length);
+        document.querySelector('[data-metadata-panel]').scrollIntoView({block:'start'});
+      }
+      if (shot === 'stats') {
+        document.querySelector('[data-nav-statistics]').click();
+        await waitFor(()=>document.querySelector('[data-stats-top]'));
+      }
+      if (shot === 'launch' || shot === 'editor') {
+        card('g01').click(); await waitFor(()=>document.querySelector('[data-launch-menu]'));
+        document.querySelector('[data-launch-menu]').click(); await waitFor(()=>document.querySelector('[data-context-menu]'));
+        if (shot === 'editor') {
+          clickText('Edit','[data-context-menu]'); await waitFor(()=>document.querySelector('[data-launch-find]'));
+          document.querySelector('[data-launch-find]').click();
+          await waitFor(()=>document.querySelector('[data-launch-candidates] input:not(:disabled)'));
+          document.querySelector('[data-launch-candidates] input:not(:disabled)').click();
+          document.querySelector('[data-launch-editor]').scrollIntoView({block:'center'});
+        }
+      }
+      if (shot === 'smart') {
+        document.querySelector('[data-smart-list=nosource]').click(); await sleep(80);
+        document.querySelector('[data-smart-banner] button').click();
+        await waitFor(()=>window.__smartMock.applies.length===1);
+        window.__smartMock.delay = 60000;
+        await waitFor(()=>document.querySelector('[data-smart-banner]').textContent.includes('1 of 3'));
+      }
+      await sleep(200);
     }
     document.body.dataset.ready = '1';
   });

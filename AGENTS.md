@@ -335,8 +335,8 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
    and sequential confident name lookup, progress/Stop and privacy cancellation.
    Delivery notes: [`docs/specs/smart-lists.md`](docs/specs/smart-lists.md).
 5. ✅ **DONE — Small game-page polish:** hotkey reference, update-discovery and note-edit dates, originating
-   list/position and neighbouring-game navigation. README screenshots remain for the release
-   (`docs/tools/screenshots/make.ps1`); mock data includes the new dates.
+   list/position and neighbouring-game navigation. README screenshots refreshed before release
+   via `docs/tools/screenshots/make.ps1` (2026-11-07), including the new feature states.
 
 **Ideas, not agreed (don't start without the owner):** a dense list view like mockup B (title, status, version,
 engine, played, last played, size; sortable headers).
@@ -549,3 +549,23 @@ smart-lists-fixture.cjs and test-smart-lists.cjs exercise the batch without exte
 
 Windows validation: vet/test/build.ps1 and all six headless scripts passed (293 assertions, including
 43 smart-list checks). Live services, real library/native window and Linux/macOS remain untested.
+
+### README screenshot refresh (2026-11-07)
+
+make.ps1 now captures ten fictional UI states plus the banner through capture-readme.cjs/CDP.
+The helper waits for ready state and fonts, verifies the requested controls, loaded local images and
+absence of browser exceptions/external requests. Port/CDPPort are configurable; occupied ports fail
+before launching dedicated hidden Edge and the loopback-only HTTP server. Conversion selects only the
+requested shots. Bulk selection now opens View options before Select. `&readme=1` performs presentation
+actions for find/stats/launch/editor/smart without changing regression scenarios' starting state.
+
+README retains the main library/detail/privacy/bulk views and adds a collapsible gallery for name search,
+statistics, the combined launch menu, checkbox discovery and bulk-search progress. Detail shows list
+position, update/notes dates, launch files and sessions. All images use generated SFW art and fictional
+paths; no actual library, source API, native file dialog or game executable is used. The previous notes
+saying README images were pending describe earlier steps; this refresh completes that release item.
+
+Verified on Windows: Vite build, make.ps1 (all ten UI states + banner), decoded image dimensions and
+all eleven README image references, plus all six regression scripts (293 assertions). Every final
+capture was visually inspected. Native Wails/backend checks were not repeated for this documentation
+and screenshot-tool-only change; real-library and live-site acceptance are not part of these images.

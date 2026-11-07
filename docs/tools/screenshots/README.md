@@ -6,7 +6,8 @@ generated SFW artwork, so screenshots can be refreshed after UI changes.
 ```powershell
 cd game-launcher; .\build.ps1 -NoTests        # the frontend must be built (frontend/dist)
 cd ..\docs\tools\screenshots
-.\make.ps1                                    # all shots; or .\make.ps1 -Shots home,detail
+.\make.ps1                                    # all ten UI states + banner
+.\make.ps1 -Shots home,detail -Port 5394 -CDPPort 9336  # subset / alternate ports
 ```
 
 Requirements: Windows with Microsoft Edge, Node.js, Python with Pillow (`pip install pillow`).
@@ -15,10 +16,22 @@ Requirements: Windows with Microsoft Edge, Node.js, Python with Pillow (`pip ins
 |---|---|
 | `games.cjs` | The fictional library: titles, versions, tags, descriptions, dialogue lines. |
 | `art.cjs` | Generates SVG covers (600×900) and in-game shots (1280×720) into `out/media/covers`. |
-| `build-ui.cjs` | Copies `frontend/dist` into `out/ui` with a Wails mock: the library data plus shot scenarios (`?shot=home\|detail\|discreet\|bulk\|menu\|settings`). |
+| `build-ui.cjs` | Copies `frontend/dist` into `out/ui` with a Wails mock: the library data plus shot scenarios (`?shot=home\|detail\|discreet\|bulk\|settings\|find\|stats\|launch\|editor\|smart`). |
 | `banner.html` | The README banner / social preview (1280×640). |
 | `make.ps1` | Runs everything: art → UI → headless Edge screenshots → WebP in `docs/images`. |
+| `capture-readme.cjs` | CDP capture with scenario, asset, runtime-error and external-request checks. |
 | `convert.py` | PNG → WebP, banner → `social-preview.png`. |
+
+README automation uses `&readme=1`; regression fixtures keep their normal initial state without it.
+The ten shots are home, detail, discreet, bulk, settings, find, stats, launch, editor and smart.
+Detail/editor use 1440×1500 to include notes/sessions and checkbox discovery; find/stats/launch use
+1440×1100, the rest 1440×900. The banner remains 1280×640. The smart shot pauses a fictional response
+at 1 of 3; it never sends a request to a real source. Bulk selection opens View options first.
+
+`make.ps1` binds the local server to loopback, uses a dedicated Edge profile, rejects occupied ports,
+and fails if a scenario, asset or browser check fails. CDP waits for readiness and fonts; it does not
+rely on a fixed virtual-time screenshot. Conversion touches only shots requested in that invocation.
+The helper verifies new states before capture; visual inspection is still required before committing.
 
 A new scenario is a branch in the `load` handler at the end of the mock in `build-ui.cjs`.
 `out/` is temporary and git-ignored.
