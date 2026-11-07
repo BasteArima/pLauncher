@@ -550,29 +550,15 @@ smart-lists-fixture.cjs and test-smart-lists.cjs exercise the batch without exte
 Windows validation: vet/test/build.ps1 and all six headless scripts passed (293 assertions, including
 43 smart-list checks). Live services, real library/native window and Linux/macOS remain untested.
 
-### README screenshot refresh (2026-11-07)
+### README screenshots and banner (2026-11-07)
 
-make.ps1 now captures ten fictional UI states plus the banner through capture-readme.cjs/CDP.
-The helper waits for ready state and fonts, verifies the requested controls, loaded local images and
-absence of browser exceptions/external requests. Port/CDPPort are configurable; occupied ports fail
-before launching dedicated hidden Edge and the loopback-only HTTP server. Conversion selects only the
-requested shots. Bulk selection now opens View options before Select. `&readme=1` performs presentation
-actions for find/stats/launch/editor/smart without changing regression scenarios' starting state.
+`docs/tools/screenshots/make.ps1` renders the README images from the mock UI with a fictional library.
+Library covers are generated as **wide 16:9 banners** (`art.cjs` → `<id>-wide.svg`), because the default card
+is wide and the old 2:3 posters lost their titles in it; the posters (`<id>.svg`) remain for tall cards and art.
+`x01/x02-wide.svg` are the fictional «Moonlit Harbor» search results. Default shots: home, detail, discreet,
+bulk, settings, find, stats, launch (editor/smart on request: `-Shots editor,smart`). The banner is
+`banner.html` (1280×640, also `social-preview.png`, which is uploaded by hand in the repo settings).
 
-README retains the main library/detail/privacy/bulk views and adds a collapsible gallery for name search,
-statistics, the combined launch menu, checkbox discovery and bulk-search progress. Detail shows list
-position, update/notes dates, launch files and sessions. All images use generated SFW art and fictional
-paths; no actual library, source API, native file dialog or game executable is used. The previous notes
-saying README images were pending describe earlier steps; this refresh completes that release item.
-
-Verified on Windows: Vite build, make.ps1 (all ten UI states + banner), decoded image dimensions and
-all eleven README image references, plus all six regression scripts (293 assertions). Every final
-capture was visually inspected. Native Wails/backend checks were not repeated for this documentation
-and screenshot-tool-only change; real-library and live-site acceptance are not part of these images.
-
-README screenshot URLs use `?v=<12 hex digits of SHA-256>` from each exported WebP. make.ps1 runs
-update-readme-images.py after successful conversion, including partial runs; unchanged images keep
-their URLs and -NoConvert leaves them untouched. The helper can also refresh existing exports directly.
-This avoids stale embedded GitHub images when the filename stays the same.
-Verified the partial make.ps1 -Shots detail flow on Windows and all eleven exported hashes; helper
-checks covered changed/unchanged images, repeated runs, UTF-8/CRLF and failure without a partial edit.
+README image URLs are plain relative paths. Do not add `?v=` cache-busting: GitHub serves them through a
+302 to raw.githubusercontent.com that drops the query, and raw files are cached only for 5 minutes anyway.
+After pushing new images, a hard refresh (Ctrl+F5) shows them. Inspect every capture before committing.

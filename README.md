@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.webp?v=7704d9b9a706" alt="pLauncher — your local game library, organized like Steam" width="100%">
+  <img src="docs/images/banner.webp" alt="pLauncher — your local game library, organized like Steam" width="100%">
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@ Which of the forty folders called `Game` was it, anyway?
 no telemetry. And if someone walks in, one keypress hides it all.
 
 <p align="center">
-  <img src="docs/images/home.webp?v=dd73acc2fd37" alt="Library grid with play statuses, updates, collections and filters" width="100%">
+  <img src="docs/images/home.webp" alt="Library: wide cards with play statuses and updates, collections in the sidebar" width="100%">
 </p>
 
 ## Features
@@ -34,33 +34,52 @@ no telemetry. And if someone walks in, one keypress hides it all.
 - **Folder scanning.** Every subfolder becomes a game. The launch file is picked automatically, and it doesn't
   have to be an `.exe`: HTML, `.bat`, `.jar`, `.swf`, QSP, RAGS and LÖVE games work too (plus `.sh`, `.x86_64`,
   AppImage and `.app` on Linux and macOS).
+- **Several launch files per game.** Keep the config tool and the walkthrough next to the game: they open from
+  the menu beside **Play**, and only the main file counts as playtime.
 - **Engine detection** by folder contents: Ren'Py, Unity, Unreal, Godot, RPG Maker, GameMaker, Construct, Wolf RPG,
   KiriKiri, TyranoBuilder, Flash, QSP and HTML.
-- **Steam-style home:** a hero banner, shelves you can rearrange, collections (manual or by tags), favorites,
-  search, sorting and adjustable card size.
-- **Playtime tracking** and folder size on disk for every game.
+- **Your own tracker:** play status (playing, want to play, finished, dropped), a 5-star rating and private notes
+  with `||spoilers||`. Collections (manual or by tags), favorites, a multi-tag filter, wide or tall cards.
 - **Moved your games to another drive?** Missing folders are found and relinked, and your playtime,
   tags and collections stay put.
 - Drag a folder onto the window to add it. Ignore folders that aren't games (hello, `_videos`).
 
-### 🔎 Metadata from a link
-Paste a game's page and pLauncher fills in the title, version, author, engine, languages, tags, description,
-cover and up to 15 screenshots.
+### 🔎 Game info in two clicks
+**Find by name:** pLauncher takes the folder name (`MoonlitHarbor_v0.3` → *Moonlit Harbor*), searches
+F95zone, Steam and VNDB, and shows the matches with the reason it likes them. Pick one, preview it, save.
+Or **paste a link** to the game's page. Either way you get the title, version, author, engine, languages, tags,
+description, cover and up to 15 screenshots.
 
 | Supported sites | |
 |---|---|
-| F95zone | Pornolab |
-| Erotorrent | Island of Pleasure |
-| Steam (official API) | *more are welcome, see [Contributing](#contributing)* |
+| F95zone (search + link) | Pornolab (link) |
+| Steam (search + link, official API) | Erotorrent (link) |
+| VNDB (search + link) | Island of Pleasure (link) |
 
 <p align="center">
-  <img src="docs/images/detail.webp?v=ceb7b4daf0d2" alt="Game page with update discovery date, notes, launch files and play sessions" width="100%">
+  <img src="docs/images/find.webp" alt="Find game info by name: matches from Steam, F95zone and VNDB with match reasons" width="100%">
 </p>
 
 ### ⬆️ Update tracking
 Each game remembers where it came from. **Check all** compares the version you have with the latest one on each
-source and marks the games that have a new build. Accept the update and the page is parsed again.
-Your *Waiting for updates* collection has never been this easy to keep up with.
+source, marks the games that have a new build and remembers when the update was found. Hit *I've updated the game*
+and the page is parsed again. Your *Waiting for updates* collection has never been this easy to keep up with.
+
+**Smart lists** collect what needs attention: updates, games without a cover, without a launch file or without a
+source link, and folders that went missing. Each one has a single button that fixes the whole list.
+
+<p align="center">
+  <img src="docs/images/detail.webp" alt="Game page: update notice, status and rating, notes, launch files and play sessions" width="100%">
+</p>
+
+### 📊 Play sessions and statistics
+Every session is recorded, even if you close the launcher while playing. The game page shows the last eight weeks;
+**Statistics** shows hours this week, this month and all time, a year of weekly activity, your top games, statuses,
+engines and disk usage.
+
+<p align="center">
+  <img src="docs/images/stats.webp" alt="Statistics: playtime totals, 52 weeks of activity and top games" width="100%">
+</p>
 
 ### 🙈 Privacy, taken seriously
 - **Blur covers:** off, until hover, or always. `Ctrl+H` blurs everything instantly.
@@ -72,15 +91,15 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
   in the app but doesn't encrypt them, so keep the folder somewhere private too.
 
 <p align="center">
-  <img src="docs/images/discreet.webp?v=7049083c8905" alt="Discreet mode: every cover is blurred" width="49%">
-  <img src="docs/images/settings.webp?v=18652651dc7d" alt="Privacy settings: blur, PIN lock and panic button" width="49%">
+  <img src="docs/images/discreet.webp" alt="Discreet mode: every cover is blurred" width="49%">
+  <img src="docs/images/settings.webp" alt="Privacy settings: blur, PIN lock and panic button" width="49%">
 </p>
 
 ### ⚡ Built for big libraries
 - **Bulk actions:** select with `Ctrl`/`Shift` + click and add to collections, favorite, refresh metadata,
   check for updates, find launch files or remove, all at once.
 - **Keyboard-friendly:** arrows to move around, `Enter` to open, `Ctrl+Enter` to play, `F5` to scan,
-  `Ctrl+F` to search, `F1` for the full list.
+  `Ctrl+F` to search, `Alt+←/→` or the mouse side buttons to go back and forward, `F1` for the full list.
 - **Backup and restore:** export your whole library (database, covers, custom languages) to a single `.zip`.
 - **Self-update** on Windows and Linux: a small notice in the title bar, what's new, download progress and a
   restart, with SHA-256 verification and an automatic rollback if the new version doesn't start.
@@ -88,28 +107,12 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
   Українська, 日本語, 简体中文. Add your own by dropping a JSON file into the data folder.
 
 <p align="center">
-  <img src="docs/images/bulk.webp?v=69a1c6600342" alt="Selection mode with the bulk actions bar" width="100%">
+  <img src="docs/images/bulk.webp" alt="Selection mode with the bulk actions bar" width="100%">
 </p>
 
-<details>
-<summary>More views: search, statistics, launch files and smart lists</summary>
-
-<p>Find game info by name across F95zone, Steam and VNDB, then review a match before saving.</p>
-<img src="docs/images/find.webp?v=8397a781e8d2" alt="Search-by-name results with source metadata and match reasons" width="100%">
-
-<p>Statistics for the visible library: playtime totals, weekly activity and top games.</p>
-<img src="docs/images/stats.webp?v=c7b96c3811ee" alt="Library statistics with weekly activity and top games" width="100%">
-
-<p>The menu beside Play combines launch files and game actions. Only the primary file records playtime.</p>
-<img src="docs/images/launch.webp?v=c15f0486243b" alt="Combined Play dropdown with a starred primary file, configuration tool and walkthrough" width="100%">
-
-<p>Edit the primary file and labels, or find additional files in the game folder.</p>
-<img src="docs/images/editor.webp?v=e5e2965dcab0" alt="Game editor with launch-file labels, primary stars and checkbox discovery" width="100%">
-
-<p>Smart lists find missing launch files and search for source links, with progress and a Stop button.</p>
-<img src="docs/images/smart.webp?v=1db09ea0fc46" alt="No source link smart list during a bulk name search, with progress and Stop" width="100%">
-
-</details>
+<p align="center">
+  <img src="docs/images/launch.webp" alt="The menu beside Play: the main launch file, a configuration tool, a walkthrough and game actions" width="100%">
+</p>
 
 ## Download
 
@@ -191,6 +194,8 @@ pLauncher doesn't collect, store or send any personal data, and it has no teleme
 screenshots and settings stay in the data folder you choose. The app connects to the internet only:
 
 - to fetch the game pages you paste into it, with their cover and screenshots;
+- when you search for a game by name: the name goes to the search of the sites you selected (F95zone, Steam,
+  VNDB), and the match you open is fetched for a preview;
 - to check those pages for new versions when you ask it to;
 - at startup and every 6 hours, to check [GitHub Releases](https://github.com/BasteArima/pLauncher/releases) for
   a new launcher version (you can turn this off in Settings → General), and to download it when you choose to

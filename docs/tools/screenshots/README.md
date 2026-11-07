@@ -6,7 +6,7 @@ generated SFW artwork, so screenshots can be refreshed after UI changes.
 ```powershell
 cd game-launcher; .\build.ps1 -NoTests        # the frontend must be built (frontend/dist)
 cd ..\docs\tools\screenshots
-.\make.ps1                                    # all ten UI states + banner
+.\make.ps1                                    # all README states + banner
 .\make.ps1 -Shots home,detail -Port 5394 -CDPPort 9336  # subset / alternate ports
 ```
 
@@ -15,18 +15,17 @@ Requirements: Windows with Microsoft Edge, Node.js, Python with Pillow (`pip ins
 | File | What it does |
 |---|---|
 | `games.cjs` | The fictional library: titles, versions, tags, descriptions, dialogue lines. |
-| `art.cjs` | Generates SVG covers (600×900) and in-game shots (1280×720) into `out/media/covers`. |
+| `art.cjs` | Generates SVG covers: wide 1280×720 (`<id>-wide.svg`, used by the library) and posters 600×900, plus in-game shots (1280×720), into `out/media/covers`. |
 | `build-ui.cjs` | Copies `frontend/dist` into `out/ui` with a Wails mock: the library data plus shot scenarios (`?shot=home\|detail\|discreet\|bulk\|settings\|find\|stats\|launch\|editor\|smart`). |
-| `banner.html` | The README banner / social preview (1280×640). |
+| `banner.html` | The README banner / social preview (1280×640, Inter from `node_modules`). |
 | `make.ps1` | Runs everything: art → UI → headless Edge screenshots → WebP in `docs/images`. |
 | `capture-readme.cjs` | CDP capture with scenario, asset, runtime-error and external-request checks. |
 | `convert.py` | PNG → WebP, banner → `social-preview.png`. |
-| `update-readme-images.py` | Adds content-hash versions to README screenshot URLs. |
 
 README automation uses `&readme=1`; regression fixtures keep their normal initial state without it.
-The ten shots are home, detail, discreet, bulk, settings, find, stats, launch, editor and smart.
-Detail/editor use 1440×1500 to include notes/sessions and checkbox discovery; find/stats/launch use
-1440×1100, the rest 1440×900. The banner remains 1280×640. The smart shot pauses a fictional response
+The default shots are home, detail, discreet, bulk, settings, find, stats and launch; editor and smart are
+available with `-Shots editor,smart` but are not in the README. Detail is 1440×1330, editor 1440×1500,
+find 1440×1220, stats/launch 1440×1100, the rest 1440×900. The banner remains 1280×640. The smart shot pauses a fictional response
 at 1 of 3; it never sends a request to a real source. Bulk selection opens View options first.
 
 `make.ps1` binds the local server to loopback, uses a dedicated Edge profile, rejects occupied ports,
@@ -34,11 +33,10 @@ and fails if a scenario, asset or browser check fails. CDP waits for readiness a
 rely on a fixed virtual-time screenshot. Conversion touches only shots requested in that invocation.
 The helper verifies new states before capture; visual inspection is still required before committing.
 
-After conversion, `make.ps1` updates every README screenshot URL to `?v=<12 SHA-256 hex digits>`
-from the exported WebP bytes. Changed images get new URLs to bypass stale caches; identical images
-keep their URLs. Partial runs retain unchanged images' versions. `-NoConvert` leaves README URLs alone.
-Run `python docs/tools/screenshots/update-readme-images.py` from the repository root to refresh URLs
-for existing exports without taking new screenshots.
+README image URLs are plain relative paths. Query-string versions don't help: GitHub redirects them to
+raw.githubusercontent.com without the query, and raw files are cached for 5 minutes. After a push,
+Ctrl+F5 on the repository page shows the new images. `social-preview.png` is uploaded by hand in the
+repository settings (Settings → General → Social preview).
 
 A new scenario is a branch in the `load` handler at the end of the mock in `build-ui.cjs`.
 `out/` is temporary and git-ignored.

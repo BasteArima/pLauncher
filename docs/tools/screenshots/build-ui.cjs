@@ -19,7 +19,7 @@ const data = games.map((g, i) => {
   return {
     id: g.id, title: g.title.replace('|', ' ').replace('Room mates', 'Roommates'), description: g.desc, version: g.version,
     author: g.author, engine: g.engine, languages: g.langs, tags: g.tags,
-    cover_path: `covers/${g.id}.svg`, cover_fit: '', cover_pos: '50% 50%',
+    cover_path: `covers/${g.id}-wide.svg`, cover_fit: '', cover_pos: '50% 50%',
     images: g.lines.map((_, k) => `covers/${g.id}-${k + 1}.svg`),
     exec_path: `D:/Games/${g.title.replace('|', ' ')}/Game.exe`, folder_path: `D:/Games/${g.title.replace('|', ' ')}`,
     favorite: !!g.fav, time_played: g.played, added_at: now - (i + 1) * DAY * 3,
@@ -57,12 +57,12 @@ const mock = `(function () {
   const results = ['Steam', 'F95zone', 'VNDB'].flatMap((source, i) => [0, 1].map(j => ({
     source, url: source === 'VNDB' ? 'https://vndb.org/v' + (1 + j) : source === 'Steam' ? 'https://store.steampowered.com/app/' + (1 + j) + '/' : 'https://f95zone.to/threads/' + (1 + j) + '/',
     title: j ? 'Moonlit Harbor: Afterlight' : 'Moonlit Harbor', author: 'Harbor Studio', version: source === 'F95zone' ? '0.3' : '', year: '2026', engine: source === 'F95zone' ? "Ren'Py" : '', updated_at: source === 'F95zone' ? '2026-10-30T12:00:00Z' : '',
-    thumb: location.origin + '/media/covers/g01.svg', score: j ? 0.45 - i * 0.02 : 0.96 - i * 0.18, best: i === 0 && j === 0,
+    thumb: location.origin + '/media/covers/x0' + (j + 1) + '-wide.svg', score: j ? 0.45 - i * 0.02 : 0.96 - i * 0.18, best: i === 0 && j === 0,
   }))).sort((a, b) => b.score - a.score);
   const previewData = url => ({
     title: results.find(h => h.url === url)?.title || 'Moonlit Harbor', description: 'A quiet harbor, an unexpected letter, and a summer that changes everything. Explore the town and choose your own path.',
     author: 'Harbor Studio', engine: '', version: url.includes('f95zone') ? '0.3' : '', languages: ['English', 'Русский'], tags: ['Visual Novel', 'Mystery'],
-    cover_path: location.origin + '/media/covers/g01.svg', images: [1, 2].map(n => location.origin + '/media/covers/g01-' + n + '.svg'),
+    cover_path: location.origin + '/media/covers/' + (url.includes('/v2') || url.includes('/2/') ? 'x02' : 'x01') + '-wide.svg', images: [1, 2].map(n => location.origin + '/media/covers/g01-' + n + '.svg'),
   });
   const stats = (${require('./stats-fixture.cjs').toString()})({ games, collections, priv, enabled: params.get('shot') === 'stats' });
   collections = stats.collections;
@@ -86,7 +86,7 @@ const mock = `(function () {
       const g = games.find(g => g.id === id), metadata = previewData(url), source = results.find(h => h.url === url).source;
       const tags = [...new Set([...(g.tags || []), ...metadata.tags])];
       Object.assign(g, metadata, { tags, engine: metadata.engine || g.engine, version: metadata.version || g.version || '0.3',
-        cover_path: 'covers/g01.svg', images: ['covers/g01-1.svg', 'covers/g01-2.svg'],
+        cover_path: 'covers/x01-wide.svg', images: ['covers/g01-1.svg', 'covers/g01-2.svg'],
         sources: [{ source, url, last_version: metadata.version }], primary_source: source, update_available: false, update_version: '', update_source: '', update_found_at: 0 });
     },
     GetCustomLocales: () => ({}), GetAppVersion: () => '1.0.0', GetDataDir: () => 'D:/pLauncher-data', GetPrivacy: () => priv, NotifyWindowShown: () => null,
@@ -141,7 +141,6 @@ const mock = `(function () {
       if (shot === 'find') {
         controls.failedSource = ''; document.querySelector('[data-find-search]').click();
         await waitFor(()=>document.querySelectorAll('[data-find-card]').length);
-        document.querySelector('[data-metadata-panel]').scrollIntoView({block:'start'});
       }
       if (shot === 'stats') {
         document.querySelector('[data-nav-statistics]').click();

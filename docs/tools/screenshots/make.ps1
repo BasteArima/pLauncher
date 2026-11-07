@@ -3,7 +3,8 @@
 # Node.js, Python с Pillow (pip install pillow) и Microsoft Edge.
 param(
     [ValidateSet('home','detail','discreet','bulk','settings','find','stats','launch','editor','smart')]
-    [string[]]$Shots = @('home', 'detail', 'discreet', 'bulk', 'settings', 'find', 'stats', 'launch', 'editor', 'smart'),
+    # editor и smart в README не входят, но снимаются по запросу: -Shots editor,smart
+    [string[]]$Shots = @('home', 'detail', 'discreet', 'bulk', 'settings', 'find', 'stats', 'launch'),
     [int]$Port = 5393,
     [int]$CDPPort = 9336,
     [switch]$NoConvert
@@ -58,7 +59,7 @@ try {
     Start-Sleep -Seconds 1
     try {
         foreach ($s in $Shots) {
-            $size = if ($s -in @('detail','editor')) { '1440,1500' } elseif ($s -in @('find','stats','launch')) { '1440,1100' } else { '1440,900' }
+            $size = switch ($s) { 'detail' { '1440,1330' } 'editor' { '1440,1500' } 'find' { '1440,1220' } { $_ -in @('stats','launch') } { '1440,1100' } default { '1440,900' } }
             Shoot "http://127.0.0.1:$Port/?shot=$s&readme=1" (Join-Path $png "$s.png") $size
         }
     } finally { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
@@ -69,8 +70,6 @@ try {
     if (-not $NoConvert) {
         python convert.py $png $images @Shots banner
         if ($LASTEXITCODE -ne 0) { throw "Image conversion failed" }
-        python update-readme-images.py
-        if ($LASTEXITCODE -ne 0) { throw "README image version update failed" }
     }
 } finally {
     Stop-Edge

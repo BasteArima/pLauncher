@@ -357,7 +357,7 @@
                     <div class="text-sm font-semibold text-slate-100 mt-0.5 leading-snug">{lastPlayed}</div>
                 </div>
                 <button on:click={recalcSize} title={$t('detail.size_hint')}
-                        class="rounded-lg bg-slate-950/60 px-3 py-2.5 text-left hover:bg-slate-800 transition-colors">
+                        class="flex flex-col justify-start rounded-lg bg-slate-950/60 px-3 py-2.5 text-left hover:bg-slate-800 transition-colors">
                     <div class="text-[11px] text-slate-500">{$t('detail.size')}</div>
                     <div class="text-sm font-semibold text-slate-100 mt-0.5 leading-snug">{sizing ? '…' : (fmtSize(displayGame.size_bytes) || '—')}</div>
                 </button>

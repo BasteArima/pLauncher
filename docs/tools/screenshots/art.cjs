@@ -194,6 +194,24 @@ function cover(g) {
     <rect width="${w}" height="${h}" fill="url(#${id}vig)"/><rect width="${w}" height="${h}" filter="url(#${id}grain)"/></svg>`;
 }
 
+// Широкая обложка-баннер (1280x720), как у тредов F95: карточки по умолчанию широкие, и постер 2:3
+// в них обрезается по названию. Название по центру, студия сверху, подзаголовок снизу.
+function coverWide(g) {
+  const w = 1280, h = 720, id = 'w' + g.id;
+  const font = g.font || "'Segoe UI Black', 'Arial Black', sans-serif";
+  const size = Math.round((g.titleSize || 74) * 1.45);
+  const lines = g.title.toUpperCase().split('|');
+  const top = h * 0.47 - (lines.length * size * 0.95) / 2 + size * 0.78;
+  const title = lines.map((l, i) => `<text x="${w / 2}" y="${top + i * size * 0.95}" text-anchor="middle" font-family="${font}" font-size="${size}" letter-spacing="${(g.spacing ?? 4) * 1.4}" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-opacity=".3" stroke-width="4">${esc(l)}</text>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice">${scene(g.scene, w, h, g.seed * 3 + 1, id)}
+    <radialGradient id="${id}mid" cx=".5" cy=".47" r=".55"><stop offset="0" stop-color="#05040c" stop-opacity=".45"/><stop offset="1" stop-color="#05040c" stop-opacity="0"/></radialGradient>
+    <rect width="${w}" height="${h}" fill="url(#${id}mid)"/>
+    <text x="${w / 2}" y="78" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="24" letter-spacing="10" fill="#fff" opacity=".8">${esc(g.studio.toUpperCase())}</text>
+    ${title}
+    <text x="${w / 2}" y="${top + (lines.length - 1) * size * 0.95 + 62}" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="30" letter-spacing="8" fill="${g.accent || '#ffd48a'}">${esc(g.tagline.toUpperCase())}</text>
+    <rect width="${w}" height="${h}" fill="url(#${id}vig)"/><rect width="${w}" height="${h}" filter="url(#${id}grain)"/></svg>`;
+}
+
 // Кадр «из игры»: фон + окно диалога в духе Ren'Py с быстрым меню.
 function shot(g, i, line) {
   const w = 1280, h = 720, id = `s${g.id}${i}`;
@@ -208,12 +226,20 @@ function shot(g, i, line) {
     <rect width="${w}" height="${h}" filter="url(#${id}grain)"/></svg>`;
 }
 
-module.exports = { cover, shot };
+module.exports = { cover, coverWide, shot };
+
+// Игры, которых нет в библиотеке: результаты «Найти по названию» на скриншоте find
+const SEARCH_ART = [
+  { id: 'x01', title: 'Moonlit|Harbor', scene: 'lake', seed: 201, studio: 'Harbor Studio', tagline: 'v0.3', accent: '#9fd3ff' },
+  { id: 'x02', title: 'Moonlit Harbor|Afterlight', scene: 'citydusk', seed: 202, studio: 'Harbor Studio', tagline: 'Prologue', accent: '#ffcf9a', titleSize: 56 },
+];
 
 if (require.main === module) {
   const games = require('./games.cjs');
+  for (const g of SEARCH_ART) fs.writeFileSync(path.join(OUT, `${g.id}-wide.svg`), coverWide(g));
   for (const g of games) {
     fs.writeFileSync(path.join(OUT, `${g.id}.svg`), cover(g));
+    fs.writeFileSync(path.join(OUT, `${g.id}-wide.svg`), coverWide(g));
     g.lines.forEach((l, i) => fs.writeFileSync(path.join(OUT, `${g.id}-${i + 1}.svg`), shot(g, i + 1, l)));
   }
   console.log('art: ' + fs.readdirSync(OUT).length + ' files');

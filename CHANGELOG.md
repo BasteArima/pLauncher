@@ -58,6 +58,7 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 - Context menus open where you click and flip near window edges.
 
 ### Fixed
+- The «Size» tile on the game page lines up with «Played» and «Last played».
 - Scrolling a large library is smooth again (blur effects no longer run on every card).
 
 ## [1.1.0] - 2026-11-05

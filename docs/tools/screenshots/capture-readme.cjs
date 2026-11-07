@@ -38,7 +38,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const isUI = url.startsWith('http:');
     let ready = false;
     for (let i = 0; i < 150; i++) {
-      ready = await evaluate(isUI ? 'document.body?.dataset.ready === "1"' : 'document.readyState === "complete" && !!document.querySelector(".fan")');
+      ready = await evaluate(isUI ? 'document.body?.dataset.ready === "1"' : 'document.readyState === "complete" && !!document.querySelector("[data-banner]")');
       if (ready) break;
       assert.equal(errors.length, 0, 'Scenario failed: ' + errors.join('; '));
       await delay(100);

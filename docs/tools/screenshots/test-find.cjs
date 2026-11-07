@@ -133,7 +133,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     await click('[data-preview-save]'); await wait('!document.querySelector("[data-info-preview]")');
     const saved = (await snapshot()).find(g=>g.id==='g01');
     check('saved title', saved.title, 'Moonlit Harbor');
-    check('saved local cover', saved.cover_path, 'covers/g01.svg');
+    check('saved local cover', saved.cover_path, 'covers/x01-wide.svg');
     check('saved details, merged tags and folder version', !!saved.description && saved.images.length === 2 && saved.tags.includes('Manual') && saved.tags.includes('Mystery') && saved.version === '0.3');
     check('saved source', saved.sources[0].source, 'Steam');
     check('saved title displayed', await evaluate('document.querySelector("main h1").textContent'), 'Moonlit Harbor');
