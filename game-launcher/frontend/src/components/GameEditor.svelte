@@ -8,8 +8,9 @@
     import { showToast, askConfirm } from '../lib/ui.js';
     import { mediaSrc, coverStyle, coverPosXY, coverZoom, COVER_ZOOM_MAX } from '../lib/util.js';
     import Icon from './Icon.svelte';
+    import LaunchFilesEditor from './LaunchFilesEditor.svelte';
     import {
-        SelectCoverImage, CopyCoverToData, SelectScreenshots, CopyScreenshotToData, SelectExecutable,
+        SelectCoverImage, CopyCoverToData, SelectScreenshots, CopyScreenshotToData,
     } from '../../wailsjs/go/main/App.js';
 
     export let game;
@@ -113,14 +114,6 @@
         game.images = list;
         sel = i;
         dragIndex = overIndex = null;
-    }
-
-    // --- Файл запуска ---
-    async function selectExecutable() {
-        try {
-            const path = await SelectExecutable(game.folder_path); // диалог откроется в папке игры
-            if (path) game.exec_path = path;
-        } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
     }
 
     // --- Языки: строкой через запятую ---
@@ -320,7 +313,7 @@
     </div>
 
     <!-- ПРАВАЯ КОЛОНКА: те же места, что на странице игры, но поля редактируются -->
-    <aside class="flex-[1_1_340px] max-w-[420px] flex flex-col gap-5">
+    <aside class="flex-[1_1_340px] max-w-[420px] min-w-0 flex flex-col gap-5">
         <section class="{card} p-6 flex flex-col gap-3.5">
             <label class="flex flex-col gap-1.5">
                 <span class={fieldLabel}>{$t('edit.title_label')}</span>
@@ -337,13 +330,7 @@
                 <label class="flex flex-col gap-1.5"><span class={fieldLabel}>{$t('detail.languages')}</span>
                     <input type="text" value={langText} on:input={(e) => setLangs(e.target.value)} placeholder="EN, RU" class={field}/></label>
             </div>
-            <label class="flex flex-col gap-1.5">
-                <span class={fieldLabel}>{$t('detail.launch_file')}</span>
-                <span class="flex gap-1.5">
-                    <input type="text" bind:value={game.exec_path} placeholder="Game.exe · index.html · start.bat" class="{field} font-mono text-xs flex-1 min-w-0"/>
-                    <button on:click={selectExecutable} class="h-9 px-3 shrink-0 rounded-lg text-sm text-slate-200 bg-slate-800 border border-white/10 hover:bg-slate-700">{$t('edit.choose')}</button>
-                </span>
-            </label>
+            <LaunchFilesEditor bind:game/>
         </section>
 
         <section class="{card} p-5 flex flex-col gap-2.5">

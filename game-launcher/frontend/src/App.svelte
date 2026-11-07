@@ -761,9 +761,14 @@
     }
 
     // --- Редактирование ---
-    function startEdit() {
+    function startEdit(focusFiles = false) {
         originalGameSnapshot = JSON.stringify(selectedGame);
+        selectedGame = JSON.parse(originalGameSnapshot); // draft must not mutate the library list
         isEditing = true;
+        if (focusFiles === true) requestAnimationFrame(() => {
+            const block = document.getElementById('launch-files-editor');
+            block?.scrollIntoView({ block: 'center' }); block?.querySelector('button')?.focus();
+        });
     }
     async function cancelEdit() {
         if (JSON.stringify(selectedGame) === originalGameSnapshot) { isEditing = false; return; }
@@ -1187,7 +1192,7 @@
                                     onOpenCollection={openCollection}
                                     onCollectionsMenu={(e) => openCtx(e, collectionsMenuItems(selectedGame))}
                                     onEdit={startEdit}
-                                    onMenu={(e) => openCtx(e, gameMenuItems(selectedGame))}
+                                    onMenu={(e, files) => { openCtx(e, [...files, ...(files.length ? [{ sep: true }] : []), ...gameMenuItems(selectedGame)]); ctx = { ...ctx, width: 300, keyboard: true }; }}
                                     onToggleFav={toggleFavorite}
                                     onRelink={relinkManually}
                                     onRelinkAll={() => showRelink = true}
@@ -1341,7 +1346,7 @@
             <Toast/>
 
             {#if ctx}{#key ctx}
-                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} width={ctx.width || 232} onClose={() => ctx = null}/>{/key}
+                <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} width={ctx.width || 232} keyboard={!!ctx.keyboard} onClose={() => ctx = null}/>{/key}
             {/if}
         </main>
     </div>

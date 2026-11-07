@@ -101,3 +101,28 @@ Outputs: `out/game-page-checks.json` and `out/game-page-*.png`. `game-page-mocku
 `docs/design/game-page.png`. The new labels/controls follow the board. Existing differences remain:
 the app sidebar, larger typography/spacing and metadata panel; a 1016px full window stacks the columns.
 These are mock-library checks, not real-game acceptance. This does not regenerate README images.
+
+## Launch-file interface regression
+
+Use the same fictional UI server and dedicated Edge CDP instance (`UI_PORT` / `CDP_PORT`), then run:
+
+```powershell
+node docs/tools/screenshots/test-launch-files.cjs
+python docs/tools/screenshots/compare-launch-files.py
+```
+
+The 69 checks exercise the combined menu, Details links, primary/extra routing, draft labels/swaps/removal,
+native-picker cancellation (mocked), checkbox discovery, capacity/merge overflow, save/discard, EN/RU,
+missing/error/partial states, keyboard focus and late replies after cancel/history/lock/panic. The 900px
+layout is checked for horizontal overflow in view and edit mode. Existing find/stats/game-page scripts
+must pass as well; find explicitly verifies launch controls are absent in read-only preview.
+
+`?shot=launch` adds missing, empty-primary, capacity and overflow games. `window.__launchFilesMock` controls
+`delay`, `error`, `empty`, `incomplete`, `candidates`, `selectedPath`, `selectDelay`, `selectError`,
+`availabilityDelay`, `availabilityError`, `missing`, `lateReply` and `calls`. `lateReply` deliberately allows
+stale mock responses after lock so frontend guards are exercised independently of backend privacy checks.
+
+Outputs stay in git-ignored `out/`: launch-files-checks.json, launch-files-right.png, menu/editor/narrow
+screenshots and launch-files-comparison.png. The comparison retains the reference cards' relative sizes,
+insets and gaps while scaling the reference column from 266px to the app capture's 340px width; no app CSS
+is overridden. See the feature spec for the remaining differences. It needs Pillow, like convert.py.

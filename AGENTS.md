@@ -70,7 +70,7 @@ The app is fully working. Done so far:
   **Personal fields** `Game.Status` ("" | playing | want | finished | dropped; list + colors in `lib/status.js`),
   `Rating` (0–5), `Notes` (`||spoiler||` segments are hidden until revealed): DB columns `status/rating/notes`, read with
   COALESCE; relink merge keeps them; saved via `UpdateGame`. Status chips over the grid use `activeFilter = 'status:<id>'`.
-  Game page = two independent columns (no gaps): left media/about/notes/metadata, right play card (Play, ⋯ = game menu, ♡,
+  Game page = two independent columns (no gaps): left media/about/notes/metadata, right play card (Play, ▾ = files + game menu, ♡,
   stats, status, rating, update block «Open page» / «I've updated the game» = re-parse from the update source, sites) +
   collections + details. Scrolling: the library position is remembered when a game opens and restored on close; a new view
   starts at the top, clicking the current view again scrolls smoothly up; a «Back to top» button appears past 1.2 screens.
@@ -115,7 +115,7 @@ The app is fully working. Done so far:
   html (index/game/…), bat/cmd, jar, swf, qsp, rags, love (docs/installers skipped). On Linux/macOS native
   launchers (.sh, .x86_64, .AppImage, .app bundles) win over `.exe`. Re-scan fills an empty `ExecPath` of
   existing games; `DetectLaunchFiles(ids)` does it on demand. `launcher.isDirectExecutable` decides direct exec
-  vs OS association (`cmd start` / `open` / `xdg-open`).
+  vs OS association (`ShellExecute` / `open` / `xdg-open`).
 - **Folder size** (`sizes.go`): `size_bytes/size_checked_at` columns, computed in a background goroutine
   (startup, after scan/drop/relink; stale after 7 days) and written ONLY via `repo.SetGameSize` so UI saves
   never overwrite it. `RecalcGameSize(id)` / `RefreshSizes()`; sort option `size_desc`.
@@ -308,8 +308,8 @@ Polish / convenience:
 6. ✅ **DONE — Auto-detect engine** from folder contents (`scanner.DetectEngine`, 13 engines:
    Ren'Py/Unity/Unreal/Godot/RPG Maker/Game Maker/Construct/Wolf RPG/KiriKiri/TyranoBuilder/Flash/QSP/HTML).
    Runs on scan/drop, fills `Game.Engine` only when empty, backfills existing games on re-scan.
-7. **Multiple launch files**: backend done (primary + eight extras, labels, discovery, untracked extras, relink/backup);
-   editor and combined Play menu remain step 2. See `docs/specs/launch-files.md`.
+7. ✅ **DONE — Multiple launch files**: primary + eight extras, labels, bounded discovery, untracked extras,
+   relink/backup, editor and combined Play menu. See `docs/specs/launch-files.md`.
 8. ✅ **DONE — Relink moved games** (see "Current state").
 9. ✅ **DONE — Backup/export library** (zip). NOT done: a "library health" dashboard (no cover / no
    description / no exe as actionable lists).
@@ -328,8 +328,8 @@ Owner's note: #1 (update checking) and #2 (statuses) are expected to give the bi
 2. ✅ **DONE — Play sessions + Stats tab.** Durable recording, game-page Sessions and the sidebar Statistics
    view are implemented. Real-library acceptance remains manual; headless UI checks use fictional data.
    Full spec: [`docs/specs/play-sessions-stats.md`](docs/specs/play-sessions-stats.md).
-3. **Multiple launch files** (#7 above): step 1 backend is implemented. Step 2 remains: editor list and
-   Play / chevron / favourite; always-visible chevron combines file rows with every old ellipsis action.
+3. ✅ **DONE — Multiple launch files** (#7 above): backend and editor list implemented;
+   Play / chevron / favourite, with the always-visible chevron combining file rows and all old ellipsis actions.
    Specification and confirmed decisions: [`docs/specs/launch-files.md`](docs/specs/launch-files.md).
 4. **More smart lists**: «No launch file» and «No source link», each with a banner action (detect launch files /
    find info by name).
@@ -495,9 +495,37 @@ Direct extras detach and reap without a session monitor, timestamp or restart bl
 keeps durable monitoring; PDF/TXT use OS associations even with exec bits. Windows uses ShellExecute,
 without cmd interpolation. UpdateGame/RelinkGame serialize with launch role resolution through sessionsMu.
 
-The UI is still step 2: it must build star swaps/first-add promotion in a draft and save the complete list.
+The UI was delivered in step 2 below: it builds star swaps/first-add promotion in a draft and saves the complete list.
 Backend saves of an empty primary never promote an extra. See the spec's confirmed combined-menu rules.
 Bindings are regenerated. Mock APIs and fixtures are wired through build-ui.cjs/launch-files-fixture.cjs.
 Windows vet/test/build and 39 headless game-page regression checks passed with fictional data. Tests use
 harmless detached helpers and fake document openers. Linux/macOS packages were compiled only; native dialogs,
-real document associations, Windows ACL denial, real games/library and the new interface remain untested.
+real document associations, Windows ACL denial and real games/library remain untested. UI acceptance is below.
+
+### Multiple launch files — interface (2026-11-07)
+
+GameDetail uses LaunchGameFile for Play and Details links. The chevron is always visible; it combines
+file rows (only when count > 1) with gameMenuItems, without changing card context menus. Availability is
+fetched on page/menu open and window focus; request counters plus destruction/preview guards discard late
+results. Menu rows show filename/path, primary star and missing status without disabling error reporting.
+ContextMenu has opt-in keyboard focus/navigation, secondary text and muted file rows; ordinary menus retain
+their layout. A pending chevron request consumes Escape on its focused button before App's window handler.
+
+LaunchFilesEditor is bound to the GameEditor draft, inside its current right card. It swaps primary/extra
+paths and labels, leaves primary empty on removal and makes the first newly added file primary if needed.
+No direct path typing: SelectLaunchFile starts in the saved folder; FindLaunchFileCandidates supplies the
+inline checkbox picker. GetLaunchFileLabel supplies automatic placeholder keys, with explicit $t dependencies.
+lib/launchFiles.js holds presentation/path identity and remaining-slot helpers. Empty labels remain empty in
+storage, custom labels stay literal. Picker selections only enter the draft after Add selected; all fields
+participate in App's dirty snapshot, Ctrl+S and Esc/discard. startEdit clones the snapshot so edits cannot
+leak through the library list after cancellation. Late dialog/search replies cannot edit a
+destroyed component. Missing primary Play opens this block. Eight extras is the addition limit; merge overflow
+remains editable/removable. All twenty UI strings exist in eleven locales; new icons are in lib/icons.js.
+
+Run test-launch-files.cjs with the normal UI_PORT/CDP_PORT setup, alongside test-find/test-stats/test-game-page.
+launch-files-fixture.cjs exposes missing files, capacity/overflow, delays, failures and partial/empty results;
+no actual files launch. Windows vet/test/build and 201 headless assertions passed (69 launch, 42 find,
+51 stats, 39 game-page). compare-launch-files.py compares the right-column capture at equal displayed width;
+the spec records the remaining typography/spacing, card-inset, update-wrap and Details-order differences.
+No private editor mockup exists; the new block follows GameEditor. Native dialogs, document associations,
+Linux/macOS UI and the owner's real library/games still require manual acceptance. README images are unchanged.

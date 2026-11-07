@@ -1,7 +1,7 @@
 # Spec: multiple launch files
 
-Status: **step 1 — backend implemented and verified on Windows** (2026-11-07).
-Step 2 (interface) is not part of this delivery.
+Status: **steps 1 and 2 implemented; Windows automated acceptance passed** (2026-11-07).
+Native dialogs/associations and real-library acceptance remain manual.
 Design reference: [A2 · Game page](../design/game-page.png), interpreted using
 [the design README](../design/README.md): the small dropdown beside Play and the Launch files list in Details.
 
@@ -85,8 +85,8 @@ game page, without counting time spent in a guide or settings utility as playtim
 - Enforce the chosen capacity in the picker and Add… controls, with a localized explanation. The backend
   validates it too. Do not silently truncate the user's selection.
 - Autofill labels as described below; permit editing immediately after adding. Exact editor visuals beyond
-  the existing editable page are not supplied by `game-page.png`. If the private A4 board is required for
-  a more detailed layout, obtain its export before implementing that design rather than inventing it.
+  the existing editable page are not supplied by `game-page.png`. For step 2 the owner explicitly chose
+  the current GameEditor style; no new editor design or private-board parity is claimed.
 
 ## Backend
 
@@ -217,7 +217,7 @@ Implemented App contracts (DTO details below):
   Mock all new bound methods; do not open real utilities or documents during browser checks.
 - Suggested delivery: step 1 implements storage, launch dispatch/accounting isolation, discovery, relink,
   backup coverage and generated bindings; step 2 implements the editor, dropdown and Details flow with mocks.
-  Only step 1 is authorized for this delivery; do not implement the step 2 controls yet.
+  Both steps are delivered. The owner authorized step 2 after reviewing the backend delivery.
 - On implementation deliveries, update this spec's status, AGENTS.md and CHANGELOG `[Unreleased]`; commit
   without attribution and do not push unless requested. README screenshot refresh stays out of this feature.
 
@@ -286,7 +286,53 @@ exercise Windows direct dispatch and survival after parent exit; association ope
 Linux/amd64 and macOS/amd64 launcher, discovery and DB test packages were cross-compiled, **not executed**.
 The POSIX unreadable-root permission test is skipped on Windows; Windows ACL denial was not exercised.
 Native file dialogs, installed document associations and the owner's real library/games remain manual checks.
-Step 2 editor/menu/Details acceptance and visual comparison are pending; no README images were refreshed.
+Step 2 was pending at that delivery; its acceptance and comparison are recorded below. No README images were refreshed.
+
+## Step 2 delivery
+
+- GameDetail now uses Play / chevron / favourite. The always-visible chevron opens the existing ContextMenu
+  with launch rows only for two or more saved files, then a separator and all previous game actions.
+  File rows have full-path tooltips, filename secondary text, a primary star and muted availability hints.
+  Keyboard navigation, activation, Escape, outside dismissal and return focus work for this combined menu.
+  Card right-click and other menus retain their actions and layout.
+- Details renders primary-first links in the existing card. Each calls LaunchGameFile; Play calls the same
+  method for the primary. Empty Details and Play without a primary focus the editor's launch-file block.
+- LaunchFilesEditor replaces the single path field inside the existing GameEditor card. Star swaps include
+  labels; removing the primary leaves it empty; first-add promotion occurs only when adding to an empty
+  primary slot. Labels are optional inputs with localized automatic placeholders. Eight-extra limits and
+  retained relink overflow are enforced without truncation. No file operations persist before Save/Ctrl+S.
+- Find in folder is an inline checkbox picker with loading, empty, failure/retry, partial-list and selection
+  states. Already-listed/aliased paths cannot be selected twice. Escape inside the picker closes it first;
+  editor Escape uses the existing discard confirmation. API replies are invalidated on destruction,
+  preview entry, cancellation and navigation/lock/panic; a late native-picker reply cannot mutate a saved game.
+- Uses the five existing launch-file APIs. The backend is unchanged. Twenty UI strings are added to all
+  eleven locales; stars/chevrons use lib/icons.js. Explicit labels remain literal when switching language.
+
+Windows/amd64 checks: `go vet ./...`, `go test ./...`, `build.ps1` (including generated bindings) passed.
+Vite still reports existing accessibility/unused-export, Browserslist-age and bundle-size warnings.
+Headless Edge on the fictional mock library passed **201 assertions**: test-launch-files 69,
+test-game-page 39, test-stats 51 and test-find 42. New coverage includes native-picker cancellation (mocked),
+checkbox selection, alias rejection, labels and swaps, save/discard/removal, empty/one/many-file menus,
+capacity/overflow, keyboard focus, missing files, recent-play isolation, errors/retries/partial results,
+late responses after history/lock/panic, EN/RU switches and 900px layouts. Preview tests explicitly exclude
+all new launch controls. Native dialogs and OS openers are mocked, not real acceptance tests.
+
+Visual comparison: `test-launch-files.cjs` captures the right column at its natural **340px** width;
+`compare-launch-files.py` crops the three reference cards and proportionally displays the mockup's **266px**
+column at the same 340px width. It does not override app CSS. Result: `out/launch-files-comparison.png`,
+with the raw capture in `out/launch-files-right.png`; editor and narrow EN/RU captures are in the same folder.
+The Play / chevron / favourite order and primary-first file list match the board. Remaining differences:
+
+- The app retains larger typography, padding and gaps: the captured column is 1177px tall versus 914px for
+  the proportionally scaled reference. These are the existing page styles, not a new editor design.
+- Details and Play sessions align with the play card in the app. The board insets these two cards to the right.
+- The update actions wrap onto two lines at this width; the board places them on one line.
+- Details keeps Added before Collections; the board reverses them. File rows show the agreed custom/automatic
+  labels instead of the board's raw filenames. Fixture titles, dates, stats, art and theme colors also differ.
+
+No README screenshot assets changed. This step was executed only on Windows; Linux/macOS UI and native
+association/file-dialog behavior, the built window on the real library and actual game launches were not
+verified. Step 1's Go process tests still use harmless helpers and fake association openers.
 
 ## Decisions
 

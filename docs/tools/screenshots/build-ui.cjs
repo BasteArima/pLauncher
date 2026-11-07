@@ -101,7 +101,7 @@ const mock = `(function () {
       Object.assign(g, { version: g.update_version || g.version, update_available: false, update_version: '', update_source: '', update_found_at: 0 });
     },
   };
-  Object.assign(impl, (${require('./launch-files-fixture.cjs').toString()})({ games, priv, params }));
+  Object.assign(impl, (${require('./launch-files-fixture.cjs').toString()})({ games, priv, params, saveGame: impl.UpdateGame }));
   const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve().then(() => { controls.calls.push({ name, args }); return impl[name]?.(...args); }).then(value => JSON.parse(JSON.stringify(value ?? null))) });
   window.go = { main: { App } };
   const events = {};

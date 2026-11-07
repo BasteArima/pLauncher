@@ -1,12 +1,14 @@
 <script>
     // Страница игры (режим просмотра) по макету: две независимые колонки, без пустот между блоками.
     // Слева — картинки (крупно + лента, стрелки ‹ ›), «Об игре» с тегами, заметки, блок ссылок.
-    // Справа — карточка: «Играть», ⋯, ♡, время/последний запуск/размер, статус, оценка, обновление,
+    // Справа — карточка: «Играть», ▾, ♡, время/последний запуск/размер, статус, оценка, обновление,
     // площадки; ниже коллекции и подробности (версия, движок, языки, папка, файл запуска).
+    import { onDestroy, tick } from 'svelte';
+    import { fileKey, fileName, fileLabel, launchFiles } from '../lib/launchFiles.js';
     import { t, tr, langStore } from '../i18n.js';
     import { showToast } from '../lib/ui.js';
     import { mediaSrc, fmtPlaytime, fmtSize, copyText, lsJSON, lsSet } from '../lib/util.js';
-    import { Launch, OpenFolder, OpenURL, SelectExecutable, UpdateGame, UpdateGameMetadata, RecalcGameSize } from '../../wailsjs/go/main/App.js';
+    import { LaunchGameFile, GetLaunchFileAvailability, OpenFolder, OpenURL, UpdateGame, UpdateGameMetadata, RecalcGameSize } from '../../wailsjs/go/main/App.js';
     import Icon from './Icon.svelte';
     import MetadataPanel from './MetadataPanel.svelte';
     import GameSessions from './GameSessions.svelte';
@@ -38,7 +40,7 @@
     export let onCollectionsMenu = (e) => {};            // «+»: меню с галочками ручных коллекций
     export let onEdit = () => {};
     export let onToggleFav = (g) => {};
-    export let onMenu = (e) => {};                       // ⋯: то же меню, что по правому щелчку
+    export let onMenu = (e, files) => {};                       // ▾: файлы, затем все прежние действия
     export let onRelink = (g) => {};                     // указать новую папку вручную
     export let onRelinkAll = () => {};                   // окно перепривязки
     export let onApplyTag = (tag) => {};
@@ -79,22 +81,55 @@
         catch (err) { showToast(tr('toast.open_folder_fail', { err }), 'error'); }
     }
 
-    // Главная кнопка: указать папку (если пропала) → выбрать exe (если нет) → запуск
-    async function smartPlay() {
-        if (game.folder_missing) { await onRelink(game); return; }
-        if (!game.exec_path) { await pickExe(); return; }
+    // Availability is checked only for the open game. Replies cannot outlive its page/preview.
+    let alive = true, availabilityRequest = 0, menuRequest = 0;
+    let availability = [], filesError = '', menuLoading = false;
+    $: fileSignature = JSON.stringify([game.id, game.exec_path, game.exec_label, game.launch_files]);
+    $: refreshFiles(fileSignature, preview);
+    $: fileRows = launchFiles(game).map(file => ({ ...file, ...(availability.find(row => fileKey(row.path) === fileKey(file.path)) || {}) }));
+    onDestroy(() => { alive = false; availabilityRequest++; menuRequest++; });
+    async function refreshFiles(signature, isPreview) {
+        const ticket = ++availabilityRequest;
+        if (isPreview) { availability = []; menuRequest++; menuLoading = false; return; }
+        filesError = '';
         try {
-            await Launch(game.id, game.exec_path, game.folder_path);
-            await onReload(); // «последний запуск» → порядок в библиотеке
-        } catch (err) { showToast(tr('toast.launch_fail', { err }), 'error'); }
+            const result = await GetLaunchFileAvailability(game.id);
+            if (alive && ticket === availabilityRequest && !preview) availability = result || [];
+        } catch (err) { if (alive && ticket === availabilityRequest && !preview) filesError = tr('toast.error', { err }); }
     }
-    async function pickExe() {
+    function missingHint(file, translate = tr) { return file.availability && file.availability !== 'available' ? translate('launch.' + file.availability) : ''; }
+    async function launchFile(path) {
+        const id = game.id;
         try {
-            const path = await SelectExecutable(game.folder_path);
-            if (!path) return;
-            game.exec_path = path;
-            await save();
-        } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
+            await LaunchGameFile(id, path);
+            if (alive && !preview && id === game.id) await onReload();
+        } catch (err) { if (alive && !preview && id === game.id) showToast(tr('toast.launch_fail', { err }), 'error'); }
+    }
+    function smartPlay() {
+        if (game.folder_missing) { onRelink(game); return; }
+        if (!game.exec_path) { onEdit(true); return; }
+        launchFile(game.exec_path);
+    }
+    async function openLaunchMenu(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (menuLoading) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const ticket = ++menuRequest;
+        menuLoading = true;
+        await refreshFiles(fileSignature, preview);
+        await tick();
+        if (!alive || preview || ticket !== menuRequest) return;
+        menuLoading = false;
+        const items = fileRows.length > 1 ? fileRows.map(file => ({
+            label: fileLabel(file, file.label_key, tr), icon: file.primary ? 'star' : 'play', fillIcon: file.primary,
+            ariaLabel: [file.primary ? tr('launch.primary') : '', fileLabel(file, file.label_key, tr), missingHint(file)].filter(Boolean).join(' · '),
+            description: [fileName(file.path), missingHint(file)].filter(Boolean).join(' · '),
+            title: file.path, muted: !!missingHint(file), file: true, action: () => launchFile(file.path),
+        })) : [];
+        onMenu({ clientX: rect.right, clientY: rect.bottom + 4, preventDefault() {}, stopPropagation() {} }, items);
+    }
+    function cancelPendingMenu(e) {
+        if (menuLoading && e.key === 'Escape') { e.preventDefault(); menuRequest++; menuLoading = false; }
     }
 
     // Сохранить личные поля (статус, оценка, заметки, файл запуска)
@@ -152,13 +187,14 @@
     }
     // Игра только с папкой (ещё ни разу не парсилась): блок «Найти информацию» сразу под картинками
     $: noInfo = !game.cover_path && !game.description && !(game.sources || []).some(s => s.url);
-    $: launchName = (game.exec_path || '').split(/[\\/]/).pop();
 
     const card = 'rounded-2xl bg-slate-900/60 border border-white/5';
     const sectionTitle = 'text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3';
     const iconBtn = 'h-12 w-12 shrink-0 rounded-xl flex items-center justify-center border border-white/10 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors';
     const detailLabel = 'text-slate-500';
 </script>
+
+<svelte:window on:keydown={cancelPendingMenu} on:focus={() => refreshFiles(fileSignature, preview)}/>
 
 {#if !preview && displayGame.folder_missing}
     <div class="mb-6 rounded-xl bg-rose-950/50 border border-rose-800/50 p-4 flex items-center gap-4 flex-wrap animate-fade-in">
@@ -283,7 +319,7 @@
     </div>
 
     <!-- ПРАВАЯ КОЛОНКА -->
-    <aside class="flex-[1_1_340px] max-w-[420px] flex flex-col gap-5">
+    <aside data-game-right class="flex-[1_1_340px] max-w-[420px] min-w-0 flex flex-col gap-5">
         <section class="{card} p-6 flex flex-col gap-5">
             <div>
                 <h1 class="text-3xl font-bold text-white leading-tight break-words cursor-pointer hover:text-indigo-200 transition-colors"
@@ -297,13 +333,13 @@
 
             {#if !preview}
             <div class="flex gap-2">
-                <button on:click={smartPlay}
+                <button data-main-play on:click={smartPlay}
                         class="flex-1 h-12 rounded-xl flex items-center justify-center gap-2.5 text-base font-bold transition-colors {displayGame.folder_missing ? 'bg-rose-300 hover:bg-rose-200 text-rose-950' : displayGame.exec_path ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-slate-100 hover:bg-white text-slate-950'}">
                     {#if displayGame.exec_path && !displayGame.folder_missing}<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>{/if}
                     {displayGame.folder_missing ? $t('missing.pick') : displayGame.exec_path ? $t('btn.play') : $t('btn.set_exe')}
                 </button>
-                <button on:click|stopPropagation={onMenu} class={iconBtn} title={$t('card.more')} aria-label={$t('card.more')}>
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                <button data-launch-menu on:keydown={cancelPendingMenu} on:click={openLaunchMenu} aria-busy={menuLoading} aria-haspopup="menu" class={iconBtn} title={$t('launch.menu')} aria-label={$t('launch.menu')}>
+                    <Icon name="chevron-down" size={18}/>
                 </button>
                 <button on:click={() => onToggleFav(game)} class="{iconBtn} {displayGame.favorite ? '!text-pink-400' : ''}"
                         title={displayGame.favorite ? $t('detail.fav_in') : $t('detail.fav_add')} aria-label={displayGame.favorite ? $t('detail.fav_in') : $t('detail.fav_add')}>
@@ -409,12 +445,21 @@
                 </span>
                 <span class={detailLabel}>{$t('detail.folder')}</span>
                 <button on:click={openFolder} class="text-left font-mono text-xs text-indigo-300 hover:text-indigo-100 break-all" title={$t('ctx.open_folder')}>{displayGame.folder_path}</button>
-                <span class={detailLabel}>{$t('detail.launch_file')}</span>
-                {#if launchName}
-                    <button on:click={pickExe} class="text-left font-mono text-xs text-slate-300 hover:text-white break-all" title={$t('btn.set_exe')}>{launchName}</button>
-                {:else}
-                    <button on:click={pickExe} class="text-left text-xs text-rose-300 hover:text-rose-200">{$t('btn.set_exe')}</button>
-                {/if}
+                <span class={detailLabel}>{$t('launch.files')}</span>
+                <div data-launch-details class="min-w-0 flex flex-col gap-1">
+                    {#each fileRows as file (file.path)}
+                        <button data-launch-file data-path={file.path} on:click={() => launchFile(file.path)}
+                                title={[file.path, missingHint(file, $t)].filter(Boolean).join(' · ')}
+                                aria-label={[file.primary ? $t('launch.primary') : '', fileLabel(file, file.label_key, $t), missingHint(file, $t)].filter(Boolean).join(' · ')}
+                                class="text-left text-xs flex items-start gap-1.5 min-w-0 {file.availability && file.availability !== 'available' ? 'text-slate-500' : 'text-slate-300 hover:text-white'}">
+                            {#if file.primary}<Icon name="star" size={12} fill class="mt-0.5"/>{:else}<span class="w-3 shrink-0"></span>{/if}
+                            <span class="min-w-0"><span class="block truncate">{fileLabel(file, file.label_key, $t)}</span>{#if missingHint(file, $t)}<span class="block text-[10px]">{missingHint(file, $t)}</span>{/if}</span>
+                        </button>
+                    {:else}
+                        <button data-launch-empty-edit on:click={() => onEdit(true)} class="text-left text-xs text-indigo-300 hover:text-white">{$t('launch.add')}</button>
+                    {/each}
+                    {#if filesError}<p role="alert" class="text-xs text-rose-300">{filesError}</p><button on:click={() => refreshFiles(fileSignature, preview)} class="text-left text-xs text-slate-400 hover:text-white">{$t('launch.retry')}</button>{/if}
+                </div>
                 {/if}
             </div>
         </section>

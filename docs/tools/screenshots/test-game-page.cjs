@@ -134,7 +134,8 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     check('settings share added shortcuts', await evaluate('document.body.innerText.includes("Back from game preview") && document.body.innerText.includes("Mouse 4 / 5")'));
     await key('Escape');
     const openEditor = async () => {
-      await click('main button[aria-label="More actions"]');
+      await click('[data-launch-menu]');
+      await wait(visible('[data-context-menu]'));
       await textButton('Edit', '.fixed');
       await wait(visible('#game-about'));
     };
