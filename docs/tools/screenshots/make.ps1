@@ -69,6 +69,8 @@ try {
     if (-not $NoConvert) {
         python convert.py $png $images @Shots banner
         if ($LASTEXITCODE -ne 0) { throw "Image conversion failed" }
+        python update-readme-images.py
+        if ($LASTEXITCODE -ne 0) { throw "README image version update failed" }
     }
 } finally {
     Stop-Edge

@@ -21,6 +21,7 @@ Requirements: Windows with Microsoft Edge, Node.js, Python with Pillow (`pip ins
 | `make.ps1` | Runs everything: art → UI → headless Edge screenshots → WebP in `docs/images`. |
 | `capture-readme.cjs` | CDP capture with scenario, asset, runtime-error and external-request checks. |
 | `convert.py` | PNG → WebP, banner → `social-preview.png`. |
+| `update-readme-images.py` | Adds content-hash versions to README screenshot URLs. |
 
 README automation uses `&readme=1`; regression fixtures keep their normal initial state without it.
 The ten shots are home, detail, discreet, bulk, settings, find, stats, launch, editor and smart.
@@ -32,6 +33,12 @@ at 1 of 3; it never sends a request to a real source. Bulk selection opens View 
 and fails if a scenario, asset or browser check fails. CDP waits for readiness and fonts; it does not
 rely on a fixed virtual-time screenshot. Conversion touches only shots requested in that invocation.
 The helper verifies new states before capture; visual inspection is still required before committing.
+
+After conversion, `make.ps1` updates every README screenshot URL to `?v=<12 SHA-256 hex digits>`
+from the exported WebP bytes. Changed images get new URLs to bypass stale caches; identical images
+keep their URLs. Partial runs retain unchanged images' versions. `-NoConvert` leaves README URLs alone.
+Run `python docs/tools/screenshots/update-readme-images.py` from the repository root to refresh URLs
+for existing exports without taking new screenshots.
 
 A new scenario is a branch in the `load` handler at the end of the mock in `build-ui.cjs`.
 `out/` is temporary and git-ignored.

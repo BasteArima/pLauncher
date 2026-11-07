@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.webp" alt="pLauncher — your local game library, organized like Steam" width="100%">
+  <img src="docs/images/banner.webp?v=7704d9b9a706" alt="pLauncher — your local game library, organized like Steam" width="100%">
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@ Which of the forty folders called `Game` was it, anyway?
 no telemetry. And if someone walks in, one keypress hides it all.
 
 <p align="center">
-  <img src="docs/images/home.webp" alt="Library grid with play statuses, updates, collections and filters" width="100%">
+  <img src="docs/images/home.webp?v=dd73acc2fd37" alt="Library grid with play statuses, updates, collections and filters" width="100%">
 </p>
 
 ## Features
@@ -54,7 +54,7 @@ cover and up to 15 screenshots.
 | Steam (official API) | *more are welcome, see [Contributing](#contributing)* |
 
 <p align="center">
-  <img src="docs/images/detail.webp" alt="Game page with update discovery date, notes, launch files and play sessions" width="100%">
+  <img src="docs/images/detail.webp?v=ceb7b4daf0d2" alt="Game page with update discovery date, notes, launch files and play sessions" width="100%">
 </p>
 
 ### ⬆️ Update tracking
@@ -72,8 +72,8 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
   in the app but doesn't encrypt them, so keep the folder somewhere private too.
 
 <p align="center">
-  <img src="docs/images/discreet.webp" alt="Discreet mode: every cover is blurred" width="49%">
-  <img src="docs/images/settings.webp" alt="Privacy settings: blur, PIN lock and panic button" width="49%">
+  <img src="docs/images/discreet.webp?v=7049083c8905" alt="Discreet mode: every cover is blurred" width="49%">
+  <img src="docs/images/settings.webp?v=18652651dc7d" alt="Privacy settings: blur, PIN lock and panic button" width="49%">
 </p>
 
 ### ⚡ Built for big libraries
@@ -88,26 +88,26 @@ Your *Waiting for updates* collection has never been this easy to keep up with.
   Українська, 日本語, 简体中文. Add your own by dropping a JSON file into the data folder.
 
 <p align="center">
-  <img src="docs/images/bulk.webp" alt="Selection mode with the bulk actions bar" width="100%">
+  <img src="docs/images/bulk.webp?v=69a1c6600342" alt="Selection mode with the bulk actions bar" width="100%">
 </p>
 
 <details>
 <summary>More views: search, statistics, launch files and smart lists</summary>
 
 <p>Find game info by name across F95zone, Steam and VNDB, then review a match before saving.</p>
-<img src="docs/images/find.webp" alt="Search-by-name results with source metadata and match reasons" width="100%">
+<img src="docs/images/find.webp?v=8397a781e8d2" alt="Search-by-name results with source metadata and match reasons" width="100%">
 
 <p>Statistics for the visible library: playtime totals, weekly activity and top games.</p>
-<img src="docs/images/stats.webp" alt="Library statistics with weekly activity and top games" width="100%">
+<img src="docs/images/stats.webp?v=c7b96c3811ee" alt="Library statistics with weekly activity and top games" width="100%">
 
 <p>The menu beside Play combines launch files and game actions. Only the primary file records playtime.</p>
-<img src="docs/images/launch.webp" alt="Combined Play dropdown with a starred primary file, configuration tool and walkthrough" width="100%">
+<img src="docs/images/launch.webp?v=c15f0486243b" alt="Combined Play dropdown with a starred primary file, configuration tool and walkthrough" width="100%">
 
 <p>Edit the primary file and labels, or find additional files in the game folder.</p>
-<img src="docs/images/editor.webp" alt="Game editor with launch-file labels, primary stars and checkbox discovery" width="100%">
+<img src="docs/images/editor.webp?v=e5e2965dcab0" alt="Game editor with launch-file labels, primary stars and checkbox discovery" width="100%">
 
 <p>Smart lists find missing launch files and search for source links, with progress and a Stop button.</p>
-<img src="docs/images/smart.webp" alt="No source link smart list during a bulk name search, with progress and Stop" width="100%">
+<img src="docs/images/smart.webp?v=1db09ea0fc46" alt="No source link smart list during a bulk name search, with progress and Stop" width="100%">
 
 </details>
 

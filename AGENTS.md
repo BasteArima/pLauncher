@@ -569,3 +569,10 @@ Verified on Windows: Vite build, make.ps1 (all ten UI states + banner), decoded 
 all eleven README image references, plus all six regression scripts (293 assertions). Every final
 capture was visually inspected. Native Wails/backend checks were not repeated for this documentation
 and screenshot-tool-only change; real-library and live-site acceptance are not part of these images.
+
+README screenshot URLs use `?v=<12 hex digits of SHA-256>` from each exported WebP. make.ps1 runs
+update-readme-images.py after successful conversion, including partial runs; unchanged images keep
+their URLs and -NoConvert leaves them untouched. The helper can also refresh existing exports directly.
+This avoids stale embedded GitHub images when the filename stays the same.
+Verified the partial make.ps1 -Shots detail flow on Windows and all eleven exported hashes; helper
+checks covered changed/unchanged images, repeated runs, UTF-8/CRLF and failure without a partial edit.
