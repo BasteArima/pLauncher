@@ -1,17 +1,32 @@
 // Массовые действия над выделенными играми. Используются панелью выделения
 // и контекстным меню (ПКМ по одной из выделенных карточек).
 import { writable } from 'svelte/store';
+import { rememberManual, forgetManual, loadManualChoices, openManualGames } from './collectionChoices.js';
+import { stopSmartSearch } from './smartLists.js';
 import { tr } from '../i18n.js';
 import { showToast, askConfirm } from './ui.js';
 import { clearSelection } from './view.js';
 import {
-    RemoveGames, IgnoreGames, SetFavorites, DetectLaunchFiles, CheckGameUpdates, UpdateGameMetadata,
+    RemoveGames, IgnoreGames, SetFavorites, DetectLaunchFiles, CheckGameUpdates, BeginSmartSearch, StopSmartSearch, ReparseGameInfo,
 } from '../../wailsjs/go/main/App.js';
 
 // Прогресс долгой операции: null или {label, done, total}
 export const bulkProgress = writable(null);
 let cancelled = false;
-export function cancelBulk() { cancelled = true; }
+let reparseJob = null, visibleIDs = new Set();
+export function cancelBulk(privacy = false) {
+    privacy = privacy === true; // A direct Svelte click handler passes its MouseEvent.
+    cancelled = true;
+    if (reparseJob) {
+        reparseJob.cancelled = true; reparseJob.private = privacy;
+        if (reparseJob.token) StopSmartSearch(reparseJob.token).catch(() => {});
+        bulkProgress.set(null);
+    }
+}
+export function reconcileBulkVisibility(games) {
+    visibleIDs = new Set(games.map(g => g.id));
+    if (reparseJob && !reparseJob.cancelled && reparseJob.ids.some(id => !visibleIDs.has(id))) cancelBulk(true);
+}
 
 // Ссылка на основную площадку игры (для перепарса/проверки обновлений)
 export function primaryUrl(g) {
@@ -102,7 +117,36 @@ export async function bulkReparse(games, reload) {
         confirmText: tr('bulk.reparse'),
     });
     if (!confirmed) return;
-    const { ok, fail } = await runEach(tr('bulk.reparsing'), items, g => UpdateGameMetadata(g.id, primaryUrl(g)));
-    await reload();
-    showToast(tr('bulk.done', { ok, fail }), fail ? 'error' : 'success');
+    if (reparseJob && !reparseJob.cancelled) return;
+    stopSmartSearch();
+    const job = { ids: items.map(g => g.id), token: 0, cancelled: false, private: false };
+    reparseJob = job;
+    let ok = 0, fail = 0, manual = 0;
+    try {
+        job.token = await BeginSmartSearch();
+        if (!job.token || job.cancelled) return;
+        for (let i = 0; i < job.ids.length && !job.cancelled; i++) {
+            const id = job.ids[i];
+            if (!visibleIDs.has(id)) { cancelBulk(true); break; }
+            bulkProgress.set({ label: tr('bulk.reparsing'), done: i, total: job.ids.length });
+            try {
+                const result = await ReparseGameInfo(job.token, id);
+                if (job.cancelled) break;
+                if (result?.applied) { ok++; forgetManual(id); }
+                else if (result?.manual) {
+                    manual++; rememberManual(id);
+                    await loadManualChoices([id], () => !job.cancelled && visibleIDs.has(id));
+                }
+            } catch (err) { if (!job.cancelled) fail++; }
+        }
+        if (!job.private) await reload();
+    } catch (err) { if (!job.cancelled) fail++; }
+    finally {
+        if (job.token) await StopSmartSearch(job.token).catch(() => {});
+        if (reparseJob === job) {
+            reparseJob = null; bulkProgress.set(null);
+            if (!job.private) showToast(tr('bulk.done', { ok, fail }), fail ? 'error' : 'success',
+                manual ? { key: 'collection.manual_needed', params: { n: manual }, run: openManualGames } : null);
+        }
+    }
 }

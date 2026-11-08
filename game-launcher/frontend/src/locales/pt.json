@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "Jogo não encontrado nesta publicação; escolha novamente.",
   "err.parse.collection_changed": "Os jogos desta publicação mudaram; escolha novamente.",
   "collection.game_number": "Jogo {n}",
-  "collection.manual_needed": "Seleção manual necessária: {n}"
+  "collection.manual_needed": "Seleção manual necessária: {n}",
+  "collection.choose": "Escolha um jogo desta publicação · {n} jogos",
+  "collection.folder_match": "Parece corresponder à sua pasta",
+  "collection.empty": "Nenhum jogo encontrado nesta publicação. Tente outro link.",
+  "collection.use": "Escolher"
 }

@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "Гру не знайдено в роздачі, виберіть знову.",
   "err.parse.collection_changed": "Склад ігор у роздачі змінився, виберіть знову.",
   "collection.game_number": "Гра {n}",
-  "collection.manual_needed": "Потрібен ручний вибір: {n}"
+  "collection.manual_needed": "Потрібен ручний вибір: {n}",
+  "collection.choose": "Виберіть гру з роздачі · ігор: {n}",
+  "collection.folder_match": "Схоже на вашу папку",
+  "collection.empty": "Ігри в роздачі не знайдено. Спробуйте інше посилання.",
+  "collection.use": "Вибрати"
 }

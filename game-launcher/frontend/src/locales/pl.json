@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "Nie znaleziono gry w tym wydaniu; wybierz ponownie.",
   "err.parse.collection_changed": "Zestaw gier w tym wydaniu uległ zmianie; wybierz ponownie.",
   "collection.game_number": "Gra {n}",
-  "collection.manual_needed": "Wymagany ręczny wybór: {n}"
+  "collection.manual_needed": "Wymagany ręczny wybór: {n}",
+  "collection.choose": "Wybierz grę z tego wydania · {n} gier",
+  "collection.folder_match": "Pasuje do nazwy folderu",
+  "collection.empty": "Nie znaleziono gier w tym wydaniu. Spróbuj innego linku.",
+  "collection.use": "Wybierz"
 }

@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "この配布にゲームが見つかりません。選び直してください。",
   "err.parse.collection_changed": "この配布のゲーム構成が変更されました。選び直してください。",
   "collection.game_number": "ゲーム {n}",
-  "collection.manual_needed": "手動選択が必要：{n}"
+  "collection.manual_needed": "手動選択が必要：{n}",
+  "collection.choose": "この配布からゲームを選択 · {n} 件",
+  "collection.folder_match": "フォルダー名と一致しそうです",
+  "collection.empty": "この配布にゲームが見つかりません。別のリンクをお試しください。",
+  "collection.use": "選択"
 }

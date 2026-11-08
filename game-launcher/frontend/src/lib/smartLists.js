@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { SuggestSearchName, SearchGameInfo, BeginSmartSearch, StopSmartSearch, ApplySmartGameInfo } from '../../wailsjs/go/main/App.js';
 import { lsJSON } from './util.js';
 import { tr } from '../i18n.js';
+import { rememberManual, forgetManual, clearManualChoices, loadManualChoices, openManualGames } from './collectionChoices.js';
 import { showToast } from './ui.js';
 
 export const noLaunch = g => !g.folder_missing && !!g.launch_missing;
@@ -18,11 +19,11 @@ const publish = job => smartSearch.set({ active: !job.stopped, done: job.done, t
 function summarize(job) {
     if (job.summarized) return;
     job.summarized = true;
-    showToast(tr('smart.search_summary', { n: job.applied, m: job.manual, k: job.errors }), job.errors ? 'error' : 'success');
+    showToast(tr('smart.search_summary', { n: job.applied, m: job.manual, k: job.errors }), job.errors ? 'error' : 'success', job.manual ? { key: 'collection.manual_needed', params: { n: job.manual }, run: openManualGames } : null);
 }
 export function stopSmartSearch(privacy = false) {
     const job = run;
-    if (privacy) searchResults.set({});
+    if (privacy) { searchResults.set({}); clearManualChoices(); }
     if (!job || job.stopped) return;
     job.stopped = true;
     job.wake?.();
@@ -57,11 +58,11 @@ export async function findMissingSources(games, getVisible, reload) {
         const applied = await ApplySmartGameInfo(job.token, id, query, result);
         if (job.stopped) return;
         if (applied) {
-            job.applied++;
+            job.applied++; forgetManual(id);
             searchResults.update(cache => { const next = { ...cache }; delete next[id]; return next; });
             await reload();
         } else if (result?.failed?.length) job.errors++;
-        else job.manual++;
+        else { job.manual++; rememberManual(id); await loadManualChoices([id], () => !job.stopped && eligible(id)); }
     }
     try {
         job.token = await BeginSmartSearch();

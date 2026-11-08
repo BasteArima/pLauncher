@@ -159,3 +159,25 @@ These mocks never contact a search site, open a native dialog or execute a launc
 
 All CDP regression scripts emulate an active, focused tab so headless Edge does not suspend menu-focus
 animation frames when Windows treats the hidden test browser as a background window.
+
+## Pornolab collection chooser
+
+Run `node docs/tools/screenshots/test-pornolab-collections.cjs` against the same fictional server and
+dedicated Edge profile (`UI_PORT` / `CDP_PORT` supported). `?shot=collection` opens a folder-only game.
+`pornolab-fixture.cjs` provides two/three ranked sections, an unselected saved collection source,
+an independent ordinary source and a hidden game. `window.__collectionMock` controls count, best,
+fallback, resolve/preview/save delays and errors, changed/expired snapshots, and exposes pageGets,
+saved IDs/indices, manual payloads and calls. The mock obeys backend privacy generations for writes
+while deliberately delivering late read replies to exercise frontend guards.
+
+Checks cover prominent/compact list → preview → back → another section → save, original section index
+and saved title, external source opening, no automatic choice, single-fetch reuse, expiry, changed
+membership, missing/reordered titles, localized fallback labels, EN/RU, discreet and hover blur,
+lightbox key precedence, delayed resolve/preview/save, batch manual handoff/Stop/privacy/hidden scope,
+and the native minimum 900px width. All other test-*.cjs must pass too.
+
+Outputs stay in git-ignored `out/`: collection-checks.json and collection-{two-en,three-en,three-ru,
+compact,fallback-ru,blur,reselect,manual-list,narrow}.png. The normal captures use the design board's
+1426px viewport width. Compare three-en/three-ru with `docs/design/find-by-name-results.png`; documented
+intentional differences are in `docs/specs/pornolab-collections.md`. No real library, external page,
+image server or native window is used, and README release screenshots are not regenerated.

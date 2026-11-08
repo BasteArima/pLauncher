@@ -6,10 +6,11 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
-- Pornolab multi-game release backend: section-specific metadata and update checks, explicit source
-  selection (`#game=N` plus a saved title), a bounded page cache and manual-choice results for bulk
-  metadata filling. Includes neutral Windows-1251 fixtures and localized errors. The selection
-  interface and clickable manual-work summary are pending a separate frontend step.
+- Pornolab multi-game releases: choose a game from cover rows with a folder-match hint, preview it
+  and save its section-specific metadata. Selected sources (`#game=N` plus a saved title) retain
+  identity for updates; page caching avoids repeated downloads. Changed or missing sections offer
+  reselection. Bulk metadata filling skips unselected releases and links to games needing manual
+  choice. Includes privacy blur/cancellation, all 11 locales and neutral parser/UI fixtures.
 
 ### Fixed
 - Metadata tabs now route links entered in Search by name through the ordinary link parser, including

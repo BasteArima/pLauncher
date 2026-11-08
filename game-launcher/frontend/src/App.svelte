@@ -32,6 +32,8 @@
         CopyScreenshotToData,
         PreviewGameInfo,
         ApplyGameInfo,
+        PreviewPornolabGame,
+        ApplyPornolabGame,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
@@ -42,7 +44,8 @@
     import { discreet, blurMode } from './lib/privacy.js';
     import { showHero, homeView, ctxGameId, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
-    import { bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
+    import { manualGames, manualViewRequest, collectionError, forgetManual, reconcileManualVisibility, openManualGames } from './lib/collectionChoices.js';
+    import { bulkProgress, cancelBulk, reconcileBulkVisibility, bulkRemove, bulkIgnore, bulkFavorite, bulkDetectLaunch, bulkCheckUpdates, bulkReparse, primaryUrl } from './lib/bulk.js';
     import { noLaunch, noSource, smartSearch, findMissingSources, stopSmartSearch, reconcileSearchVisibility } from './lib/smartLists.js';
     import SmartBanner from './components/SmartBanner.svelte';
     import Statistics from './components/Statistics.svelte';
@@ -117,6 +120,11 @@
     let originalGameSnapshot = '';       // слепок игры для «есть ли несохранённые изменения»
     let searchQuery = '';
     let activeFilter = 'all';
+    let manualRequest = 0;
+    $: if ($manualViewRequest !== manualRequest) { manualRequest = $manualViewRequest; if (!locked) { searchQuery = ''; applyFilter('manual'); } }
+    $: manualCount = visibleGames.filter(g => $manualGames[g.id]).length;
+    $: reconcileManualVisibility(visibleGames);
+    $: reconcileBulkVisibility(visibleGames);
     // Фильтр по тегам: нужные (все или любой из них) и исключённые
     const emptyTags = () => ({ inc: [], exc: [], mode: 'all' });
     let tagFilter = emptyTags();
@@ -181,7 +189,7 @@
         pinPrompt = null;
     }
     function onLocked() {
-        stopSmartSearch(true);
+        stopSmartSearch(true); cancelBulk(true);
         locked = true;
         privacyEpoch++; gamesRequest++;
         showHidden = false;
@@ -196,7 +204,7 @@
         await loadCustomLocales();
     }
     function onPanic() {
-        stopSmartSearch(true);
+        stopSmartSearch(true); cancelBulk(true);
         privacyEpoch++; gamesRequest++;
         showHidden = false;
         discreet.set(true);              // вернувшись, обложки будут размыты
@@ -263,6 +271,7 @@
         if (activeFilter === 'missing') return g.folder_missing;
         if (activeFilter === 'nolaunch') return noLaunch(g);
         if (activeFilter === 'nosource') return noSource(g);
+        if (activeFilter === 'manual') return !!$manualGames[g.id];
         if (activeFilter.startsWith('status:')) return (g.status || '') === activeFilter.slice(7);
         return true;
     }), sortBy);
@@ -295,7 +304,7 @@
         : activeFilter === 'nocover' ? {
             tone: 'info', title: tr('smart.nocover_title', { n: noCoverCount }),
             text: noCoverWithLink.length ? tr('smart.nocover_text_links', { n: noCoverWithLink.length }) : tr('smart.nocover_text'),
-            action: noCoverWithLink.length ? tr('smart.nocover_action') : '', onAction: () => bulkReparse(noCoverWithLink, loadGames) }
+            action: $bulkProgress ? tr('btn.cancel') : noCoverWithLink.length ? tr('smart.nocover_action') : '', onAction: () => $bulkProgress ? cancelBulk() : bulkReparse(noCoverWithLink, loadGames) }
         : activeFilter === 'nolaunch' ? {
             tone: 'info', title: tr('smart.nolaunch_title', { n: noLaunchGames.length }), text: tr('smart.nolaunch_text'),
             action: tr('smart.nolaunch_action'), busy: detectingSmart || !noLaunchGames.length, onAction: detectMissingLaunch }
@@ -303,7 +312,7 @@
             tone: 'info', title: tr('smart.nosource_title', { n: noSourceGames.length }),
             text: $smartSearch?.active ? tr('smart.search_progress', { n: $smartSearch.done, m: $smartSearch.total }) : tr('smart.nosource_text'),
             action: $smartSearch?.active ? tr('smart.search_stop') : tr('smart.nosource_action'),
-            busy: !$smartSearch?.active && !noSourceGames.length,
+            busy: !!$bulkProgress || (!$smartSearch?.active && !noSourceGames.length),
             onAction: () => $smartSearch?.active ? stopSmartSearch() : findMissingSources(noSourceGames, () => visibleGames, loadGames) }
         : activeFilter === 'missing' ? {
             tone: 'danger', title: tr('smart.missing_title', { n: missingGames.length }), text: tr('smart.missing_text'),
@@ -352,6 +361,7 @@
         : activeFilter === 'missing' ? tr('missing.nav')
         : activeFilter === 'nolaunch' ? tr('smart.nolaunch')
         : activeFilter === 'nosource' ? tr('smart.nosource')
+        : activeFilter === 'manual' ? tr('collection.manual_needed', { n: manualCount })
         : activeFilter.startsWith('status:') ? tr('status.' + activeFilter.slice(7))
         : tr('nav.all_games'));
 
@@ -593,8 +603,10 @@
         const ticket = ++infoRequest;
         previewLoading = true;
         try {
-            const metadata = await PreviewGameInfo(hit.url);
-            if (ticket !== infoRequest || locked || selectedGame?.id !== original.id || !metadata) return;
+            const metadata = hit.selection
+                ? await PreviewPornolabGame(original.id, hit.selection.url, hit.selection.snapshot, hit.selection.index)
+                : await PreviewGameInfo(hit.url);
+            if (ticket !== infoRequest || locked || selectedGame?.id !== original.id || !metadata || (hit.isCurrent && !hit.isCurrent())) return;
             const merged = { ...original };
             for (const key of ['title', 'version', 'description', 'author', 'engine', 'cover_path']) {
                 if (metadata[key]) merged[key] = metadata[key];
@@ -606,15 +618,19 @@
                 if (!tagKeys.has(tag.toLowerCase())) { tagKeys.add(tag.toLowerCase()); merged.tags.push(tag); }
             }
             if (!merged.version) merged.version = folderVersion;
-            merged.sources = [...(original.sources || []).filter(s => s.source !== hit.source), { source: hit.source, url: hit.url, last_version: metadata.version || '' }];
+            const source = hit.selection && metadata.sources?.find(s => s.source === hit.source);
+            merged.sources = [...(original.sources || []).filter(s => s.source !== hit.source), source || { source: hit.source, url: hit.url, last_version: metadata.version || '' }];
             merged.primary_source = original.primary_source || hit.source;
             previewScroll = mainEl?.scrollTop || 0;
-            gameInfoPreview = { game: merged, source: hit.source, url: hit.url };
+            gameInfoPreview = { game: merged, source: hit.source, url: hit.url, selection: hit.selection, onReselect: hit.onReselect, onSaved: hit.onSaved };
             await tick();
             scrollTop(false);
             mainEl?.querySelector('[data-preview-back]')?.focus({ preventScroll: true });
         } catch (err) {
-            if (ticket === infoRequest && !locked) showToast(tr('toast.error', { err }), 'error');
+            if (ticket === infoRequest && !locked && (!hit.isCurrent || hit.isCurrent())) {
+                if (hit.onReselect && collectionError(err)) await hit.onReselect(err);
+                else showToast(tr('toast.error', { err }), 'error');
+            }
         } finally { if (ticket === infoRequest) previewLoading = false; }
     }
     async function backFromPreview() {
@@ -633,18 +649,23 @@
         const ticket = infoRequest;
         savingInfo = true;
         try {
-            await ApplyGameInfo(chosen.game.id, chosen.url);
+            if (chosen.selection) await ApplyPornolabGame(chosen.game.id, chosen.selection.url, chosen.selection.snapshot, chosen.selection.index);
+            else await ApplyGameInfo(chosen.game.id, chosen.url);
             if (ticket !== infoRequest || locked) return;
             const fresh = await GetGames();
             if (ticket !== infoRequest || locked) return;
             games = fresh || [];
             selectedGame = games.find(g => g.id === chosen.game.id) || selectedGame;
+            forgetManual(chosen.game.id); chosen.onSaved?.();
             clearInfoPreview();
             showToast(tr('find.saved'), 'success');
             await tick();
             scrollTop(false);
         } catch (err) {
-            if (ticket === infoRequest && !locked) showToast(tr('toast.error', { err }), 'error');
+            if (ticket === infoRequest && !locked) {
+                if (chosen.onReselect && collectionError(err)) { clearInfoPreview(); await chosen.onReselect(err); }
+                else showToast(tr('toast.error', { err }), 'error');
+            }
         } finally { if (ticket === infoRequest) savingInfo = false; }
     }
 
@@ -665,7 +686,8 @@
         const labels = [];
         if (list.c) labels.push(list.c === '__uncat' ? tr('nav.uncategorized') : cols.find(c => c.id === list.c)?.name);
         if (list.q) labels.push(tr('view.search') + ': ' + list.q);
-        if (list.f && list.f !== 'all') labels.push(tr(list.f.startsWith('status:') ? 'status.' + list.f.slice(7)
+        if (list.f === 'manual') labels.push(tr('collection.manual_needed', { n: list.ids.length }));
+        else if (list.f && list.f !== 'all') labels.push(tr(list.f.startsWith('status:') ? 'status.' + list.f.slice(7)
             : ({ favorites: 'nav.favorites', updates: 'nav.updates', nocover: 'nav.no_cover', missing: 'missing.nav', nolaunch: 'smart.nolaunch', nosource: 'smart.nosource' })[list.f]));
         if (list.t?.inc.length || list.t?.exc.length) labels.push(tr('view.tags'));
         return labels.filter(Boolean).join(' · ') || tr('nav.all_games');
@@ -1244,7 +1266,8 @@
                 <!-- Заголовок вида: название + число, справа сортировка -->
                 <div class="flex items-center gap-3 mb-4 animate-fade-in flex-wrap">
                     <h2 class="text-2xl font-semibold text-white tracking-tight truncate min-w-0">{viewTitle}</h2>
-                    {#if !showShelves}<span class="text-slate-500 text-sm">{filteredGames.length}</span>{/if}
+                    {#if manualCount && activeFilter !== 'manual'}<button data-manual-summary on:click={openManualGames} class="text-sm text-amber-300 hover:text-amber-200 underline underline-offset-4">{$t('collection.manual_needed', { n: manualCount })}</button>{/if}
+                    {#if !showShelves && activeFilter !== 'manual'}<span class="text-slate-500 text-sm">{filteredGames.length}</span>{/if}
                     {#if !isHome}
                         <button on:click={resetView}
                                 class="shrink-0 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-white/10 transition-colors">

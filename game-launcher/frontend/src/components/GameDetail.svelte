@@ -12,6 +12,7 @@
     import Icon from './Icon.svelte';
     import MetadataPanel from './MetadataPanel.svelte';
     import GameSessions from './GameSessions.svelte';
+    import { collectionError } from '../lib/collectionChoices.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { STATUSES } from '../lib/status.js';
 
@@ -48,6 +49,7 @@
     export let onReload = async () => {};
 
     let parsing = false;
+    let metadataPanel;
     const copy = (text, label) => copyText(text, label, showToast);
 
     // --- Медиа: обложка + скриншоты в одной ленте; выбранное показывается крупно ---
@@ -157,11 +159,13 @@
         parsing = true;
         try {
             await UpdateGameMetadata(game.id, url);
+            if (!alive) return false;
             showToast(tr('toast.meta_loaded'), 'success');
             await onReload();
             return true;
         } catch (err) {
-            showToast(tr('toast.meta_fail', { err }), 'error');
+            if (alive && collectionError(err)) await metadataPanel?.reselect(url, err);
+            else if (alive) showToast(tr('toast.meta_fail', { err }), 'error');
             return false;
         } finally {
             parsing = false;
@@ -172,7 +176,7 @@
     // свежие данные с этой площадки (версия, описание, картинки) и снять отметку обновления.
     $: updateSrc = (game.sources || []).find(s => s.source === game.update_source && s.url);
     function openUpdatePage() { if (updateSrc) OpenURL(updateSrc.url); }
-    function markUpdated() { if (updateSrc) parse(updateSrc.url); }
+    function markUpdated() { if (updateSrc) metadataPanel?.submitLink(updateSrc.url); }
 
     $: links = (displayGame.sources || []).filter(s => s.url);
     $: lastPlayed = ($langStore, game.last_launched_at ? fmtDay(game.last_launched_at * 1000, $langStore) : tr('detail.never'));
@@ -267,7 +271,7 @@
 
         <!-- Скрываем, не размонтируем: после превью остаются запрос, источники и результаты. -->
         <div class:hidden={!!preview} style="order: {noInfo && !dismissed ? 1 : 5}" data-metadata-panel>
-            <MetadataPanel {game} {supportedSources} {parsing} onParse={parse} {onReload} {onPreview} onDismiss={dismissInfo} prominent={noInfo && !dismissed}/>
+            <MetadataPanel bind:this={metadataPanel} {game} {supportedSources} {parsing} onParse={parse} {onReload} {onPreview} onDismiss={dismissInfo} prominent={noInfo && !dismissed}/>
         </div>
 
         <section class="order-2">

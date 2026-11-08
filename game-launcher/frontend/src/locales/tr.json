@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "Oyun bu paylaşımda bulunamadı; yeniden seçin.",
   "err.parse.collection_changed": "Bu paylaşımdaki oyunlar değişti; yeniden seçin.",
   "collection.game_number": "Oyun {n}",
-  "collection.manual_needed": "Elle seçim gerekiyor: {n}"
+  "collection.manual_needed": "Elle seçim gerekiyor: {n}",
+  "collection.choose": "Bu paylaşımdan bir oyun seçin · {n} oyun",
+  "collection.folder_match": "Klasörünüzle eşleşiyor gibi görünüyor",
+  "collection.empty": "Bu paylaşımda oyun bulunamadı. Başka bir bağlantı deneyin.",
+  "collection.use": "Seç"
 }

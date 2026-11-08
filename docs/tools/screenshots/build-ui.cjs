@@ -94,7 +94,7 @@ const mock = `(function () {
         cover_path: 'covers/x01-wide.svg', images: ['covers/g01-1.svg', 'covers/g01-2.svg'],
         sources: [{ source, url, last_version: metadata.version }], primary_source: source, update_available: false, update_version: '', update_source: '', update_found_at: 0 });
     },
-    GetCustomLocales: () => ({}), GetAppVersion: () => '1.0.0', GetDataDir: () => 'D:/pLauncher-data', GetPrivacy: () => priv, NotifyWindowShown: () => null,
+    GetCustomLocales: () => ({}), GetAppVersion: () => '1.0.0', GetDataDir: () => 'D:/pLauncher-data', GetPrivacy: () => priv, SavePrivacy: value => Object.assign(priv, value), NotifyWindowShown: () => null,
     GetIgnoredPaths: () => ['D:/Games/_videos'], CheckLauncherUpdate: () => ({ available: false, current: '1.0.0', latest: '1.0.0' }),
     UpdateGame: (g) => {
       const i = games.findIndex(x => x.id === g.id);
@@ -116,10 +116,18 @@ const mock = `(function () {
   };
   Object.assign(impl, (${require('./launch-files-fixture.cjs').toString()})({ games, priv, params, saveGame: impl.UpdateGame }));
   Object.assign(impl, (${require('./smart-lists-fixture.cjs').toString()})({ games, collections, priv, params, impl }));
+  Object.assign(impl, (${require('./pornolab-fixture.cjs').toString()})({ games, collections, priv, params, impl }));
   const App = new Proxy({}, { get: (_, name) => (...args) => Promise.resolve().then(() => { controls.calls.push({ name, args }); return impl[name]?.(...args); }).then(value => JSON.parse(JSON.stringify(value ?? null))) });
   window.go = { main: { App } };
   const events = {};
-  window.__mockEmit = (name, ...args) => { if (name === 'privacy-locked') priv.locked = true; if (name === 'privacy-locked' || name === 'privacy-panic') impl.StopSmartSearch(0); (events[name] || []).forEach(fn => fn(...args)); };
+  window.__mockEmit = (name, ...args) => {
+    if (name === 'privacy-locked') priv.locked = true;
+    if (name === 'privacy-locked' || name === 'privacy-panic') {
+      impl.StopSmartSearch(0);
+      if (window.__collectionMock) { window.__collectionMock.generation++; window.__collectionMock.manual = {}; }
+    }
+    (events[name] || []).forEach(fn => fn(...args));
+  };
   window.runtime = new Proxy({}, { get: (_, name) => name === 'EventsOnMultiple' ? (event, fn) => { (events[event] ||= []).push(fn); return () => {}; } : () => {} });
 
   // Сценарии съёмки
@@ -130,7 +138,7 @@ const mock = `(function () {
   const st = document.createElement('style'); st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'; document.head.appendChild(st);
   window.addEventListener('load', async () => {
     await sleep(900);
-    if (shot === 'detail' || shot === 'find') { card('g01').click(); await sleep(600); }
+    if (shot === 'detail' || shot === 'find' || shot === 'collection') { card('g01').click(); await sleep(600); }
     if (shot === 'discreet') { key('h', { ctrlKey: true, code: 'KeyH' }); await sleep(400); }
     if (shot === 'bulk') {
       document.querySelector('button[aria-label="View options"]').click(); await sleep(80);

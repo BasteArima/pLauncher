@@ -211,7 +211,7 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   (`cleanReleaseTitle`, `versionFromTitle`, `parseReleaseLanguages`, `parseReleaseTags`).
   **Do NOT** go back to font-size heuristics for the title — that was the old, broken approach.
 - Exception: a selected game in a Pornolab collection takes its own section heading and fields.
-  Collection backend is implemented; chooser UI is pending. See `docs/specs/pornolab-collections.md`.
+  Collection backend and chooser UI are implemented. See `docs/specs/pornolab-collections.md`.
   Sections own an `Описание` field and are separated by `post-hr` or game spoilers. Preserve raw
   `.sp-body[title]` / `.sp-title` support, not just the JavaScript-created `.sp-head`.
 - pornolab pages are **windows-1251** (decoded via `charmap`). Image real URLs are in the `title` attr
@@ -369,7 +369,7 @@ Durable project notes live in the agent memory dir
 `~/.claude/projects/<this project>/memory/` (parser-design, data-dir-architecture,
 ui-state-and-collections-plan). The code comments and `extract_test.go` are also good references.
 
-### Pornolab collection backend (2026-11-09)
+### Pornolab collections (2026-11-09)
 
 `internal/parser/pornolab_collections.go` extracts only the chosen game's fields/media. Ordinary
 single-game parsing remains in `parseLegacy`; unselected collections require manual choice except
@@ -385,7 +385,20 @@ with document-order indices, a fallback-title flag and description excerpt. Snap
 the frontend; return it unchanged with the original index. `collection.game_number` formats Game N.
 Reparse uses Begin/StopSmartSearch tokens and returns applied/manual flags; the manual handoff is
 in memory and cleared on privacy transitions. Existing ApplySmartGameInfo returns false for manual
-collection choices. Wiring the chooser, clickable summary and bulk frontend caller is still pending.
+collection choices. `bulkReparse` uses this tokenized contract; never restore the old direct
+UpdateGameMetadata loop, which cannot distinguish manual selection from failures.
+
+`MetadataPanel` inspects Pornolab links in both layouts (including name-field URL handoff).
+`CollectionChoices` renders all candidates, uses Go's ranking/Best flag and original section index,
+then opens App's existing read-only preview. Save uses ApplyPornolabGame. Collection errors reopen
+Resolve with refresh=false; normal errors retain the current stage. Saved selections resolve by
+selected_title, never the edited library title. Lock/panic, tab edits and navigation reject stale replies.
+`lib/collectionChoices.js` keeps manual IDs and candidate payloads in memory, scoped to visibleGames.
+The actionable summary and persistent library-header link open the manual filter; opening an affected
+game restores its chooser or name-search results. Successful application removes it from that list.
+Privacy clears payloads, IDs and actionable toasts. All chooser strings exist in all 11 locales.
+`test-pornolab-collections.cjs` uses fictional local media and controlled replies; see the screenshot
+README for scenarios. Do not test this UI against the owner's real library.
 
 The App-owned page cache expires after ten idle minutes, retains at most five 4 MiB pages and clones
 DOMs per extraction. Expiry fetches silently; changed membership returns `parse.collection_changed`.

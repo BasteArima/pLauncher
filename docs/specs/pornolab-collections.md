@@ -1,8 +1,8 @@
 # Spec: select a game from a Pornolab collection
 
-Status: **step 1 — backend implemented; Windows checks passed; UI pending** (2026-11-09).
-The owner approved the behaviour and Decisions below. Step 1 includes the backend, fixtures,
-localization keys, generated bindings and mock method stubs. The chooser UI remains a separate step.
+Status: **steps 1 and 2 implemented; Windows and mock-UI verification complete** (2026-11-09).
+The backend, chooser, preview/save flow and clickable batch handoff are implemented.
+Real-library/native-window acceptance remains with the owner; delivery details are below.
 
 Design reference: [Find game info results](../design/find-by-name-results.png), interpreted using
 [the design README](../design/README.md). Reuse the flow in [find-by-name.md](find-by-name.md) and the
@@ -284,7 +284,7 @@ when none exist; CI relies on the committed fixture.
 
 Searching Pornolab by name, authentication/Cloudflare workarounds, auto-importing every game in a release,
 new library collection types, multi-game support for other sites, and automatically converting legacy
-sources without user selection. The chooser interface and clickable manual-work summary are outside step 1.
+sources without user selection.
 
 ## Decisions
 
@@ -298,7 +298,7 @@ Confirmed by the owner on 2026-11-09:
    only when the game set changes. Ambiguous identity still requires a new choice.
 5. Manual work uses the existing smart-list handoff: **Manual choice needed: {n}** /
    **Нужен ручной выбор: {n}**, clickable to open the affected games. Step 1 supplies the backend payload;
-   wiring the click and rendering the list belong to the subsequent UI step.
+   step 2 connects this payload to the clickable summary and affected-game list.
 
 ## Backend delivery (2026-11-09)
 
@@ -317,7 +317,7 @@ New bound methods and their mock stubs:
 - `ApplyPornolabGame(gameID, url, snapshot, index)` applies that choice using the existing merge rules.
 - `ReparseGameInfo(token, gameID)` uses Begin/StopSmartSearch and returns `{game_id, applied, manual}`.
 - `GetManualGameChoices()` returns game IDs, source URLs and candidate snapshots for the existing
-  smart-list handoff. The frontend must use this payload and the manual count in its later UI delivery.
+  smart-list handoff. Step 2 consumes this payload and the manual count.
 
 Treat snapshot as opaque. It contains a privacy generation, section identities and a metadata digest;
 no page DOM is retained by a snapshot. The cache holds up to five raw pages (4 MiB maximum each), with
@@ -330,7 +330,7 @@ accepting a newly detected version cannot accidentally use pre-check metadata.
 Metadata application, smart-list lookup and bulk reparse refuse unselected collections before saving.
 The legacy UpdateGameMetadata caller receives the coded choice-required error; the new batch method
 classifies it as manual and records the handoff. ApplySmartGameInfo returns false for manual cases.
-The current bulk UI still needs to switch to the new batch contract in step 2. No Svelte component,
+Step 2 switches the bulk UI to this batch contract. No Svelte component,
 frontend action handler, layout or interaction was changed in this backend step.
 
 Validation on Windows: `go vet ./...`, `go test ./...` and `build.ps1`; Wails bindings regenerated.
@@ -344,5 +344,49 @@ Mock script syntax was checked with Node. Build warnings remain in unchanged Sve
 for Browserslist data age and bundle size.
 
 Not checked: a real library, native Wails interaction/global panic hotkey, live Pornolab/Cloudflare,
-Linux/macOS execution or visual UI acceptance. The chooser and clickable manual-work summary remain
-unimplemented by design for step 2; their headless UI checks and mockup comparison are still pending.
+Linux/macOS execution or visual UI acceptance in step 1. Step 2 mock-UI verification is recorded below.
+
+## Interface delivery (2026-11-09)
+
+Both MetadataPanel layouts now inspect Pornolab links before parsing. Unselected releases show
+CollectionChoices rows with all candidates, document-order section identities, localized fallback
+labels, Go-ranked folder confidence and privacy-aware 16:9 covers. The user chooses explicitly,
+previews with the existing media/lightbox flow, and saves using the selected snapshot. Back/Esc
+preserve the list and URL; saved sources retain their title identity independently of the library title.
+Generic failures retain the current stage; missing/ambiguous sections or changed membership reopen
+choices with localized guidance and refresh=false. An unchanged expired snapshot proceeds silently.
+
+Bulk filling uses ReparseGameInfo with Begin/StopSmartSearch tokens. Its summary separates successful
+applications, errors and manual choices. The manual-choice action opens only affected visible games;
+a library-header link remains available after the toast expires. Opening an item restores its cached
+collection choices or ordinary name-search results. Successful saves remove it from this list. Stop,
+lock/panic and visibility changes invalidate late results; privacy also clears cached handoffs and
+actionable toasts. Settings blur, hover reveal and discreet mode apply to list, preview and lightbox.
+
+Verification on Windows: go vet ./..., go test ./... and build.ps1 passed; the executable is
+`game-launcher/build/bin/pLauncher.exe`. All six existing headless UI scripts passed (347 assertions).
+The new `test-pornolab-collections.cjs` passed 82 assertions: two/three candidates, both panel layouts, ranked identity,
+explicit choice, preview/back/save, one-fetch reuse, expired snapshots, missing/reordered saved titles,
+localized fallback labels, generic and reselection errors, EN/RU runtime switching, source opening,
+privacy blur, late responses, bulk manual handoff/Stop and hidden-game exclusion, plus a 900px layout.
+Mocks use fictional local media and controlled responses; backend cache semantics are separately
+covered by the step 1 Go tests. No live site is contacted by these UI checks.
+
+Compared `out/collection-three-en.png` and `out/collection-three-ru.png` at the reference's 1426px
+viewport width with `docs/design/find-by-name-results.png`. The separate bordered rows, 136px 16:9
+thumbnails, gaps, green reason and white/outlined actions follow the board. Remaining differences:
+
+- This is the Paste a link tab: URL/Get info replace name/Search; source chips and the folder-version
+  search explanation are replaced by the release's game count. Metadata is version/year/developer,
+  and the green reason is Looks like your folder, as agreed for collections.
+- The production card occupies the game page's left column beside the sidebar and play/details
+  column; the reference shows an isolated full-width card. App typography and button padding are
+  more compact; at narrow widths actions wrap below the row and thumbnails reduce to 120px.
+- Local fictional artwork replaces the reference's solid placeholders. The small external-page
+  button remains, as required by the design README even though it is absent from the image.
+- The existing Continue without info link remains under a prominent panel; app theme colors and
+  borders take precedence over the board's exact shades.
+
+Not checked: the owner's real library, a live/native Wails interaction or global panic hotkey,
+Pornolab/Cloudflare networking, and Linux/macOS execution. Existing Svelte accessibility warnings,
+Browserslist age and bundle-size warnings remain; no new chooser accessibility warning is emitted.

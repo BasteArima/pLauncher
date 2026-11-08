@@ -87,7 +87,7 @@
     const sectionCls = 'px-2.5 mb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider';
     $: hasSmart = updatesCount || noCoverCount || missingCount || noLaunchCount || noSourceCount;
     // Системные строки «Все игры» и «Избранное»: подсвечены, пока не открыта коллекция или умный список
-    $: allActive = !statisticsActive && !activeCollection && !['updates', 'nocover', 'missing', 'favorites', 'nolaunch', 'nosource'].includes(activeFilter);
+    $: allActive = !statisticsActive && !activeCollection && !['updates', 'nocover', 'missing', 'favorites', 'nolaunch', 'nosource', 'manual'].includes(activeFilter);
     $: favActive = !statisticsActive && !activeCollection && activeFilter === 'favorites';
 </script>
 
@@ -231,7 +231,7 @@
                     </button>
                 {/if}
                 {#if noCoverCount}
-                    <button on:click={() => onFilter('nocover')} class={navCls(activeFilter === 'nocover' && !activeCollection)} title={$t('nav.no_cover_hint')}>
+                    <button data-bulk-list="nocover" on:click={() => onFilter('nocover')} class={navCls(activeFilter === 'nocover' && !activeCollection)} title={$t('nav.no_cover_hint')}>
                         <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg> {$t('nav.no_cover')}
                         <span class="ml-auto text-xs text-slate-500">{noCoverCount}</span>
                     </button>

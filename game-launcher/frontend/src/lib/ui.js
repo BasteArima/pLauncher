@@ -6,10 +6,10 @@ import { writable, get } from 'svelte/store';
 export const toast = writable({ show: false, message: '', type: 'success' });
 let toastTimer = null;
 
-export function showToast(message, type = 'success') {
-    toast.set({ show: true, message, type });
+export function showToast(message, type = 'success', action = null) {
+    toast.set({ show: true, message, type, action });
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.update(t => ({ ...t, show: false })), 3000);
+    toastTimer = setTimeout(() => toast.update(t => ({ ...t, show: false })), action ? 8000 : 3000);
 }
 
 // --- Подтверждение (вместо нативного confirm) ---

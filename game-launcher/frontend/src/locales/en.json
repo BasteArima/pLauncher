@@ -735,5 +735,9 @@
   "err.parse.collection_game_missing": "Game not found in this release; choose it again.",
   "err.parse.collection_changed": "The games in this release have changed; choose again.",
   "collection.game_number": "Game {n}",
-  "collection.manual_needed": "Manual choice needed: {n}"
+  "collection.manual_needed": "Manual choice needed: {n}",
+  "collection.choose": "Choose a game from this release · {n} games",
+  "collection.folder_match": "Looks like your folder",
+  "collection.empty": "No games found in this release. Try another link.",
+  "collection.use": "Use this"
 }
