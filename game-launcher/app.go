@@ -23,18 +23,21 @@ import (
 
 // App — это ядро нашего приложения, связывающее все модули
 type App struct {
-	ctx          context.Context
-	sessionsMu   sync.Mutex // serializes launch and data replacement
-	sessionsStop context.CancelFunc
-	mu           sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
-	repo         db.GameRepository
-	scanner      *scanner.Scanner
-	launcher     fileLauncher
-	dataDir      string // абсолютный путь к папке с данными (БД + обложки)
-	priv         privacyState
-	live         bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
-	smartSearch  smartSearchState
-	upd          updateState
+	ctx           context.Context
+	sessionsMu    sync.Mutex // serializes launch and data replacement
+	sessionsStop  context.CancelFunc
+	mu            sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
+	repo          db.GameRepository
+	scanner       *scanner.Scanner
+	launcher      fileLauncher
+	dataDir       string // абсолютный путь к папке с данными (БД + обложки)
+	priv          privacyState
+	live          bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
+	pornolab      parser.PornolabCache
+	collectionMu  sync.Mutex
+	manualChoices map[string]ManualGameChoice
+	smartSearch   smartSearchState
+	upd           updateState
 }
 
 // NewApp создает новое приложение
@@ -72,6 +75,7 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) initServices(dataDir string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	a.clearCollectionState()
 
 	abs, err := filepath.Abs(dataDir)
 	if err != nil {
@@ -388,9 +392,45 @@ func (a *App) updateGameMetadataContext(ctx context.Context, gameID, url string,
 		return err
 	}
 
+	isCollectionSource := parser.SourceName(url) == "Pornolab"
+	if isCollectionSource && a.collectionPrivate() {
+		return context.Canceled
+	}
+	// Collection downloads remain isolated until the library write succeeds.
+	ownedMedia, metadataSaved := false, false
+	if isCollectionSource && saveDir == "" {
+		saveDir, err = os.MkdirTemp(filepath.Join(a.dataDir, "covers"), "collection-")
+		if err != nil {
+			return apperr.New("app.library_save", nil, "couldn't save game info: %w", err)
+		}
+		ownedMedia = true
+	}
+	defer func() {
+		if ownedMedia && !metadataSaved {
+			_ = os.RemoveAll(saveDir)
+		}
+	}()
 	// 3. Скачиваем данные в подпапку обложек внутри папки данных
 	if saveDir == "" {
 		saveDir = filepath.Join(a.dataDir, "covers", targetGame.ID)
+	}
+	if isCollectionSource {
+		var cancel context.CancelFunc
+		ctx, cancel = a.pornolab.Context(ctx)
+		defer cancel()
+		opts := parser.PornolabContextOptions(ctx)
+		opts.Cache = &a.pornolab
+		if opts.Snapshot == "" {
+			for _, src := range targetGame.Sources {
+				if src.URL == url {
+					opts.SelectedTitle = src.SelectedTitle
+					_, index, _ := parser.PornolabURL(url)
+					opts.SavedSelection = index > 0
+					break
+				}
+			}
+		}
+		ctx = parser.WithPornolab(ctx, opts)
 	}
 	parsedData, err := p.Parse(ctx, url, saveDir)
 	// Не публикуем и не сохраняем результат, если приложение заблокировали во время запроса.
@@ -441,7 +481,17 @@ func (a *App) updateGameMetadataContext(ctx context.Context, gameID, url string,
 
 	// 5. Запоминаем источник: площадка + ссылка + принятая версия (база для сравнения).
 	//    Раз пользователь только что распарсил/принял версию — сбрасываем флаг обновления.
+	if len(parsedData.Sources) > 0 && isCollectionSource {
+		url = parsedData.Sources[0].URL
+	}
 	upsertSource(targetGame, parser.SourceName(url), url, parsedData.Version)
+	if len(parsedData.Sources) > 0 && isCollectionSource {
+		for i := range targetGame.Sources {
+			if targetGame.Sources[i].Source == "Pornolab" {
+				targetGame.Sources[i].SelectedTitle = parsedData.Sources[0].SelectedTitle
+			}
+		}
+	}
 	targetGame.UpdateAvailable = false
 	targetGame.UpdateVersion = ""
 	targetGame.UpdateSource = ""
@@ -451,9 +501,17 @@ func (a *App) updateGameMetadataContext(ctx context.Context, gameID, url string,
 	if ctx.Err() != nil {
 		return nil
 	}
+	if isCollectionSource {
+		a.collectionMu.Lock()
+		defer a.collectionMu.Unlock()
+		if !a.pornolab.Valid(ctx) || a.collectionPrivate() {
+			return context.Canceled
+		}
+	}
 	if err := save(targetGame); err != nil {
 		return apperr.New("app.library_save", nil, "couldn't save game info: %w", err)
 	}
+	metadataSaved = true
 	return nil
 }
 
@@ -465,6 +523,9 @@ func upsertSource(game *models.Game, platform, url, version string) {
 	}
 	for i := range game.Sources {
 		if game.Sources[i].Source == platform {
+			if game.Sources[i].URL != url {
+				game.Sources[i].SelectedTitle = ""
+			}
 			game.Sources[i].URL = url
 			game.Sources[i].LastVersion = version
 			if game.PrimarySource == "" {
@@ -514,9 +575,30 @@ func (a *App) checkSourceAt(g *models.Game, idx int) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	parsed, err := p.Parse(a.ctx, src.URL, "") // saveDir="" → только метаданные
+	ctx := a.ctx
+	if src.Source == "Pornolab" || parser.SourceName(src.URL) == "Pornolab" {
+		if a.collectionPrivate() {
+			return false, context.Canceled
+		}
+		var cancel context.CancelFunc
+		ctx, cancel = a.pornolab.Context(ctx)
+		defer cancel()
+		_, index, _ := parser.PornolabURL(src.URL)
+		ctx = parser.WithPornolab(ctx, parser.PornolabOptions{Cache: &a.pornolab, Fresh: true, LegacyUpdate: true, SelectedTitle: src.SelectedTitle, SavedSelection: index > 0})
+	}
+	parsed, err := p.Parse(ctx, src.URL, "")
 	if err != nil {
 		return false, err
+	}
+	if ctx.Err() != nil {
+		return false, ctx.Err()
+	}
+	if parser.SourceName(src.URL) == "Pornolab" && (!a.pornolab.Valid(ctx) || a.collectionPrivate()) {
+		return false, context.Canceled
+	}
+	if len(parsed.Sources) > 0 {
+		src.URL = parsed.Sources[0].URL
+		src.SelectedTitle = parsed.Sources[0].SelectedTitle
 	}
 	return applySourceVersion(g, idx, parsed.Version, time.Now().Unix()), nil
 }
@@ -860,6 +942,23 @@ func (a *App) UpdateGame(game models.Game) error {
 	defer a.sessionsMu.Unlock()
 	if a.repo == nil || a.isLocked() {
 		return nil
+	}
+	old, err := a.gameByID(game.ID)
+	if err != nil {
+		return err
+	}
+	for i := range game.Sources {
+		source := &game.Sources[i]
+		if source.Source != "Pornolab" {
+			continue
+		}
+		source.SelectedTitle = ""
+		for _, previous := range old.Sources {
+			if previous.Source == source.Source && previous.URL == source.URL {
+				source.SelectedTitle = previous.SelectedTitle
+				break
+			}
+		}
 	}
 	if err := a.repo.SaveGame(a.ctx, &game); err != nil {
 		if apperr.Code(err) != "" {

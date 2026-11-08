@@ -26,6 +26,10 @@ export function ApplyLauncherUpdate(arg1) {
   return window['go']['main']['App']['ApplyLauncherUpdate'](arg1);
 }
 
+export function ApplyPornolabGame(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ApplyPornolabGame'](arg1, arg2, arg3, arg4);
+}
+
 export function ApplySmartGameInfo(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['ApplySmartGameInfo'](arg1, arg2, arg3, arg4);
 }
@@ -154,6 +158,10 @@ export function GetLibraryStats(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetLibraryStats'](arg1, arg2, arg3);
 }
 
+export function GetManualGameChoices() {
+  return window['go']['main']['App']['GetManualGameChoices']();
+}
+
 export function GetPortableDataDir() {
   return window['go']['main']['App']['GetPortableDataDir']();
 }
@@ -226,6 +234,10 @@ export function PreviewGameInfo(arg1) {
   return window['go']['main']['App']['PreviewGameInfo'](arg1);
 }
 
+export function PreviewPornolabGame(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['PreviewPornolabGame'](arg1, arg2, arg3, arg4);
+}
+
 export function RecalcGameSize(arg1) {
   return window['go']['main']['App']['RecalcGameSize'](arg1);
 }
@@ -260,6 +272,14 @@ export function RemoveMissingGames() {
 
 export function RemoveScanPath(arg1) {
   return window['go']['main']['App']['RemoveScanPath'](arg1);
+}
+
+export function ReparseGameInfo(arg1, arg2) {
+  return window['go']['main']['App']['ReparseGameInfo'](arg1, arg2);
+}
+
+export function ResolvePornolabCollection(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ResolvePornolabCollection'](arg1, arg2, arg3);
 }
 
 export function SaveCollections(arg1) {

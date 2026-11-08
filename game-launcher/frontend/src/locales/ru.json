@@ -730,5 +730,10 @@
   "smart.launch_summary": "Найдено {n} из {m}",
   "smart.search_progress": "{n} из {m}",
   "smart.search_stop": "Остановить",
-  "smart.search_summary": "Применено {n}, нужен ручной выбор {m}, ошибок {k}"
+  "smart.search_summary": "Применено {n}, нужен ручной выбор {m}, ошибок {k}",
+  "err.parse.collection_choice_required": "Выберите игру из этой раздачи.",
+  "err.parse.collection_game_missing": "Игра не найдена в раздаче, выберите заново.",
+  "err.parse.collection_changed": "Состав игр в раздаче изменился, выберите заново.",
+  "collection.game_number": "Игра {n}",
+  "collection.manual_needed": "Нужен ручной выбор: {n}"
 }

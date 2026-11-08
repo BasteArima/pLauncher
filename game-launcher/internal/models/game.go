@@ -5,9 +5,10 @@ package models
 // «приняли»/увидели последней именно с этой площадки; форматы версий у площадок разные,
 // поэтому сравниваем строки в рамках одной площадки, а не между ними).
 type GameSource struct {
-	Source      string `json:"source"`       // имя площадки (как в parser.SupportedSources)
-	URL         string `json:"url"`          // ссылка на страницу игры
-	LastVersion string `json:"last_version"` // последняя принятая/увиденная версия с этой площадки
+	SelectedTitle string `json:"selected_title,omitempty"` // Original section title, independent of Game.Title.
+	Source        string `json:"source"`                   // имя площадки (как в parser.SupportedSources)
+	URL           string `json:"url"`                      // ссылка на страницу игры
+	LastVersion   string `json:"last_version"`             // последняя принятая/увиденная версия с этой площадки
 }
 
 // LaunchFile is an additional local file. An empty Label uses filename-based localization.

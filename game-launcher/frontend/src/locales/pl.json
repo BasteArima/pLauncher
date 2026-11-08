@@ -730,5 +730,10 @@
   "smart.launch_summary": "Znaleziono {n} z {m}",
   "smart.search_progress": "{n} z {m}",
   "smart.search_stop": "Zatrzymaj",
-  "smart.search_summary": "Zastosowano {n}, wybór ręczny {m}, błędy {k}"
+  "smart.search_summary": "Zastosowano {n}, wybór ręczny {m}, błędy {k}",
+  "err.parse.collection_choice_required": "Wybierz grę z tego wydania.",
+  "err.parse.collection_game_missing": "Nie znaleziono gry w tym wydaniu; wybierz ponownie.",
+  "err.parse.collection_changed": "Zestaw gier w tym wydaniu uległ zmianie; wybierz ponownie.",
+  "collection.game_number": "Gra {n}",
+  "collection.manual_needed": "Wymagany ręczny wybór: {n}"
 }

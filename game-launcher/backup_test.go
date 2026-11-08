@@ -38,7 +38,8 @@ func TestBackupRoundTrip(t *testing.T) {
 	}
 	mkfile(t, filepath.Join(srcDir, "covers", "g1", "cover.jpg"))
 	g := &models.Game{
-		ID: "g1", Title: "Test Game", FolderPath: `D:\Games\Test`,
+		Sources: []models.GameSource{{Source: "Pornolab", URL: "https://pornolab.net/?t=1#game=2", SelectedTitle: "Original section title", LastVersion: "1.0"}},
+		ID:      "g1", Title: "Test Game", FolderPath: `D:\Games\Test`,
 		CoverPath: filepath.Join(srcDir, "covers", "g1", "cover.jpg"),
 		Images:    []string{}, Languages: []string{}, Tags: []string{"vn"},
 	}
@@ -77,6 +78,9 @@ func TestBackupRoundTrip(t *testing.T) {
 	}
 	if games[0].CoverPath != "covers/g1/cover.jpg" {
 		t.Errorf("cover path = %q, want covers/g1/cover.jpg", games[0].CoverPath)
+	}
+	if len(games[0].Sources) != 1 || games[0].Sources[0] != g.Sources[0] {
+		t.Fatal("source identity lost in export/import", games[0].Sources)
 	}
 	if _, err := os.Stat(filepath.Join(dstDir, "covers", "g1", "cover.jpg")); err != nil {
 		t.Errorf("cover file not imported: %v", err)

@@ -730,5 +730,10 @@
   "smart.launch_summary": "{m} oyundan {n} bulundu",
   "smart.search_progress": "{n} / {m}",
   "smart.search_stop": "Durdur",
-  "smart.search_summary": "Uygulanan {n}, elle seçim gereken {m}, hata {k}"
+  "smart.search_summary": "Uygulanan {n}, elle seçim gereken {m}, hata {k}",
+  "err.parse.collection_choice_required": "Bu paylaşımdan bir oyun seçin.",
+  "err.parse.collection_game_missing": "Oyun bu paylaşımda bulunamadı; yeniden seçin.",
+  "err.parse.collection_changed": "Bu paylaşımdaki oyunlar değişti; yeniden seçin.",
+  "collection.game_number": "Oyun {n}",
+  "collection.manual_needed": "Elle seçim gerekiyor: {n}"
 }

@@ -8,7 +8,6 @@ import (
 	"game-launcher/internal/models"
 
 	"github.com/PuerkitoBio/goquery"
-	"golang.org/x/text/encoding/charmap"
 )
 
 // PornlabParser реализация парсера для pornolab.net
@@ -17,28 +16,62 @@ type PornlabParser struct {
 }
 
 func (p *PornlabParser) Parse(ctx context.Context, pageURL string, saveDir string) (*models.Game, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
+	opts, _ := ctx.Value(pornolabContextKey{}).(PornolabOptions)
+	if opts.Cache != nil && opts.Snapshot != "" {
+		if _, err := opts.Cache.unstamp(opts.Snapshot); err != nil {
+			return nil, err
+		}
+	}
+	doc, err := p.document(ctx, pageURL, opts.Cache, opts.Fresh)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	return p.parseDocument(ctx, doc, pageURL, saveDir, opts)
+}
 
-	resp, err := p.client.Do(req)
+func (p *PornlabParser) parseDocument(ctx context.Context, doc *goquery.Document, pageURL, saveDir string, opts PornolabOptions) (*models.Game, error) {
+	base, index, err := PornolabURL(pageURL)
 	if err != nil {
-		return nil, requestErr("Pornolab", err)
+		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, httpStatusErr("Pornolab", resp.StatusCode)
+	sections := pornolabSections(doc)
+	if opts.Snapshot != "" {
+		snapshot := opts.Snapshot
+		if opts.Cache != nil {
+			snapshot, err = opts.Cache.unstamp(snapshot)
+			if err != nil {
+				return nil, err
+			}
+		}
+		index, err = resolveSnapshot(snapshot, sections, index)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	decoder := charmap.Windows1251.NewDecoder()
-	doc, err := goquery.NewDocumentFromReader(decoder.Reader(resp.Body))
-	if err != nil {
-		return nil, readErr(err)
+	if index > 0 {
+		index, err = resolvePornolabSelection(sections, index, opts.SelectedTitle, opts.SavedSelection)
+		if err != nil {
+			return nil, err
+		}
+		section := sections[index-1]
+		game := section.game
+		game.Sources = []models.GameSource{{Source: "Pornolab", URL: pornolabSelectedURL(base, index), SelectedTitle: game.Title, LastVersion: game.Version}}
+		cover, images := game.CoverPath, game.Images
+		if saveDir != "" {
+			game.CoverPath = ""
+			game.Images = nil
+		}
+		downloadInto(ctx, p.client, &game, cover, images, saveDir, base)
+		return &game, nil
 	}
+	if len(sections) > 1 && !opts.LegacyUpdate {
+		return nil, collectionChoiceErr()
+	}
+	return p.parseLegacy(ctx, doc, pageURL, saveDir)
+}
 
+// The ordinary parser is intentionally kept separate from collection extraction.
+func (p *PornlabParser) parseLegacy(ctx context.Context, doc *goquery.Document, pageURL, saveDir string) (*models.Game, error) {
 	game := &models.Game{
 		Languages: []string{},
 	}

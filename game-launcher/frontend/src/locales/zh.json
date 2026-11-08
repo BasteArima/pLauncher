@@ -730,5 +730,10 @@
   "smart.launch_summary": "已找到 {n}，共 {m}",
   "smart.search_progress": "{n} / {m}",
   "smart.search_stop": "停止",
-  "smart.search_summary": "已应用 {n}，需手动选择 {m}，错误 {k}"
+  "smart.search_summary": "已应用 {n}，需手动选择 {m}，错误 {k}",
+  "err.parse.collection_choice_required": "请选择此发布中的一个游戏。",
+  "err.parse.collection_game_missing": "在此发布中未找到该游戏，请重新选择。",
+  "err.parse.collection_changed": "此发布中的游戏已更改，请重新选择。",
+  "collection.game_number": "游戏 {n}",
+  "collection.manual_needed": "需要手动选择：{n}"
 }

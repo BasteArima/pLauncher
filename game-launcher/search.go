@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path"
 	"strings"
 
@@ -65,7 +66,20 @@ func (a *App) PreviewGameInfo(url string) (*models.Game, error) {
 	if err != nil {
 		return nil, err
 	}
-	g, err := p.Parse(parser.WithPreviewImages(a.ctx), url, "")
+	ctx := a.ctx
+	if parser.SourceName(url) == "Pornolab" {
+		if a.collectionPrivate() {
+			return nil, nil
+		}
+		var cancel context.CancelFunc
+		ctx, cancel = a.pornolab.Context(ctx)
+		defer cancel()
+		ctx = parser.WithPornolab(ctx, parser.PornolabOptions{Cache: &a.pornolab})
+	}
+	g, err := p.Parse(parser.WithPreviewImages(ctx), url, "")
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	if a.isLocked() {
 		return nil, nil
 	}

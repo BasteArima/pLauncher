@@ -1,8 +1,8 @@
 # Spec: select a game from a Pornolab collection
 
-Status: **step 0 — specification only; implementation not started** (2026-11-09).
-The owner approved the behaviour below. Implementation details still needing a decision are listed
-under Open questions. This step adds only this document; fixtures, code and UI checks belong to delivery.
+Status: **step 1 — backend implemented; Windows checks passed; UI pending** (2026-11-09).
+The owner approved the behaviour and Decisions below. Step 1 includes the backend, fixtures,
+localization keys, generated bindings and mock method stubs. The chooser UI remains a separate step.
 
 Design reference: [Find game info results](../design/find-by-name-results.png), interpreted using
 [the design README](../design/README.md). Reuse the flow in [find-by-name.md](find-by-name.md) and the
@@ -124,7 +124,8 @@ do not flatten the entire post and accidentally consume the next game's fields.
 
 - **Title:** the section heading (the reference uses a span with `font-size: 24px`, with either CSS
   spacing form), cleaned as text. Never use the combined `[Сборник]` release title as a selected game's
-  name. Missing/ambiguous headings are an open case below.
+  name. Missing/duplicate headings use localized `Game {n}`, version/year and, when useful, the start
+  of the description. This display label is not the saved source identity.
 - **Version:** section `Версия`; if the field is absent, use `versionFromTitle` on the shared release title.
 - **Developer:** section `Разработчик/Издатель` and existing developer-label variants; when absent,
   use the release-title developer fallback. Do not read another section's developer via a whole-post helper.
@@ -155,7 +156,8 @@ spoiler(s), in document order, deduplicated and capped at **15** after excluding
 Reuse `normalizePostImg`: real image URLs come from `title`, not saved local `src`; retain existing
 Fastpic/imgbox normalization and decorative-image filtering. Do not include another game's poster,
 general banners, installation images or images from replies. Do not reuse the ordinary parser's
-whole-post image fallback for a selected section. The no-cover case is listed under Open questions.
+whole-post image fallback for a selected section. If no cover exists, promote the first screenshot
+from that same section and exclude it from the remaining screenshots.
 
 ## Source identity and updates
 
@@ -164,10 +166,10 @@ URL helpers; omit the fragment from the HTTP page request, but preserve it throu
 preview, apply, backup/restore and opening the source. Invalid selection syntax must not be silently
 treated as a legacy unselected URL. Existing non-selection anchors retain ordinary URL behaviour.
 
-The saved section title must be independent of the editable library `Game.Title`. Proposed storage:
-an optional `GameSource.SelectedTitle` / `selected_title` alongside the existing selected URL and
-`last_version`. Old source JSON remains readable. Confirm the exact representation below before
-implementing; a plain index without a saved title is insufficient for reorder recovery.
+The saved section title is independent of the editable library `Game.Title`: optional
+`GameSource.SelectedTitle` / `selected_title` alongside the selected URL and `last_version`.
+Old source JSON remains readable. Preserve the field across restart, backup/import and relink.
+An untitled section can be selected initially but cannot safely resolve a later saved-source parse.
 
 Resolution on a later fetch:
 
@@ -183,9 +185,9 @@ preview/save captures its title for subsequent use. The source editor must clear
 when the user intentionally replaces its topic/selection, and preserve it for an unchanged source.
 
 Use `apperr` for a missing selected game, with a message equivalent to **Game not found in this release;
-choose it again** / **Игра не найдена в раздаче, выберите заново**. Proposed code:
-`parse.collection_game_missing`. A distinct machine-readable selection-required outcome (proposed
-`parse.collection_choice_required`) lets batch callers distinguish manual work from network failures.
+choose it again** / **Игра не найдена в раздаче, выберите заново**. Code:
+`parse.collection_game_missing`. The distinct machine-readable selection-required outcome
+`parse.collection_choice_required` lets batch callers distinguish manual work from network failures.
 All new errors and UI text must have keys in all 11 locales.
 
 `CheckSourceUpdate`, `CheckGameUpdates` and `CheckAllUpdates` resolve selected sources and compare only
@@ -215,12 +217,15 @@ Cache requirements:
 
 - Shared across the separate App calls for resolve/list, preview and save; a cache on a temporary
   parser instance alone is insufficient. Strip selection fragments from the page fetch key.
-- Bounded memory and short idle lifetime; share immutable data or clone before destructive DOM extraction.
+- At most **5 pages**, evicting the least recently used; expire after **10 minutes of idle time**.
+  Share immutable data or clone before destructive DOM extraction.
   Different selections must never contaminate each other's descriptions or galleries.
 - During a valid interaction, list → preview → back → another preview → save uses **one page GET**.
   Media requests are separate; only save downloads media into the data folder.
-- An expired/discarded snapshot has a clear retry path; do not silently switch the page underneath
-  an already reviewed preview. A fresh explicit submission/update-check action can fetch fresh content.
+- After expiry/eviction, fetch silently without an extra user step. Show the chooser again only when
+  the set of games changes; version/media changes alone do not require reselection. Resolve reordered
+  games by unique title; ambiguous identity still requires explicit choice.
+  A fresh explicit submission/update-check action can fetch fresh content.
 - Clear private snapshots on lock/panic and ignore late completions from the old interaction.
   Tolerate an unconfigured or locked app without network/disk work. Keep existing cancellation rules.
 
@@ -239,6 +244,9 @@ Implementation must add sanitized fixtures under `game-launcher/internal/parser/
   general-information and notes sections without descriptions; none of those auxiliary sections count.
 - `pornolab-collection-spoilers.html`: one game per spoiler, with nested screenshot spoilers and covers
   inside each game wrapper but outside its nested spoilers; no duplicated parent/child candidates.
+- `pornolab-single.html`: one game from the same markup, with an ordinary release title, for legacy regression.
+- `pornolab-collection-ambiguous.html`: one untitled section and two repeated headings, with distinct excerpts.
+- `pornolab-collection-no-cover.html`: a missing poster, requiring promotion of that section's first screenshot.
 
 Use neutral placeholder image URLs and local HTTP test responses; never commit or fetch real artwork
 for tests. Preserve relevant `title`/`src` differences and hosting-link structure for normalization
@@ -254,16 +262,16 @@ Use `httptest` request counters to prove one page fetch across list/preview/save
 for fresh actions. Cover cache expiry, lock/panic, late responses and cancellation. Verify selected
 updates, unchanged legacy update behaviour, and manual batch classification with no metadata writes.
 
-Before changing the parser, capture its outputs for the owner's `pornolab1-6` saved pages; compare title,
-version, author, engine, languages, tags, description, cover and screenshots after the change. Use saved
-HTML and metadata-only/local HTTP tests, not live Pornolab. **Availability at step 0:** a recursive filename
-search in `C:/Users/user/Downloads` found only `pornolab-multi-3006469.html`; `pornolab1-6` were not available.
-Their regression acceptance remains pending until those inputs are located or supplied. Do not claim it passed.
+The old `pornolab1-6` samples no longer exist. Use `pornolab-single.html`, derived from the same markup,
+as the committed single-game regression. Compare title, version, author, engine, languages, tags,
+description, cover and screenshots. Also run against any new single-game `pornolab*.html` files appearing
+in Downloads, using metadata-only parsing without network access. The optional local test reports a skip
+when none exist; CI relies on the committed fixture.
 
 ## Done when
 
-- All parser, source/update, cache and batch tests above pass; single-game regression is demonstrated
-  on `pornolab1-6`, with any unavailable input stated explicitly as an acceptance gap.
+- All parser, source/update, cache and batch tests above pass, including the committed single-game
+  regression fixture and any additional available saved samples.
 - New bound methods/models have generated Wails bindings and mocks in `docs/tools/screenshots/build-ui.cjs`.
 - Headless Edge/CDP checks exercise both panel sizes: link → choices → preview → back → choose → save,
   an unconfident list, privacy blur, errors, removed/reordered games, batch manual results and cancellation.
@@ -276,22 +284,65 @@ Their regression acceptance remains pending until those inputs are located or su
 
 Searching Pornolab by name, authentication/Cloudflare workarounds, auto-importing every game in a release,
 new library collection types, multi-game support for other sites, and automatically converting legacy
-sources without user selection. No parser, fixtures, localization or generated bindings are changed in step 0.
+sources without user selection. The chooser interface and clickable manual-work summary are outside step 1.
 
-## Open questions
+## Decisions
 
-1. **Saved title representation:** confirm the proposed optional `GameSource.selected_title`, or put a
-   URL-encoded title in the fragment alongside `game=N` so a copied link carries reorder identity too.
-   Either way, it must survive restart/export and must not depend on the editable library title.
-2. **Missing or duplicate section headings:** how should the user distinguish otherwise valid sections
-   with their own descriptions? Recommendation: never guess on later ambiguous resolution; request
-   reselection. Confirm initial row wording and whether extra identity beyond the title is needed.
-3. **No section cover:** keep an empty cover/placeholder under the strict section-media rule, or allow
-   the first screenshot from that same section as a cover, as the ordinary parser does? Never borrow
-   another game's image.
-4. **Snapshot lifetime:** choose an idle timeout and memory bound; confirm the expired-preview recovery
-   wording. Recommendation: a short idle cache with an explicit reload/review step after expiry, keeping
-   one snapshot throughout an active flow.
-5. **Manual-work entry point:** reuse the existing in-memory smart-list handoff and expose a clickable
-   summary of skipped games for bulk reparse, or provide another way to reopen those games? The separate
-   manual count and the prohibition on guessing are already agreed.
+Confirmed by the owner on 2026-11-09:
+
+1. Persist `GameSource.selected_title` and `#game=N`; keep identity across restart, export/import and relink.
+2. Missing or repeated headings use localized **Game {n}** / **Игра {n}**, version/year and a description
+   excerpt if needed. On a later ambiguous parse, request reselection instead of guessing.
+3. With no cover, take the first screenshot of that same section. Never borrow another game's images.
+4. Cache at most five pages for ten minutes of idle time. On expiry fetch silently; show the list again
+   only when the game set changes. Ambiguous identity still requires a new choice.
+5. Manual work uses the existing smart-list handoff: **Manual choice needed: {n}** /
+   **Нужен ручной выбор: {n}**, clickable to open the affected games. Step 1 supplies the backend payload;
+   wiring the click and rendering the list belong to the subsequent UI step.
+
+## Backend delivery (2026-11-09)
+
+Implemented the section parser and preserved the ordinary parser as a separate legacy path. Titles,
+fields and media are scoped to the first-post section; source HTML spoiler names work without scripts.
+Candidate identity uses document order before ranking, with no eight-result cap. Missing/duplicate
+headings expose `fallback_title`, `index` and a neutralizable description excerpt for localized UI labels.
+Selected source title is stored in existing source JSON, without a new SQLite column. Missing/ambiguous
+saved identities fail explicitly; backup/import, editor saves and relink preserve the field as specified.
+
+New bound methods and their mock stubs:
+
+- `ResolvePornolabCollection(gameID, url, refresh)` returns `{collection, candidates, snapshot}`. Use
+  `refresh=true` for a new submission and `false` to reopen the already fetched changed-game list.
+- `PreviewPornolabGame(gameID, url, snapshot, index)` returns read-only Game metadata with remote media.
+- `ApplyPornolabGame(gameID, url, snapshot, index)` applies that choice using the existing merge rules.
+- `ReparseGameInfo(token, gameID)` uses Begin/StopSmartSearch and returns `{game_id, applied, manual}`.
+- `GetManualGameChoices()` returns game IDs, source URLs and candidate snapshots for the existing
+  smart-list handoff. The frontend must use this payload and the manual count in its later UI delivery.
+
+Treat snapshot as opaque. It contains a privacy generation, section identities and a metadata digest;
+no page DOM is retained by a snapshot. The cache holds up to five raw pages (4 MiB maximum each), with
+ten-minute idle expiry, fresh DOMs per parse and shared in-flight requests. A valid list/preview/save
+interaction makes one page request. Expiry/eviction fetches silently. Changed membership returns
+`parse.collection_changed`; reordered unique titles resolve automatically. Ambiguous changed data
+returns `parse.collection_game_missing`. Update checks force a fresh page and refresh the cache, so
+accepting a newly detected version cannot accidentally use pre-check metadata.
+
+Metadata application, smart-list lookup and bulk reparse refuse unselected collections before saving.
+The legacy UpdateGameMetadata caller receives the coded choice-required error; the new batch method
+classifies it as manual and records the handoff. ApplySmartGameInfo returns false for manual cases.
+The current bulk UI still needs to switch to the new batch contract in step 2. No Svelte component,
+frontend action handler, layout or interaction was changed in this backend step.
+
+Validation on Windows: `go vet ./...`, `go test ./...` and `build.ps1`; Wails bindings regenerated.
+Tests cover all six committed Windows-1251 fixture variants, metadata/media boundaries, legacy
+single-game equality, missing-field fallbacks, ranking/ambiguity, more than eight games, source
+resolution and round trips, selected/legacy update checks and update acceptance, cache request counts,
+idle renewal/expiry/LRU/refresh, privacy invalidation, late replies, batch Stop and manual classification.
+The original saved topic 3006469 also passed local extraction checks without network requests.
+No additional single-game `pornolab*.html` files were present in Downloads; that optional test skipped.
+Mock script syntax was checked with Node. Build warnings remain in unchanged Svelte components and
+for Browserslist data age and bundle size.
+
+Not checked: a real library, native Wails interaction/global panic hotkey, live Pornolab/Cloudflare,
+Linux/macOS execution or visual UI acceptance. The chooser and clickable manual-work summary remain
+unimplemented by design for step 2; their headless UI checks and mockup comparison are still pending.

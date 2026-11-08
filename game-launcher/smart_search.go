@@ -100,5 +100,9 @@ func (a *App) ApplySmartGameInfo(token uint64, gameID, query string, result pars
 	if ctx.Err() != nil {
 		return false, nil
 	}
+	if manualCollectionError(err) {
+		a.rememberManualChoice(ctx, gameID, url)
+		return false, nil
+	}
 	return applied, err
 }

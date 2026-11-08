@@ -79,6 +79,11 @@ const mock = `(function () {
       return { hits: controls.empty ? [] : results.filter(h => sources.includes(h.source) && h.source !== controls.failedSource),
         failed: sources.includes(controls.failedSource) ? [{ source: controls.failedSource, error: '[parse.request] mock timeout' }] : [] };
     },
+    ResolvePornolabCollection: () => ({ collection: false, candidates: [], snapshot: '' }),
+    PreviewPornolabGame: async (id, url) => previewData(url),
+    ApplyPornolabGame: async () => null,
+    ReparseGameInfo: async (token, id) => ({ game_id: id, applied: false, manual: true }),
+    GetManualGameChoices: () => [],
     PreviewGameInfo: async url => { await pause(controls.previewDelay); if (controls.previewError) throw '[parse.request {"site":"Steam"}] mock error'; return previewData(url); },
     ApplyGameInfo: async (id, url) => {
       await pause(controls.saveDelay);

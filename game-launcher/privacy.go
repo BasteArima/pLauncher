@@ -154,6 +154,7 @@ func (a *App) onPanic() {
 	a.priv.mu.Unlock()
 	a.cancelSmartSearchLocked()
 	a.smartSearch.mu.Unlock()
+	a.clearCollectionState()
 
 	if wasHidden {
 		runtime.WindowShow(a.ctx)
@@ -197,6 +198,7 @@ func (a *App) setLocked(v bool) {
 	}
 	a.smartSearch.mu.Unlock()
 	if v {
+		a.clearCollectionState()
 		a.emit("privacy-locked")
 	}
 }

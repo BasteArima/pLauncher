@@ -730,5 +730,10 @@
   "smart.launch_summary": "{m} 件中 {n} 件を検出",
   "smart.search_progress": "{n} / {m}",
   "smart.search_stop": "停止",
-  "smart.search_summary": "適用 {n}、手動選択が必要 {m}、エラー {k}"
+  "smart.search_summary": "適用 {n}、手動選択が必要 {m}、エラー {k}",
+  "err.parse.collection_choice_required": "この配布からゲームを選択してください。",
+  "err.parse.collection_game_missing": "この配布にゲームが見つかりません。選び直してください。",
+  "err.parse.collection_changed": "この配布のゲーム構成が変更されました。選び直してください。",
+  "collection.game_number": "ゲーム {n}",
+  "collection.manual_needed": "手動選択が必要：{n}"
 }

@@ -730,5 +730,10 @@
   "smart.launch_summary": "Encontrados {n} de {m}",
   "smart.search_progress": "{n} de {m}",
   "smart.search_stop": "Parar",
-  "smart.search_summary": "Aplicados {n}, seleção manual {m}, erros {k}"
+  "smart.search_summary": "Aplicados {n}, seleção manual {m}, erros {k}",
+  "err.parse.collection_choice_required": "Escolha um jogo desta publicação.",
+  "err.parse.collection_game_missing": "Jogo não encontrado nesta publicação; escolha novamente.",
+  "err.parse.collection_changed": "Os jogos desta publicação mudaram; escolha novamente.",
+  "collection.game_number": "Jogo {n}",
+  "collection.manual_needed": "Seleção manual necessária: {n}"
 }

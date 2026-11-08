@@ -730,5 +730,10 @@
   "smart.launch_summary": "Знайдено {n} із {m}",
   "smart.search_progress": "{n} із {m}",
   "smart.search_stop": "Зупинити",
-  "smart.search_summary": "Застосовано {n}, потрібен ручний вибір {m}, помилок {k}"
+  "smart.search_summary": "Застосовано {n}, потрібен ручний вибір {m}, помилок {k}",
+  "err.parse.collection_choice_required": "Виберіть гру з цієї роздачі.",
+  "err.parse.collection_game_missing": "Гру не знайдено в роздачі, виберіть знову.",
+  "err.parse.collection_changed": "Склад ігор у роздачі змінився, виберіть знову.",
+  "collection.game_number": "Гра {n}",
+  "collection.manual_needed": "Потрібен ручний вибір: {n}"
 }

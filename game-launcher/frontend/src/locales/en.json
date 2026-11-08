@@ -730,5 +730,10 @@
   "smart.launch_summary": "Found {n} of {m}",
   "smart.search_progress": "{n} of {m}",
   "smart.search_stop": "Stop",
-  "smart.search_summary": "Applied {n}, manual choice needed {m}, errors {k}"
+  "smart.search_summary": "Applied {n}, manual choice needed {m}, errors {k}",
+  "err.parse.collection_choice_required": "Choose a game from this release.",
+  "err.parse.collection_game_missing": "Game not found in this release; choose it again.",
+  "err.parse.collection_changed": "The games in this release have changed; choose again.",
+  "collection.game_number": "Game {n}",
+  "collection.manual_needed": "Manual choice needed: {n}"
 }

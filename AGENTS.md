@@ -210,6 +210,10 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   pornolab, the «Название» field on island) parsed by helpers in `extract.go`
   (`cleanReleaseTitle`, `versionFromTitle`, `parseReleaseLanguages`, `parseReleaseTags`).
   **Do NOT** go back to font-size heuristics for the title — that was the old, broken approach.
+- Exception: a selected game in a Pornolab collection takes its own section heading and fields.
+  Collection backend is implemented; chooser UI is pending. See `docs/specs/pornolab-collections.md`.
+  Sections own an `Описание` field and are separated by `post-hr` or game spoilers. Preserve raw
+  `.sp-body[title]` / `.sp-title` support, not just the JavaScript-created `.sp-head`.
 - pornolab pages are **windows-1251** (decoded via `charmap`). Image real URLs are in the `title` attr
   of `var.postImg` (the `src` is localized when the page is saved).
 - **F95zone hides first-post attachments from guests** ("Log in or register to see attachments"), so images come
@@ -218,9 +222,11 @@ model structs run `wails generate module` (regenerates the JS/TS bindings).
   served as AVIF whatever the URL extension: `fixImageExt` renames downloads to the real format.
 - **Steam** uses the official `store.steampowered.com/api/appdetails` JSON API (not scraping); cover =
   `library_600x900.jpg`.
-- Real saved sample pages for testing selectors are in the user's `C:/Users/user/Downloads/` (pornolab1-6,
-  island-of-pleasure, erotorrent). These sites are behind Cloudflare/login — **can't be fetched from a
-  sandbox**; iterate against the saved HTML. Pure string logic is covered by `extract_test.go`.
+- Saved samples may be in `C:/Users/user/Downloads/`; the old pornolab1–6 files no longer exist.
+  Pornolab collection input: `pornolab-multi-3006469.html` (Windows-1251). Neutral committed fixtures,
+  including a single-game regression, live in `game-launcher/internal/parser/testdata/pornolab-*.html`.
+  If new `pornolab*.html` samples appear in Downloads, run the optional local regression too. These
+  sites are behind Cloudflare/login: work against saved HTML. String logic is in `extract_test.go`.
 - Backend errors: plain `fmt.Errorf` for internal ones; anything a user may see goes through
   `apperr.New(code, apperr.P{...}, englishFormat, args...)` → message `[code {json}] English`. The frontend
   (`localizeError` in i18n.js, applied to every `tr()` param, so `tr('toast.error', { err })` just works) shows
@@ -362,6 +368,37 @@ engine, played, last played, size; sortable headers).
 Durable project notes live in the agent memory dir
 `~/.claude/projects/<this project>/memory/` (parser-design, data-dir-architecture,
 ui-state-and-collections-plan). The code comments and `extract_test.go` are also good references.
+
+### Pornolab collection backend (2026-11-09)
+
+`internal/parser/pornolab_collections.go` extracts only the chosen game's fields/media. Ordinary
+single-game parsing remains in `parseLegacy`; unselected collections require manual choice except
+for legacy whole-release update checks. `GameSource.selected_title` is persisted in existing source
+JSON with `#game=N`. Reordered games resolve by unique original title, independently of Game.Title;
+missing, unnamed or duplicate saved identities require reselection. Source edits preserve identity
+only for unchanged URLs. Backup/import and relink retain the complete source record.
+
+App methods: `ResolvePornolabCollection(gameID, url, refresh)`,
+`PreviewPornolabGame(gameID, url, snapshot, index)`, `ApplyPornolabGame(...)`,
+`ReparseGameInfo(token, gameID)` and `GetManualGameChoices()`. Resolve returns all ranked candidates
+with document-order indices, a fallback-title flag and description excerpt. Snapshot is opaque to
+the frontend; return it unchanged with the original index. `collection.game_number` formats Game N.
+Reparse uses Begin/StopSmartSearch tokens and returns applied/manual flags; the manual handoff is
+in memory and cleared on privacy transitions. Existing ApplySmartGameInfo returns false for manual
+collection choices. Wiring the chooser, clickable summary and bulk frontend caller is still pending.
+
+The App-owned page cache expires after ten idle minutes, retains at most five 4 MiB pages and clones
+DOMs per extraction. Expiry fetches silently; changed membership returns `parse.collection_changed`.
+Resolve again with `refresh=false` to show the already fetched list. Unique-title reorder and changed
+versions/media do not require a new choice; ambiguous changed data does. Update checks always refresh
+the page, also refreshing cached data so accepting an update cannot apply an older cached version.
+Lock/panic/data-folder initialization invalidate cached pages and pending operations. Collection media
+downloads are isolated until a successful save. Do not bypass these guards in the frontend.
+
+Neutral Windows-1251 fixtures cover two/three games, outer game spoilers, single-game regression,
+missing/duplicate headings and missing covers. Additional tests use local HTTP servers for caching,
+updates and cancellation. The saved original topic 3006469 is checked locally without network access;
+the optional Downloads single-game regression skips when no additional samples exist.
 
 ### Find game info by name (2026-11-06)
 

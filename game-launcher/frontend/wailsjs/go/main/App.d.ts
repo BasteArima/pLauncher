@@ -17,6 +17,8 @@ export function ApplyGameInfo(arg1:string,arg2:string):Promise<void>;
 
 export function ApplyLauncherUpdate(arg1:boolean):Promise<void>;
 
+export function ApplyPornolabGame(arg1:string,arg2:string,arg3:string,arg4:number):Promise<void>;
+
 export function ApplySmartGameInfo(arg1:number,arg2:string,arg3:string,arg4:parser.SearchResult):Promise<boolean>;
 
 export function BeginSmartSearch():Promise<number>;
@@ -81,6 +83,8 @@ export function GetLauncherStartInfo():Promise<main.LauncherStartInfo>;
 
 export function GetLibraryStats(arg1:Array<string>,arg2:string,arg3:string):Promise<models.LibraryStats>;
 
+export function GetManualGameChoices():Promise<Array<main.ManualGameChoice>>;
+
 export function GetPortableDataDir():Promise<string>;
 
 export function GetPrivacy():Promise<main.PrivacySettings>;
@@ -117,6 +121,8 @@ export function OpenURL(arg1:string):Promise<void>;
 
 export function PreviewGameInfo(arg1:string):Promise<models.Game>;
 
+export function PreviewPornolabGame(arg1:string,arg2:string,arg3:string,arg4:number):Promise<models.Game>;
+
 export function RecalcGameSize(arg1:string):Promise<number>;
 
 export function RefreshSizes():Promise<void>;
@@ -134,6 +140,10 @@ export function RemoveIgnoredPath(arg1:string):Promise<void>;
 export function RemoveMissingGames():Promise<number>;
 
 export function RemoveScanPath(arg1:string):Promise<void>;
+
+export function ReparseGameInfo(arg1:number,arg2:string):Promise<main.MetadataApplyResult>;
+
+export function ResolvePornolabCollection(arg1:string,arg2:string,arg3:boolean):Promise<parser.PornolabCollection>;
 
 export function SaveCollections(arg1:Array<models.Collection>):Promise<void>;
 
