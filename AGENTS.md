@@ -382,6 +382,15 @@ cancelled on mouseup/auxclick so Chromium does not navigate away after the appli
 `mediaSrc` accepts HTTP(S) URLs for preview media; blur applies to result thumbnails, preview and lightbox.
 Preferences: `plauncher_find_sources` (source array), `plauncher_noinfo_dismissed` (game-ID array); dismissed
 prominent panels become compact and remain reachable. Do not unmount FindByName on entering preview.
+
+Name/link tab contract (2026-11-09): each entry into name search calls SuggestSearchName again and resets
+only the editable query; results and searchedQuery stay intact, and no search runs automatically.
+FindByName stays mounted, with an active prop and suggestion generation guards for late replies.
+MetadataPanel owns the independent link draft and binds the name query. HTTP(S) or bare-domain input
+is recognized by lib/util.js searchInputURL (bare domains get https://); submitting routes to the same
+onParse handler as Paste a link, even with no name-search sources selected. Manually switching to the
+link tab transfers a URL from the name field without parsing. Unsupported sites remain backend errors.
+
 Headless regression: `docs/tools/screenshots/test-find.cjs` against the `?shot=find` mock on :5393 and dedicated
 Edge CDP on :9334. See its README for setup. The mock has two candidates per source, one failed source by
 default, remote preview URLs and actual in-memory apply behavior. Real-library validation remains manual.

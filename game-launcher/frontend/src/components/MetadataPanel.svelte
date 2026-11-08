@@ -6,7 +6,7 @@
     import Icon from './Icon.svelte';
     import FindByName from './FindByName.svelte';
     import { searchResults } from '../lib/smartLists.js';
-    import { clickOutside } from '../lib/util.js';
+    import { clickOutside, searchInputURL } from '../lib/util.js';
     import { OpenURL, CheckGameUpdates, CheckSourceUpdate } from '../../wailsjs/go/main/App.js';
 
     export let game;
@@ -20,6 +20,7 @@
     export let onDismiss = () => {};
     let tab = prominent || $searchResults[game?.id] ? 'name' : 'link';
     let parseUrl = '';
+    let query = '';
     let showSources = false;
     let checking = false;
 
@@ -28,6 +29,21 @@
     $: if (game && game.id !== lastId) { lastId = game.id; parseUrl = ''; tab = prominent || $searchResults[game.id] ? 'name' : 'link'; }
 
     $: activeSources = (game.sources || []).filter(s => s.url);
+
+    function switchTab(next) {
+        if (next === tab) return;
+        if (next === 'link') {
+            const url = searchInputURL(query);
+            if (url) parseUrl = url;
+        }
+        tab = next;
+    }
+
+    async function parseSearchLink(url) {
+        parseUrl = url;
+        tab = 'link';
+        await parse();
+    }
 
     async function parse() {
         if (!parseUrl.trim() || parsing) return;
@@ -74,9 +90,9 @@
             </div>
         {/if}
         <div class="metadata-tabs flex gap-1 p-1 rounded-xl bg-slate-950" role="group" aria-label={$t('meta.find_title')}>
-            <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => tab = 'name'}
+            <button data-find-tab="name" aria-pressed={tab === 'name'} on:click={() => switchTab('name')}
                     class="px-3 py-2 text-sm rounded-lg transition {tab === 'name' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_name')}</button>
-            <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => tab = 'link'}
+            <button data-find-tab="link" aria-pressed={tab === 'link'} on:click={() => switchTab('link')}
                     class="px-3 py-2 text-sm rounded-lg transition {tab === 'link' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}">{$t('find.tab_link')}</button>
         </div>
     </div>
@@ -100,13 +116,13 @@
             {checking ? $t('meta.checking') : $t('meta.check_updates')}
         </button>
     {/if}
-    <div class:hidden={tab !== 'name'}><FindByName {game} {onPreview}/></div>
+    <div class:hidden={tab !== 'name'}><FindByName {game} {onPreview} bind:query active={tab === 'name'} onLink={parseSearchLink}/></div>
     <div class:hidden={tab !== 'link'}>
     <div class="flex gap-3">
-        <input type="text" bind:value={parseUrl} placeholder={$t("meta.url_ph")}
+        <input data-find-link type="text" bind:value={parseUrl} placeholder={$t("meta.url_ph")}
                on:keydown={(e) => { if (e.key === 'Enter') parse(); }}
                class="flex-1 min-w-0 bg-slate-950 border border-white/10 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all"/>
-        <button on:click={parse} disabled={parsing || !parseUrl} class="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-find-parse on:click={parse} disabled={parsing || !parseUrl} class="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             {parsing ? $t('meta.downloading') : prominent ? $t('meta.get_info') : $t('meta.update')}
         </button>
     </div>

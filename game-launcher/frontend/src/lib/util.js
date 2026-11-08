@@ -1,6 +1,14 @@
 // Общие хелперы UI (без состояния).
 import { tr } from '../i18n.js';
 
+// Ссылку из поиска передаём обычному парсеру; поддержку сайта проверяет бэкенд.
+export function searchInputURL(value) {
+    const text = (value || '').trim();
+    if (/^https?:\/\//i.test(text)) return text;
+    if (/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d+)?(?:[/?#]\S*)?$/i.test(text)) return `https://${text}`;
+    return '';
+}
+
 // URL обложки/скриншота (файлы отдаются бэкендом по /media/<путь>)
 export function mediaSrc(p) {
     if (/^https?:\/\//i.test(p || '')) return p;

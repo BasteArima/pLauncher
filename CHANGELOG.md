@@ -5,6 +5,12 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+### Fixed
+- Metadata tabs now route links entered in Search by name through the ordinary link parser, including
+  addresses without `https://`. Returning to name search restores the suggested folder name without
+  repeating the search or clearing results. The link field survives tab changes, and switching from a
+  name field containing a link transfers it to Paste a link in both prominent and compact panels.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added

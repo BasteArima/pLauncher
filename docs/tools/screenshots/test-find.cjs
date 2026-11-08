@@ -60,10 +60,84 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     await wait(visible('[data-find-query]'));
     await wait('document.querySelector("[data-find-query]").value === "Moonlit Harbor"');
   };
+  const fill = (selector, value) => evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    el.value = ${JSON.stringify(value)}; el.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  const calls = name => evaluate(`window.__findMock.calls.filter(c => c.name === ${JSON.stringify(name)})`);
+  const nameTab = '[data-find-tab=name]', linkTab = '[data-find-tab=link]';
+  const queryInput = '[data-find-query]', linkInput = '[data-find-link]';
+  const field = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).value`);
+  const setupPanel = async compact => {
+    await load();
+    if (compact) {
+      await click('[data-find-dismiss]'); await key('Escape'); await click('[data-game-id="g01"]');
+      await click(nameTab);
+      await wait('document.querySelector("[data-find-query]").value === "Moonlit Harbor"');
+    }
+  };
+  const tabScenarios = async compact => {
+    const label = compact ? 'compact: ' : 'prominent: ';
+    await setupPanel(compact);
+    await click('[data-find-search]'); await wait(visible('[data-find-results]'));
+    const results = await evaluate('document.querySelector("[data-find-results]").innerHTML');
+    const searches = (await calls('SearchGameInfo')).length;
+    const suggestions = (await calls('SuggestSearchName')).length;
+    await fill(queryInput, 'Edited game name'); await click(linkTab);
+    await fill(linkInput, 'https://vndb.org/v1'); await click(nameTab);
+    await wait('document.querySelector("[data-find-query]").value === "Moonlit Harbor"');
+    check(label + 'name reset via fresh suggestion', (await calls('SuggestSearchName')).length, suggestions + 1);
+    check(label + 'results unchanged on tab return', await evaluate('document.querySelector("[data-find-results]").innerHTML'), results);
+    check(label + 'return does not search again', (await calls('SearchGameInfo')).length, searches);
+    await click(linkTab);
+    check(label + 'independent link survives round trip', await field(linkInput), 'https://vndb.org/v1');
+    await click(nameTab); await wait('document.querySelector("[data-find-query]").value === "Moonlit Harbor"');
+    await fill(queryInput, '  pornolab.net/forum/viewtopic.php?t=123  '); await click(linkTab);
+    check(label + 'manual switch transfers and replaces link', await field(linkInput), 'https://pornolab.net/forum/viewtopic.php?t=123');
+    check(label + 'manual switch does not parse', (await calls('UpdateGameMetadata')).length, 0);
+    await click(nameTab); await wait('document.querySelector("[data-find-query]").value === "Moonlit Harbor"');
+    await click(linkTab);
+    check(label + 'transferred link survives round trip', await field(linkInput), 'https://pornolab.net/forum/viewtopic.php?t=123');
+
+    for (const [input, url, enter] of [
+      ['  https://store.steampowered.com/app/1/  ', 'https://store.steampowered.com/app/1/', false],
+      ['http://f95zone.to/threads/1/', 'http://f95zone.to/threads/1/', true],
+      ['f95zone.to/threads/1/', 'https://f95zone.to/threads/1/', false],
+      ['pornolab.net/forum/viewtopic.php?t=123', 'https://pornolab.net/forum/viewtopic.php?t=123', true],
+    ]) {
+      await setupPanel(compact);
+      // Link routing does not depend on name-search source toggles.
+      for (const site of ['F95zone', 'Steam', 'VNDB']) await click(`[data-find-source="${site}"]`);
+      await fill(queryInput, input);
+      check(label + input + ' enables submit without sources', await evaluate('!document.querySelector("[data-find-search]").disabled'));
+      if (enter) { await click(queryInput); await key('Enter'); } else await click('[data-find-search]');
+      await wait('document.querySelector("[data-find-tab=link]").getAttribute("aria-pressed") === "true"');
+      await wait('window.__findMock.calls.some(c => c.name === "UpdateGameMetadata")');
+      check(label + input + ' uses ordinary parser once', (await calls('UpdateGameMetadata')).map(c => c.args), [['g01', url]]);
+      check(label + input + ' never searches by name', (await calls('SearchGameInfo')).length, 0);
+      await wait('document.querySelector("[data-find-link]").value === ""');
+      check(label + input + ' applies metadata', (await snapshot()).find(g => g.id === 'g01').sources[0].url, url);
+    }
+
+    await setupPanel(compact);
+    await fill(queryInput, 'unknown.example/game'); await click('[data-find-search]');
+    await wait('document.body.innerText.includes("This site isn\'t supported yet")');
+    check(label + 'unsupported URL stays in link field', await field(linkInput), 'https://unknown.example/game');
+    check(label + 'unsupported URL never searches', (await calls('SearchGameInfo')).length, 0);
+    const errorText = await evaluate('document.querySelector(".fixed.bottom-8.right-8 > span.font-semibold")?.textContent');
+    check(label + 'unsupported error shown', typeof errorText, 'string');
+    await click('[data-find-parse]');
+    await wait('window.__findMock.calls.filter(c => c.name === "UpdateGameMetadata").length === 2');
+    await wait('!document.querySelector("[data-find-parse]").disabled');
+    check(label + 'same error as ordinary link parsing', await evaluate('[...document.querySelectorAll(".fixed.bottom-8.right-8 > span.font-semibold")].at(-1)?.textContent'), errorText);
+    await shot(compact ? 'tabs-compact' : 'tabs-prominent', '[data-metadata-panel]');
+  };
   try {
     await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true });
     await send('Page.bringToFront');
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await tabScenarios(false);
+    await tabScenarios(true);
     await load();
     check('folder suggestion and version hint', await evaluate('document.querySelector("[data-find-by-name]").innerText.includes("0.3")'));
     check('prominent defaults to name', await evaluate('document.querySelector("[data-find-tab=name]").getAttribute("aria-pressed")'), 'true');

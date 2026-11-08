@@ -1,8 +1,8 @@
 <script>
-    import { onMount, onDestroy } from 'svelte';
+    import { onDestroy } from 'svelte';
     import { t, tr, langStore } from '../i18n.js';
     import { SuggestSearchName, SearchGameInfo, OpenURL } from '../../wailsjs/go/main/App.js';
-    import { lsSet, mediaSrc } from '../lib/util.js';
+    import { lsSet, mediaSrc, searchInputURL } from '../lib/util.js';
     import { showToast } from '../lib/ui.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import Icon from './Icon.svelte';
@@ -12,7 +12,9 @@
     export let onPreview = async (hit, version) => {};
     const sites = ['F95zone', 'Steam', 'VNDB'];
     let sources = searchSources();
-    let query = '';
+    export let query = '';
+    export let active = true;
+    export let onLink = async (url) => {};
     let version = '';
     let searchedQuery = '';
     const normVersion = value => (value || '').toLowerCase().trim().replace(/^v/, '');
@@ -40,23 +42,37 @@
     }
     $: lsSet('plauncher_find_sources', JSON.stringify(sources));
 
-    onMount(async () => {
+    let suggestionRequest = 0;
+    $: suggestionKey = active ? game.id : '';
+    $: resetSuggestion(suggestionKey);
+
+    async function resetSuggestion(id) {
+        const ticket = ++suggestionRequest;
+        if (!id) return;
+        touched = false;
+        query = '';
         try {
-            const suggestion = await SuggestSearchName(game.id);
-            if (!alive) return;
+            const suggestion = await SuggestSearchName(id);
+            if (!alive || ticket !== suggestionRequest) return;
             if (!touched) query = suggestion?.title || game.title || '';
             version = suggestion?.version || '';
         } catch (err) {
-            if (alive) { if (!touched) query = game.title || ''; showToast(tr('toast.error', { err }), 'error'); }
+            if (alive && ticket === suggestionRequest) {
+                if (!touched) query = game.title || '';
+                showToast(tr('toast.error', { err }), 'error');
+            }
         }
-    });
-    onDestroy(() => { alive = false; request++; });
+    }
+    onDestroy(() => { alive = false; request++; suggestionRequest++; });
 
     function toggle(source) {
         sources = sources.includes(source) ? sources.filter(s => s !== source) : [...sources, source];
     }
     async function search() {
-        if (!query.trim() || !sources.length || searching || choosing) return;
+        if (!query.trim() || searching || choosing) return;
+        const url = searchInputURL(query);
+        if (url) { await onLink(url); return; }
+        if (!sources.length) return;
         const ticket = ++request;
         searching = true;
         searchedQuery = query.trim();
@@ -85,7 +101,7 @@
         <input data-find-query aria-label={$t('find.name')} type="text" bind:value={query} on:input={() => touched = true}
                placeholder={$t('find.name')} disabled={searching || !!choosing}
                class="min-w-0 flex-1 bg-slate-950 border border-white/10 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:opacity-60"/>
-        <button data-find-search type="submit" disabled={!query.trim() || !sources.length || searching || !!choosing}
+        <button data-find-search type="submit" disabled={!query.trim() || (!sources.length && !searchInputURL(query)) || searching || !!choosing}
                 class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed">
             <Icon name={searching ? 'refresh' : 'search'} size={16} class={searching ? 'animate-spin' : ''}/>
             {searching ? $t('find.searching') : $t('find.search')}

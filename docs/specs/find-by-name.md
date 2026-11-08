@@ -20,6 +20,14 @@ no cover, no description and no sources). The compact `MetadataPanel` on other g
 - Two tabs: **Search by name** (default in the prominent block) | **Paste a link** (today's input, unchanged).
 - Name field prefilled from the folder name: `MoonlitHarbor_v0.3` → «Moonlit Harbor». Under it, only when something
   was removed: «From the folder name, version 0.3 removed». The user can edit the name; Enter = search.
+- Each transition to **Search by name** requests `SuggestSearchName` again and replaces the editable
+  query with its suggestion. Existing results remain; switching tabs never starts another name search.
+- The link field persists independently across tab changes. A URL in the name field replaces it when
+  switching to **Paste a link**, without parsing until submitted.
+- Submitting a URL in the name field (Search or Enter) switches to **Paste a link**, transfers it and
+  immediately runs the ordinary link parser instead of name search. HTTP(S) links and bare domains
+  such as `f95zone.to/threads/...` are recognized; bare domains receive `https://`. Unsupported sites
+  use the ordinary parser error. This works even when all name-search source chips are off.
 - Source toggles (chips): **Steam**, **F95zone**, **VNDB**; all on by default; remembered in localStorage
   `plauncher_find_sources`.
 - A muted note: «Pornolab, Erotorrent, Island of Pleasure: paste a link instead» (they are behind Cloudflare/login).
@@ -232,3 +240,19 @@ No images or library data are written by these requests.
 Steam storesearch and the selected VNDB `/vn` fields provide neither engine nor update
 time, so those sources keep both values empty. In particular, VNDB `released` is not
 presented as an update date. Mock responses use the same source-specific contract.
+
+## Name/link tab handoff (2026-11-09)
+
+Both panel sizes now share URL routing and independent link drafts. Entering name search refreshes
+only the editable suggestion, preserving results and the query used to explain their ranking.
+Late suggestion replies are ignored after tab changes or component destruction; typing while the
+suggestion is pending also keeps the new input. No UI strings or backend bindings were added.
+
+Validation on Windows: `go vet ./...`, `go test ./...` (through `build.ps1`) and the full `build.ps1`
+passed. All six headless UI suites passed: 347 assertions, including 96 in `test-find.cjs` (54 new).
+The new scenarios cover both panel sizes, Search/Enter, HTTP(S)/bare-domain URLs, no selected search
+sources, normal parser application/errors, name reset, preserved results and link drafts/transfers.
+Mock screenshots were inspected against the results board: the same layout remains, with the app's
+existing sidebar/right column and narrower panel than the standalone board. Vite still reports
+existing accessibility, Browserslist freshness and bundle-size warnings. The real library, native
+Wails window, live source requests and Linux/macOS were not tested in this change.

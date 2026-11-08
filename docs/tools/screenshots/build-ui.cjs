@@ -96,7 +96,15 @@ const mock = `(function () {
       if (i >= 0) games[i] = { ...g, notes_updated_at: (games[i].notes || '') === (g.notes || '') ? games[i].notes_updated_at : Math.floor(Date.now() / 1000) };
       return null;
     },
-    UpdateGameMetadata: (id) => {
+    UpdateGameMetadata: async (id, url) => {
+      if (params.get('shot') === 'find') {
+        await pause(controls.saveDelay);
+        const source = { 'f95zone.to': 'F95zone', 'pornolab.net': 'Pornolab', 'store.steampowered.com': 'Steam', 'vndb.org': 'VNDB' }[new URL(url).hostname];
+        if (!source) throw '[parse.unsupported] unknown source or unsupported site';
+        const g = games.find(g => g.id === id);
+        Object.assign(g, previewData(url), { cover_path: 'covers/x01-wide.svg',
+          sources: [{ source, url, last_version: '' }], primary_source: source });
+      }
       const g = games.find(g => g.id === id);
       Object.assign(g, { version: g.update_version || g.version, update_available: false, update_version: '', update_source: '', update_found_at: 0 });
     },
