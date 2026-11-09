@@ -82,7 +82,7 @@ func TestCollectionAppFlowAndUpdates(t *testing.T) {
 	if before.Title != "My title" || s.images.Load() != 0 {
 		t.Fatal("preview writes")
 	}
-	if err = a.ApplyPornolabGame(g.ID, s.url(), choices.Snapshot, 2); err != nil {
+	if err = a.ApplyPornolabGame(g.ID, s.url(), choices.Snapshot, 2, a.BeginPornolabApply()); err != nil {
 		t.Fatal(err)
 	}
 	saved, _ := a.gameByID(g.ID)
@@ -233,7 +233,7 @@ func TestCollectionPrivacyAndUnconfigured(t *testing.T) {
 		if p, e := app.PreviewPornolabGame(g.ID, s.url(), choices.Snapshot, 1); e != nil || p != nil {
 			t.Fatal(p, e)
 		}
-		if e := app.ApplyPornolabGame(g.ID, s.url(), choices.Snapshot, 1); e != nil {
+		if e := app.ApplyPornolabGame(g.ID, s.url(), choices.Snapshot, 1, app.BeginPornolabApply()); e != nil {
 			t.Fatal(e)
 		}
 		if s.pages.Load() != before {

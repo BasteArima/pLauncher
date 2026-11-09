@@ -39,8 +39,9 @@
 
     export async function reselect(url, err = '') {
         cancelChoiceRequest(); tab = 'link'; parseUrl = releaseURL(url);
+        const ticket = request + 1;
         await resolveLink(parseUrl, false, true, err);
-        if (alive) { await tick(); document.querySelector('[data-collection-results]')?.scrollIntoView({ block: 'center' }); }
+        if (current(ticket)) { await tick(); if (current(ticket)) document.querySelector('[data-collection-results]')?.scrollIntoView({ block: 'center' }); }
     }
     export async function submitLink(url) {
         parseUrl = url; tab = 'link'; await parse();
@@ -100,7 +101,7 @@
         cancelChoiceRequest();
         if (next === 'link') {
             const url = searchInputURL(query);
-            if (url) parseUrl = url;
+            if (url && url !== parseUrl) { editLink(); parseUrl = url; }
         }
         tab = next;
     }
@@ -121,14 +122,17 @@
 
     async function runCheck(fn, url) {
         if (checking) return;
+        cancelChoiceRequest();
+        const ticket = request;
+        const stillCurrent = () => alive && request === ticket;
         checking = true;
         try {
             const g = await fn();
-            if (!alive) return;
+            if (!stillCurrent()) return;
             await onReload();
-            if (!alive) return;
+            if (!stillCurrent()) return;
             showToast(g && g.update_available ? tr('toast.update_found', { v: g.update_version }) : tr('toast.update_none'), 'success');
-        } catch (err) { if (alive && collectionError(err) && url) await reselect(url, err); else if (alive) showToast(tr('toast.update_fail', { err }), 'error'); }
+        } catch (err) { if (stillCurrent() && collectionError(err) && url) await reselect(url, err); else if (stillCurrent()) showToast(tr('toast.update_fail', { err }), 'error'); }
         finally { checking = false; }
     }
     const checkGame = () => runCheck(() => CheckGameUpdates(game.id), activeSources.find(s => s.source === game.primary_source)?.url || activeSources[0]?.url);
@@ -177,7 +181,7 @@
                     </button>
                     <button on:click={() => { editLink(); parseUrl = s.url; tab = 'link'; }} title={$t("meta.use_for_parse")}
                             class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-indigo-300 border-l border-white/10 transition-colors"><Icon name="download" size={13}/></button>
-                    <button on:click={() => checkSource(s.source)} disabled={checking} title={$t("meta.check_source")}
+                    <button data-check-source={s.source} on:click={() => checkSource(s.source)} disabled={checking} title={$t("meta.check_source")}
                             class="px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-amber-300 border-l border-white/10 transition-colors disabled:opacity-50"><Icon name="refresh" size={13}/></button>
                 </span>
             {/each}

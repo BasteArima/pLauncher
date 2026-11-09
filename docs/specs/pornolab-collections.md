@@ -2,7 +2,7 @@
 
 Status: **steps 1 and 2 implemented; Windows and mock-UI verification complete** (2026-11-09).
 The backend, chooser, preview/save flow and clickable batch handoff are implemented.
-Real-library/native-window acceptance remains with the owner; delivery details are below.
+Real-library/native-window acceptance remains with the owner; delivery and review details are below.
 
 Design reference: [Find game info results](../design/find-by-name-results.png), interpreted using
 [the design README](../design/README.md). Reuse the flow in [find-by-name.md](find-by-name.md) and the
@@ -314,7 +314,8 @@ New bound methods and their mock stubs:
 - `ResolvePornolabCollection(gameID, url, refresh)` returns `{collection, candidates, snapshot}`. Use
   `refresh=true` for a new submission and `false` to reopen the already fetched changed-game list.
 - `PreviewPornolabGame(gameID, url, snapshot, index)` returns read-only Game metadata with remote media.
-- `ApplyPornolabGame(gameID, url, snapshot, index)` applies that choice using the existing merge rules.
+- `ApplyPornolabGame(gameID, url, snapshot, index, token)` applies that choice using the existing merge rules.
+  Obtain the token from BeginPornolabApply; StopPornolabApply cancels that save independently of batch work.
 - `ReparseGameInfo(token, gameID)` uses Begin/StopSmartSearch and returns `{game_id, applied, manual}`.
 - `GetManualGameChoices()` returns game IDs, source URLs and candidate snapshots for the existing
   smart-list handoff. Step 2 consumes this payload and the manual count.
@@ -390,3 +391,34 @@ thumbnails, gaps, green reason and white/outlined actions follow the board. Rema
 Not checked: the owner's real library, a live/native Wails interaction or global panic hotkey,
 Pornolab/Cloudflare networking, and Linux/macOS execution. Existing Svelte accessibility warnings,
 Browserslist age and bundle-size warnings remain; no new chooser accessibility warning is emitted.
+
+## Review fixes (2026-11-09)
+
+The implementation review reproduced and fixed these gaps:
+
+- A late update check saved the entire pre-request Game, overwriting edits, restoring an old source
+  or resurrecting a removed entry. All three update-check entry points now reload the record and
+  merge only update state if the checked source is unchanged; collection privacy is revalidated.
+- Navigating away from an in-flight save discarded UI replies but still allowed the backend write.
+  BeginPornolabApply/StopPornolabApply now serialize cancellation with the commit. The frontend stops
+  late Begin tokens before starting Apply, and old cleanup cannot cancel a newer token. Temporary
+  media is removed on cancellation without invalidating the reusable page snapshot. Image and
+  Fastpic requests now carry the operation context instead of waiting for network timeouts.
+- A cancelled owner of a shared page GET failed unrelated waiters. Live waiters now retry that fetch;
+  ordinary cache reuse, expiry, capacity, refresh and privacy invalidation retain their existing tests.
+- A delayed update-check error could force reselection over a newly entered link. The panel guards
+  both success and failure by its request generation, including the post-reselection scroll. Moving
+  a different URL from the name tab clears rows for the previous release.
+- A malformed #game fragment produced a manual count without a usable handoff. Manual inspection
+  now strips the fragment and inherits batch cancellation. A shared title with several distinct
+  years no longer supplies an arbitrary last year to every candidate.
+
+Regression coverage includes controlled HTTP barriers for all update entry points, library edits,
+source replacement/deletion, prompt media cancellation and cleanup, independent cache waiters,
+malformed manual links and ambiguous years. The collection CDP suite now has 89 assertions, including
+real navigation during save rather than only pressing the disabled Back/Esc action.
+
+Validation: go vet ./..., go test ./..., build.ps1 and all seven headless test-*.cjs suites (436 UI
+assertions). Wails bindings regenerated. The layout is unchanged. Tests use temporary libraries,
+local HTTP fixtures and fictional screenshots; no real library, live Pornolab or native global
+hotkey was exercised. Linux/macOS execution remains unverified; existing build warnings remain.

@@ -82,6 +82,7 @@ const mock = `(function () {
     ResolvePornolabCollection: () => ({ collection: false, candidates: [], snapshot: '' }),
     PreviewPornolabGame: async (id, url) => previewData(url),
     ApplyPornolabGame: async () => null,
+    BeginPornolabApply: async () => 1, StopPornolabApply: async () => null,
     ReparseGameInfo: async (token, id) => ({ game_id: id, applied: false, manual: true }),
     GetManualGameChoices: () => [],
     PreviewGameInfo: async url => { await pause(controls.previewDelay); if (controls.previewError) throw '[parse.request {"site":"Steam"}] mock error'; return previewData(url); },

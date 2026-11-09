@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,11 +33,16 @@ func (a *App) clearCollectionState() {
 	a.collectionMu.Lock()
 	defer a.collectionMu.Unlock()
 	a.pornolab.Clear()
+	a.StopPornolabApply(0)
 	a.manualChoices = nil
 }
 
 // Resolve uses the same response in both metadata panels. Refresh starts a new page action.
 func (a *App) ResolvePornolabCollection(gameID, url string, refresh bool) (parser.PornolabCollection, error) {
+	return a.resolvePornolabCollection(a.ctx, gameID, url, refresh)
+}
+
+func (a *App) resolvePornolabCollection(parent context.Context, gameID, url string, refresh bool) (parser.PornolabCollection, error) {
 	empty := parser.PornolabCollection{Candidates: []parser.PornolabCandidate{}}
 	if a.repo == nil || a.collectionPrivate() {
 		return empty, nil
@@ -53,7 +59,7 @@ func (a *App) ResolvePornolabCollection(gameID, url string, refresh bool) (parse
 	if !ok {
 		return empty, apperr.New("parse.unsupported", nil, "unknown source or unsupported site")
 	}
-	ctx, cancel := a.pornolab.Context(a.ctx)
+	ctx, cancel := a.pornolab.Context(parent)
 	defer cancel()
 	suggestion := folderSearchName(g.FolderPath)
 	result, err := pornolab.InspectCollection(parser.WithPornolab(ctx, parser.PornolabOptions{Cache: &a.pornolab, Fresh: refresh}), url, suggestion.Title, parser.SearchHint{Version: suggestion.Version, Engine: g.Engine})
@@ -101,9 +107,43 @@ func (a *App) PreviewPornolabGame(gameID, url, snapshot string, index int) (*mod
 	return g, gameInfoParseErr(err)
 }
 
-func (a *App) ApplyPornolabGame(gameID, url, snapshot string, index int) error {
+func (a *App) BeginPornolabApply() uint64 {
+	a.collectionApply.mu.Lock()
+	defer a.collectionApply.mu.Unlock()
+	if a.collectionApply.cancel != nil {
+		a.collectionApply.cancel()
+	}
+	a.collectionApply.id++
+	a.collectionApply.ctx = nil
+	if a.repo == nil || a.collectionPrivate() {
+		return 0
+	}
+	a.collectionApply.ctx, a.collectionApply.cancel = context.WithCancel(a.ctx)
+	return a.collectionApply.id
+}
+
+func (a *App) StopPornolabApply(token uint64) {
+	a.collectionApply.mu.Lock()
+	defer a.collectionApply.mu.Unlock()
+	if token != 0 && token != a.collectionApply.id {
+		return
+	}
+	if a.collectionApply.cancel != nil {
+		a.collectionApply.cancel()
+	}
+	a.collectionApply.ctx = nil
+}
+
+func (a *App) ApplyPornolabGame(gameID, url, snapshot string, index int, token uint64) error {
 	if a.repo == nil || a.collectionPrivate() {
 		return nil
+	}
+	a.collectionApply.mu.Lock()
+	ctx := a.collectionApply.ctx
+	valid := token != 0 && token == a.collectionApply.id && ctx != nil
+	a.collectionApply.mu.Unlock()
+	if !valid || ctx.Err() != nil {
+		return context.Canceled
 	}
 	if parser.SourceName(url) != "Pornolab" {
 		return apperr.New("parse.unsupported", nil, "unknown source or unsupported site")
@@ -115,7 +155,7 @@ func (a *App) ApplyPornolabGame(gameID, url, snapshot string, index int) error {
 	if err != nil {
 		return err
 	}
-	ctx := parser.WithPornolab(a.ctx, parser.PornolabOptions{Cache: &a.pornolab, Snapshot: snapshot})
+	ctx = parser.WithPornolab(ctx, parser.PornolabOptions{Cache: &a.pornolab, Snapshot: snapshot})
 	// Separate files until the operation commits, including when privacy interrupts a download.
 	dir, err := os.MkdirTemp(filepath.Join(a.dataDir, "covers"), "collection-")
 	if err != nil {
@@ -127,7 +167,16 @@ func (a *App) ApplyPornolabGame(gameID, url, snapshot string, index int) error {
 			_ = os.RemoveAll(dir)
 		}
 	}()
-	err = a.updateGameMetadataContext(ctx, gameID, selected, true, dir, func(g *models.Game) error { err := a.repo.SaveGame(a.ctx, g); applied = err == nil; return err })
+	err = a.updateGameMetadataContext(ctx, gameID, selected, true, dir, func(g *models.Game) error {
+		a.collectionApply.mu.Lock()
+		defer a.collectionApply.mu.Unlock()
+		if token != a.collectionApply.id || ctx.Err() != nil {
+			return context.Canceled
+		}
+		err := a.repo.SaveGame(ctx, g)
+		applied = err == nil
+		return err
+	})
 	if applied {
 		a.collectionMu.Lock()
 		delete(a.manualChoices, gameID)
@@ -145,8 +194,15 @@ func manualCollectionError(err error) bool {
 }
 
 // The frontend's existing smart-list handoff can use this payload without rerunning a search.
-func (a *App) rememberManualChoice(ctx context.Context, gameID, url string) {
-	result, err := a.ResolvePornolabCollection(gameID, url, false)
+func (a *App) rememberManualChoice(ctx context.Context, gameID, raw string) {
+	// The old fragment can be malformed; explicit reselection starts at the release itself.
+	u, err := url.Parse(raw)
+	if err != nil {
+		return
+	}
+	u.Fragment, u.RawFragment = "", ""
+	raw = u.String()
+	result, err := a.resolvePornolabCollection(ctx, gameID, raw, false)
 	if err != nil {
 		return
 	}
@@ -158,7 +214,7 @@ func (a *App) rememberManualChoice(ctx context.Context, gameID, url string) {
 	if a.manualChoices == nil {
 		a.manualChoices = map[string]ManualGameChoice{}
 	}
-	a.manualChoices[gameID] = ManualGameChoice{gameID, url, result}
+	a.manualChoices[gameID] = ManualGameChoice{gameID, raw, result}
 }
 func (a *App) GetManualGameChoices() []ManualGameChoice {
 	a.collectionMu.Lock()

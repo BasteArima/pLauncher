@@ -479,12 +479,18 @@ func pornolabSections(doc *goquery.Document) []pornolabSection {
 		}
 		year := fields["год выпуска"]
 		if _, ok := fields["год выпуска"]; !ok {
+			years := map[string]bool{}
 			for _, group := range bracketGroups(raw) {
 				for _, part := range strings.Split(group, ",") {
 					part = strings.TrimSpace(part)
 					if len(part) == 4 && isYear(part) {
-						year = part
+						years[part] = true
 					}
+				}
+			}
+			if len(years) == 1 {
+				for value := range years {
+					year = value
 				}
 			}
 		}

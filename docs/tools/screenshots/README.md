@@ -166,7 +166,7 @@ Run `node docs/tools/screenshots/test-pornolab-collections.cjs` against the same
 dedicated Edge profile (`UI_PORT` / `CDP_PORT` supported). `?shot=collection` opens a folder-only game.
 `pornolab-fixture.cjs` provides two/three ranked sections, an unselected saved collection source,
 an independent ordinary source and a hidden game. `window.__collectionMock` controls count, best,
-fallback, resolve/preview/save delays and errors, changed/expired snapshots, and exposes pageGets,
+fallback, resolve/preview/save delays and errors, beginDelay, checkDelay/checkError, changed/expired snapshots, and exposes pageGets,
 saved IDs/indices, manual payloads and calls. The mock obeys backend privacy generations for writes
 while deliberately delivering late read replies to exercise frontend guards.
 
@@ -174,7 +174,9 @@ Checks cover prominent/compact list → preview → back → another section →
 and saved title, external source opening, no automatic choice, single-fetch reuse, expiry, changed
 membership, missing/reordered titles, localized fallback labels, EN/RU, discreet and hover blur,
 lightbox key precedence, delayed resolve/preview/save, batch manual handoff/Stop/privacy/hidden scope,
-and the native minimum 900px width. All other test-*.cjs must pass too.
+and the native minimum 900px width. The review regressions exercise actual sidebar navigation during
+save, delayed Begin tokens, stale update errors after a replacement link and name-tab URL handoff.
+Interactive save tokens are separate from batch tokens. All other test-*.cjs must pass too.
 
 Outputs stay in git-ignored `out/`: collection-checks.json and collection-{two-en,three-en,three-ru,
 compact,fallback-ru,blur,reselect,manual-list,narrow}.png. The normal captures use the design board's

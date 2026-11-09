@@ -34,6 +34,8 @@
         ApplyGameInfo,
         PreviewPornolabGame,
         ApplyPornolabGame,
+        BeginPornolabApply,
+        StopPornolabApply,
     } from '../wailsjs/go/main/App.js';
     import { OnFileDrop, OnFileDropOff, EventsOn } from '../wailsjs/runtime/runtime';
     import { t, tr, setLang, addLocales, availableLangs, initialLang, langStore } from './i18n.js';
@@ -112,6 +114,7 @@
     let selectedGame = null;
     let gameInfoPreview = null; // { game, source, url }: только в памяти до сохранения
     let savingInfo = false;
+    let infoApplyToken = 0;
     let infoRequest = 0;
     let previewScroll = 0;
     let previewLoading = false;
@@ -591,6 +594,8 @@
 
     // Превью не изменяет запись библиотеки; применяем те же непустые поля, что и бэкенд.
     function clearInfoPreview() {
+        if (infoApplyToken) StopPornolabApply(infoApplyToken).catch(() => {});
+        infoApplyToken = 0;
         infoRequest++;
         gameInfoPreview = null;
         previewLoading = false;
@@ -649,7 +654,13 @@
         const ticket = infoRequest;
         savingInfo = true;
         try {
-            if (chosen.selection) await ApplyPornolabGame(chosen.game.id, chosen.selection.url, chosen.selection.snapshot, chosen.selection.index);
+            if (chosen.selection) {
+                const token = await BeginPornolabApply();
+                if (ticket !== infoRequest || locked) { if (token) await StopPornolabApply(token); return; }
+                if (!token) return;
+                infoApplyToken = token;
+                await ApplyPornolabGame(chosen.game.id, chosen.selection.url, chosen.selection.snapshot, chosen.selection.index, token);
+            }
             else await ApplyGameInfo(chosen.game.id, chosen.url);
             if (ticket !== infoRequest || locked) return;
             const fresh = await GetGames();

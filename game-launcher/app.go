@@ -23,21 +23,22 @@ import (
 
 // App — это ядро нашего приложения, связывающее все модули
 type App struct {
-	ctx           context.Context
-	sessionsMu    sync.Mutex // serializes launch and data replacement
-	sessionsStop  context.CancelFunc
-	mu            sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
-	repo          db.GameRepository
-	scanner       *scanner.Scanner
-	launcher      fileLauncher
-	dataDir       string // абсолютный путь к папке с данными (БД + обложки)
-	priv          privacyState
-	live          bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
-	pornolab      parser.PornolabCache
-	collectionMu  sync.Mutex
-	manualChoices map[string]ManualGameChoice
-	smartSearch   smartSearchState
-	upd           updateState
+	ctx             context.Context
+	sessionsMu      sync.Mutex // serializes launch and data replacement
+	sessionsStop    context.CancelFunc
+	mu              sync.Mutex // защищает (ре)инициализацию репозитория при смене папки
+	repo            db.GameRepository
+	scanner         *scanner.Scanner
+	launcher        fileLauncher
+	dataDir         string // абсолютный путь к папке с данными (БД + обложки)
+	priv            privacyState
+	live            bool // запущено внутри Wails (ctx из OnStartup) — можно слать события
+	pornolab        parser.PornolabCache
+	collectionMu    sync.Mutex
+	manualChoices   map[string]ManualGameChoice
+	smartSearch     smartSearchState
+	collectionApply smartSearchState // independent cancellation for interactive metadata saves
+	upd             updateState
 }
 
 // NewApp создает новое приложение
@@ -650,6 +651,47 @@ func (a *App) gameByID(id string) (*models.Game, error) {
 	return nil, apperr.New("app.game_not_found", nil, "game not found in the library")
 }
 
+// Merge only update state into a fresh record. A response cannot resurrect a deleted
+// game or replace a source the user edited/accepted while the request was running.
+func (a *App) checkAndSaveSource(g *models.Game, idx int) (*models.Game, bool, error) {
+	original := g.Sources[idx]
+	ctx := a.ctx
+	pornolab := parser.SourceName(original.URL) == "Pornolab"
+	if pornolab {
+		var cancel context.CancelFunc
+		ctx, cancel = a.pornolab.Context(ctx)
+		defer cancel()
+	}
+	changed, err := a.checkSourceAt(g, idx)
+	if err != nil {
+		return nil, false, err
+	}
+	if pornolab {
+		a.collectionMu.Lock()
+		defer a.collectionMu.Unlock()
+		if !a.pornolab.Valid(ctx) || a.collectionPrivate() {
+			return nil, false, context.Canceled
+		}
+	}
+	current, err := a.gameByID(g.ID)
+	if err != nil {
+		return nil, false, err
+	}
+	for i, source := range current.Sources {
+		if source != original {
+			continue
+		}
+		current.Sources[i] = g.Sources[idx]
+		current.LastCheckedAt = g.LastCheckedAt
+		current.UpdateAvailable, current.UpdateVersion, current.UpdateSource, current.UpdateFoundAt = g.UpdateAvailable, g.UpdateVersion, g.UpdateSource, g.UpdateFoundAt
+		if err := a.repo.SaveGame(ctx, current); err != nil {
+			return nil, false, err
+		}
+		return current, changed, nil
+	}
+	return current, false, nil
+}
+
 // CheckGameUpdates проверяет основную площадку игры и возвращает обновлённую запись.
 func (a *App) CheckGameUpdates(gameID string) (*models.Game, error) {
 	if a.repo == nil {
@@ -663,13 +705,8 @@ func (a *App) CheckGameUpdates(gameID string) (*models.Game, error) {
 	if idx < 0 {
 		return g, nil // нет ссылок — проверять нечего
 	}
-	if _, err := a.checkSourceAt(g, idx); err != nil {
-		return nil, err
-	}
-	if err := a.repo.SaveGame(a.ctx, g); err != nil {
-		return nil, err
-	}
-	return g, nil
+	current, _, err := a.checkAndSaveSource(g, idx)
+	return current, err
 }
 
 // CheckSourceUpdate проверяет конкретную площадку игры (ручная проверка из бейджа).
@@ -683,14 +720,9 @@ func (a *App) CheckSourceUpdate(gameID, platform string) (*models.Game, error) {
 	}
 	for i := range g.Sources {
 		if g.Sources[i].Source == platform {
-			if _, err := a.checkSourceAt(g, i); err != nil {
-				return nil, err
-			}
-			break
+			current, _, err := a.checkAndSaveSource(g, i)
+			return current, err
 		}
-	}
-	if err := a.repo.SaveGame(a.ctx, g); err != nil {
-		return nil, err
 	}
 	return g, nil
 }
@@ -711,13 +743,9 @@ func (a *App) CheckAllUpdates() (int, error) {
 		if idx < 0 {
 			continue
 		}
-		changed, err := a.checkSourceAt(g, idx)
+		_, changed, err := a.checkAndSaveSource(g, idx)
 		if err != nil {
 			fmt.Printf("проверка обновлений %s: %v\n", g.Title, err)
-			continue
-		}
-		if err := a.repo.SaveGame(a.ctx, g); err != nil {
-			fmt.Printf("сохранение после проверки %s: %v\n", g.Title, err)
 			continue
 		}
 		if changed {

@@ -170,11 +170,11 @@ func DownloadImagesAsync(ctx context.Context, client *http.Client, imageURLs []s
 			localPath := filepath.Join(saveDir, fileName)
 
 			// Передаем referer в функцию скачивания
-			err := downloadFile(client, urlToDownload, localPath, referer)
+			err := downloadFile(ctx, client, urlToDownload, localPath, referer)
 			// Защищённая картинка fastpic: берём подписанную ссылку со страницы fullview
-			if err != nil && strings.Contains(urlToDownload, ".fastpic.org/big/") {
-				if signed, rerr := resolveFastpicSigned(client, urlToDownload); rerr == nil {
-					err = downloadFile(client, signed, localPath, referer)
+			if err != nil && ctx.Err() == nil && strings.Contains(urlToDownload, ".fastpic.org/big/") {
+				if signed, rerr := resolveFastpicSigned(ctx, client, urlToDownload); rerr == nil {
+					err = downloadFile(ctx, client, signed, localPath, referer)
 				} else {
 					err = fmt.Errorf("%v; %v", err, rerr)
 				}
@@ -337,8 +337,8 @@ func truncateText(s string, max int) string {
 }
 
 // downloadFile скачивает один файл на диск (теперь с Referer)
-func downloadFile(client *http.Client, urlToDownload, filepath, referer string) error {
-	req, err := http.NewRequest("GET", urlToDownload, nil)
+func downloadFile(ctx context.Context, client *http.Client, urlToDownload, filepath, referer string) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", urlToDownload, nil)
 	if err != nil {
 		return err
 	}

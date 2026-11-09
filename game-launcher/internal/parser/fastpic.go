@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"io"
@@ -47,12 +48,12 @@ func fastpicSignedFromHTML(page, fileName string) string {
 }
 
 // resolveFastpicSigned получает подписанную ссылку на оригинал защищённой картинки.
-func resolveFastpicSigned(client *http.Client, bigURL string) (string, error) {
+func resolveFastpicSigned(ctx context.Context, client *http.Client, bigURL string) (string, error) {
 	fullview, err := fastpicFullviewURL(bigURL)
 	if err != nil {
 		return "", err
 	}
-	req, err := http.NewRequest("GET", fullview, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fullview, nil)
 	if err != nil {
 		return "", err
 	}

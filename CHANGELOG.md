@@ -13,6 +13,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
   choice. Includes privacy blur/cancellation, all 11 locales and neutral parser/UI fixtures.
 
 ### Fixed
+- Pornolab collection saves now cancel on navigation, including in-flight image requests. Late
+  update checks preserve edited records, replaced sources and deleted games; stale UI replies cannot
+  reopen choices over a newer link. Cancelled shared fetches no longer fail unrelated cache waiters.
+  Malformed selection links now reach manual reselection, and ambiguous shared years stay unset.
 - Metadata tabs now route links entered in Search by name through the ordinary link parser, including
   addresses without `https://`. Returning to name search restores the suggested folder name without
   repeating the search or clearing results. The link field survives tab changes, and switching from a

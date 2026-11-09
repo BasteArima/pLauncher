@@ -165,10 +165,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
       await state(`${phase==='resolve'?'resolveDelay':phase==='preview'?'previewDelay':'saveDelay'}=600`);
       if (phase==='resolve') await submit(); else await click(phase==='preview'?'[data-collection-use="2"]':'[data-preview-save]');
       if (cancel==='navigate') {
-        // Save disables leaving the preview until the transaction completes.
-        if (phase==='save') { await key('Escape'); check('save cannot be abandoned by Esc',await evaluate(visible(preview))); await delay(750); continue; }
-        await key('Escape');
-        if (phase==='preview') await key('Escape');
+        await click('[data-nav-statistics]');
       } else { await evaluate(`window.__mockEmit('privacy-${cancel==='lock'?'locked':'panic'}')`); if(cancel==='lock') await unlock(); }
       await delay(750);
       check(`${phase}/${cancel}: no late content`,await evaluate('!document.querySelector("[data-info-preview]") && !document.querySelector("[data-collection-results]")'));
@@ -176,6 +173,24 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     }
     await load(); await state('resolveDelay=600'); await submit(); await click('[data-find-tab=name]'); await delay(750);
     check('tab switch ignores late result',await evaluate('!document.querySelector("[data-collection-results]")'));
+
+    await load(); await submit(); await rows(2); await click('[data-find-tab=name]');
+    await fill('[data-find-query]',raw.replace('3006469','3006470')); await click('[data-find-tab=link]');
+    check('URL handoff discards previous release rows',await evaluate('!document.querySelector("[data-collection-results]")'));
+    await load(); await submit(); await rows(2); await choose(); await state('beginDelay=600');
+    await click('[data-preview-save]'); await click('[data-nav-statistics]'); await delay(750);
+    check('late begin token never starts save',await state('calls.filter(c=>c.name==="save").length'),0);
+    check('late begin token is cancelled',await state('applyActive'),false);
+    await load();
+    await evaluate(`window.__collectionMock.games[0].sources=[{source:'Pornolab',url:${JSON.stringify(raw+'#game=2')},selected_title:'Moonlit Harbor'}]; window.__mockEmit('games-updated')`);
+    await wait(visible('[data-check-source=Pornolab]'));
+    await state('checkDelay=600; window.__collectionMock.checkError="parse.collection_game_missing"');
+    await click('[data-check-source=Pornolab]');
+    const replacement = raw.replace('3006469','3006470');
+    await submit(replacement); await rows(2); await delay(750);
+    check('late update error preserves replacement URL',await evaluate('document.querySelector("[data-find-link]").value'),replacement);
+    check('late update error does not reopen old release',await state('calls.filter(c=>c.name==="resolve").map(c=>c.url)'),[replacement]);
+    check('late update error leaves new list usable',await evaluate('!document.querySelector("[data-collection-error]")'));
 
     await load(); await startBulk(); await wait(visible('[data-toast-action]'));
     check('bulk summary distinguishes manual count',await evaluate('document.querySelector("[data-toast-action]").textContent.trim()'),'Manual choice needed: 1');

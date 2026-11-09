@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -121,6 +122,9 @@ func fetchPornolab(ctx context.Context, client *http.Client, base string) ([]byt
 	return b, nil
 }
 func (c *PornolabCache) get(ctx context.Context, client *http.Client, base string, fresh bool) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	c.mu.Lock()
 	c.initLocked()
 	now := c.now()
@@ -141,6 +145,10 @@ func (c *PornolabCache) get(ctx context.Context, client *http.Client, base strin
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-f.done:
+			// A stopped batch must not cancel an independent interactive request sharing its GET.
+			if ctx.Err() == nil && (errors.Is(f.err, context.Canceled) || errors.Is(f.err, context.DeadlineExceeded)) {
+				return c.get(ctx, client, base, fresh)
+			}
 			return f.data, f.err
 		}
 	}

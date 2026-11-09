@@ -17,9 +17,11 @@ export function ApplyGameInfo(arg1:string,arg2:string):Promise<void>;
 
 export function ApplyLauncherUpdate(arg1:boolean):Promise<void>;
 
-export function ApplyPornolabGame(arg1:string,arg2:string,arg3:string,arg4:number):Promise<void>;
+export function ApplyPornolabGame(arg1:string,arg2:string,arg3:string,arg4:number,arg5:number):Promise<void>;
 
 export function ApplySmartGameInfo(arg1:number,arg2:string,arg3:string,arg4:parser.SearchResult):Promise<boolean>;
+
+export function BeginPornolabApply():Promise<number>;
 
 export function BeginSmartSearch():Promise<number>;
 
@@ -180,6 +182,8 @@ export function SetFavorites(arg1:Array<string>,arg2:boolean):Promise<number>;
 export function SetPin(arg1:string,arg2:string):Promise<void>;
 
 export function StartLauncherDownload():Promise<void>;
+
+export function StopPornolabApply(arg1:number):Promise<void>;
 
 export function StopSmartSearch(arg1:number):Promise<void>;
 

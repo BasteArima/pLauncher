@@ -379,7 +379,7 @@ missing, unnamed or duplicate saved identities require reselection. Source edits
 only for unchanged URLs. Backup/import and relink retain the complete source record.
 
 App methods: `ResolvePornolabCollection(gameID, url, refresh)`,
-`PreviewPornolabGame(gameID, url, snapshot, index)`, `ApplyPornolabGame(...)`,
+`PreviewPornolabGame(gameID, url, snapshot, index)`, `ApplyPornolabGame(gameID, url, snapshot, index, token)`,
 `ReparseGameInfo(token, gameID)` and `GetManualGameChoices()`. Resolve returns all ranked candidates
 with document-order indices, a fallback-title flag and description excerpt. Snapshot is opaque to
 the frontend; return it unchanged with the original index. `collection.game_number` formats Game N.
@@ -390,13 +390,21 @@ UpdateGameMetadata loop, which cannot distinguish manual selection from failures
 
 `MetadataPanel` inspects Pornolab links in both layouts (including name-field URL handoff).
 `CollectionChoices` renders all candidates, uses Go's ranking/Best flag and original section index,
-then opens App's existing read-only preview. Save uses ApplyPornolabGame. Collection errors reopen
+then opens App's existing read-only preview. Save obtains BeginPornolabApply's token and passes it
+to ApplyPornolabGame. StopPornolabApply cancels on navigation/lock/panic; a late Begin response is
+stopped before Apply can run. This token is independent of smart-list batches and the page cache.
+Image downloads (including Fastpic fallback) use the operation context. Collection errors reopen
 Resolve with refresh=false; normal errors retain the current stage. Saved selections resolve by
 selected_title, never the edited library title. Lock/panic, tab edits and navigation reject stale replies.
 `lib/collectionChoices.js` keeps manual IDs and candidate payloads in memory, scoped to visibleGames.
 The actionable summary and persistent library-header link open the manual filter; opening an affected
 game restores its chooser or name-search results. Successful application removes it from that list.
-Privacy clears payloads, IDs and actionable toasts. All chooser strings exist in all 11 locales.
+Privacy clears payloads, IDs and actionable toasts. Update-check replies share the panel request
+generation: a stale failure cannot replace a newer link with reselection. A URL transferred from the
+name tab clears choices for the previous release. All chooser strings exist in all 11 locales.
+Update checks merge only update state into the current library record and reject replaced sources;
+never save the pre-request Game wholesale. A cancelled shared page fetch is retried for an independent
+live waiter. Manual handoffs strip malformed selection fragments and inherit batch cancellation.
 `test-pornolab-collections.cjs` uses fictional local media and controlled replies; see the screenshot
 README for scenarios. Do not test this UI against the owner's real library.
 

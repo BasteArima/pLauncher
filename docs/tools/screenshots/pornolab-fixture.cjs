@@ -5,6 +5,7 @@ module.exports = function pornolabFixture({ games, collections, priv, params, im
     count: 2, best: true, fallback: false, resolveDelay: 40, previewDelay: 40, saveDelay: 40,
     resolveError: false, previewError: '', saveError: '', changed: false, expired: false,
     pageGets: 0, saved: [], manual: {}, games, calls: [], cached: false, generation: 0,
+    applyToken: 0, applyActive: false, beginDelay: 0, checkDelay: 40, checkError: '',
   };
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   const failure = code => '[' + code + (code === 'parse.request' ? ' {"site":"Pornolab"}' : '') + '] Mock failure';
@@ -45,6 +46,13 @@ module.exports = function pornolabFixture({ games, collections, priv, params, im
     if (state.expired) { state.pageGets++; state.expired = false; }
   }
   return {
+    BeginPornolabApply: async () => { const token = ++state.applyToken; state.applyActive = true; await pause(state.beginDelay); return token; },
+    StopPornolabApply: token => { if (!token || token === state.applyToken) state.applyActive = false; },
+    CheckSourceUpdate: async (id, source) => {
+      state.calls.push({name:'check',id}); await pause(state.checkDelay);
+      if (state.checkError) throw failure(state.checkError);
+      return impl.CheckGameUpdates ? impl.CheckGameUpdates(id) : games.find(g=>g.id===id);
+    },
     ResolvePornolabCollection: async (id, url, refresh) => {
       state.calls.push({ name: 'resolve', id, url, refresh }); await pause(state.resolveDelay);
       if (!isCollection(url)) return { collection: false, candidates: [], snapshot: '' };
@@ -56,10 +64,10 @@ module.exports = function pornolabFixture({ games, collections, priv, params, im
       if (state.previewError) throw failure(state.previewError);
       validate(snapshot); return metadata(url, index);
     },
-    ApplyPornolabGame: async (id, url, snapshot, index) => {
+    ApplyPornolabGame: async (id, url, snapshot, index, token) => {
       const generation = state.generation;
       state.calls.push({ name: 'save', id, url, index }); await pause(state.saveDelay);
-      if (priv.locked || generation !== state.generation) return;
+      if (priv.locked || generation !== state.generation || !state.applyActive || token !== state.applyToken) return;
       if (state.saveError) throw failure(state.saveError);
       validate(snapshot);
       const g = games.find(g => g.id === id), m = metadata(url, index);
