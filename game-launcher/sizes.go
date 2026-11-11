@@ -24,9 +24,17 @@ const sizeMaxAge = 7 * 24 * time.Hour
 var sizesRunning atomic.Bool
 
 // folderSize суммирует размеры файлов в папке (символические ссылки не проходит).
-func folderSize(root string) (int64, error) {
+func folderSize(root string) (int64, error) { return folderSizeUntil(root, nil) }
+
+// folderSizeUntil — то же, но обход прерывается, как только stop() вернёт true.
+func folderSizeUntil(root string, stop func() bool) (int64, error) {
 	var total int64
+	stopped := false
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if stop != nil && stop() {
+			stopped = true
+			return filepath.SkipAll
+		}
 		if err != nil {
 			if path == root {
 				return err
@@ -46,8 +54,13 @@ func folderSize(root string) (int64, error) {
 		}
 		return nil
 	})
+	if err == nil && stopped {
+		err = errSizeStopped
+	}
 	return total, err
 }
+
+var errSizeStopped = fmt.Errorf("size calculation stopped")
 
 func sizeStale(g *models.Game, now time.Time) bool {
 	return g.SizeCheckedAt == 0 || now.Sub(time.Unix(g.SizeCheckedAt, 0)) > sizeMaxAge
@@ -60,7 +73,10 @@ func (a *App) refreshSizesAsync(force bool) {
 		return
 	}
 	repo := a.repo
+	stop := a.sizesStop.Load
+	a.sizesWG.Add(1)
 	go func() {
+		defer a.sizesWG.Done()
 		defer sizesRunning.Store(false)
 		games, err := repo.GetAllGames(a.ctx)
 		if err != nil {
@@ -69,15 +85,18 @@ func (a *App) refreshSizesAsync(force bool) {
 		now := time.Now()
 		done := 0
 		for _, g := range games {
-			if a.repo != repo { // сменили папку данных — прекращаем
+			if a.repo != repo || stop() { // сменили папку данных или закрываемся — прекращаем
 				return
 			}
 			if g.FolderPath == "" || folderMissing(g.FolderPath) || (!force && !sizeStale(g, now)) {
 				continue
 			}
-			size, err := folderSize(g.FolderPath)
+			size, err := folderSizeUntil(g.FolderPath, stop)
 			if err != nil {
 				continue
+			}
+			if stop() {
+				return
 			}
 			if repo.SetGameSize(a.ctx, g.ID, size, time.Now().Unix()) == nil {
 				done++

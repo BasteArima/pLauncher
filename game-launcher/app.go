@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"game-launcher/internal/db"
@@ -39,6 +40,8 @@ type App struct {
 	smartSearch     smartSearchState
 	collectionApply smartSearchState // independent cancellation for interactive metadata saves
 	upd             updateState
+	sizesWG         sync.WaitGroup // фоновый пересчёт размеров (closeServices ждёт его)
+	sizesStop       atomic.Bool    // просьба прервать пересчёт перед закрытием БД
 }
 
 // NewApp создает новое приложение
@@ -140,6 +143,10 @@ func (a *App) closeServices() {
 	}
 	a.mu.Unlock()
 	a.priv.hotkeys.Unregister()
+	// Фоновый пересчёт размеров пишет в БД: останавливаем и дожидаемся его до закрытия
+	a.sizesStop.Store(true)
+	a.sizesWG.Wait()
+	a.sizesStop.Store(false)
 	if a.repo != nil {
 		// Приводим интерфейс к конкретному типу для вызова специфичного метода Close
 		if sqliteRepo, ok := a.repo.(*db.SQLiteRepo); ok {
