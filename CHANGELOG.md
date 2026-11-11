@@ -5,6 +5,10 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+### Fixed
+- Closing the launcher (or switching the data folder) now stops and waits for the background folder-size
+  refresh instead of letting it write to an already closed database.
+
 ## [1.3.0] - 2026-11-11
 
 ### Added
