@@ -5,6 +5,8 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-11
+
 ### Added
 - Rebindable keyboard shortcuts in Settings → General: click a combination and press a new one.
   Conflicts, text-editing combinations and keys without Ctrl/Alt are rejected; each shortcut can be
@@ -12,14 +14,15 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
   layout. Tooltips, the search hint and help texts show the current combinations.
 - Discreet mode now also hides game titles and versions behind an animated «spoiler» (as in
   Telegram) on cards, the sidebar, the hero, game pages and statistics. Status and launch type stay visible.
-
-### Changed
-- The «Check game updates» sidebar button uses a cloud icon instead of the up arrow.
 - Pornolab multi-game releases: choose a game from cover rows with a folder-match hint, preview it
   and save its section-specific metadata. Selected sources (`#game=N` plus a saved title) retain
   identity for updates; page caching avoids repeated downloads. Changed or missing sections offer
   reselection. Bulk metadata filling skips unselected releases and links to games needing manual
   choice. Includes privacy blur/cancellation, all 11 locales and neutral parser/UI fixtures.
+
+### Changed
+- The «Check game updates» sidebar button uses a cloud icon instead of the up arrow.
+- Drop-down lists draw their arrow a little away from the edge.
 
 ### Fixed
 - Pornolab collection saves now cancel on navigation, including in-flight image requests. Late
@@ -108,7 +111,8 @@ Erotorrent, Island of Pleasure and Steam, update tracking, a Steam-style library
 PIN lock, panic button, hidden collections), bulk actions, backup and restore, self-update, 11 languages.
 See the [release notes](https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0).
 
-[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/BasteArima/pLauncher/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.3.0
 [1.2.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BasteArima/pLauncher/releases/tag/v1.0.0
