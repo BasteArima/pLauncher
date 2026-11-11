@@ -5,6 +5,7 @@
     // Сканирование и добавление игр — в боковой панели.
     import { t } from '../i18n.js';
     import { discreet } from '../lib/privacy.js';
+    import { hotkeys, hkLabel, withHotkey } from '../lib/hotkeys.js';
     import { updateInfo, download, updateModalOpen } from '../lib/update.js';
     import { WindowMinimise, WindowToggleMaximise, Quit } from '../../wailsjs/runtime/runtime';
 
@@ -57,8 +58,8 @@
                 {#if searchQuery}
                     <button on:click={() => { searchQuery = ''; onSearch(); }} aria-label={$t('btn.clear')}
                             class="absolute right-2 w-6 h-6 rounded text-slate-500 hover:text-white">×</button>
-                {:else}
-                    <span class="absolute right-2.5 text-[11px] text-slate-500 border border-white/10 rounded px-1.5 pointer-events-none">Ctrl F</span>
+                {:else if hkLabel($hotkeys, 'search')}
+                    <span class="absolute right-2.5 text-[11px] text-slate-500 border border-white/10 rounded px-1.5 pointer-events-none">{hkLabel($hotkeys, 'search').replace(/\+(?=.)/g, ' ')}</span>
                 {/if}
             </label>
             {#if showUpdate}
@@ -77,7 +78,7 @@
                 </button>
             {/if}
             <button on:click={() => discreet.update(v => !v)} on:dblclick|stopPropagation
-                    title={$discreet ? $t('app.discreet_show') : $t('app.discreet_hide')}
+                    title={$discreet ? withHotkey($t('app.discreet_show'), $hotkeys, 'discreet') : withHotkey($t('app.discreet_hide'), $hotkeys, 'discreet')}
                     class="{quickBtn} {$discreet ? 'bg-indigo-500/25 text-indigo-200 ring-1 ring-inset ring-indigo-400/40' : 'text-slate-400 hover:bg-white/10 hover:text-white'}">
                 {#if $discreet}
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.4 5.2A9.6 9.6 0 0 1 12 5c4.5 0 8.3 2.9 10 7a11 11 0 0 1-2.2 3.4M6.6 6.6A11 11 0 0 0 2 12c1.7 4.1 5.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M3 3l18 18"/></svg>
@@ -88,7 +89,7 @@
             </button>
             {#if hiddenCount}
                 <button on:click={onToggleHidden} on:dblclick|stopPropagation
-                        title={(showHidden ? $t('menu.hide_hidden') : $t('menu.show_hidden')) + ' · Ctrl+Shift+H'}
+                        title={withHotkey(showHidden ? $t('menu.hide_hidden') : $t('menu.show_hidden'), $hotkeys, 'hidden')}
                         aria-label={showHidden ? $t('menu.hide_hidden') : $t('menu.show_hidden')}
                         class="{quickBtn} {showHidden ? 'bg-amber-500/20 text-amber-200 ring-1 ring-inset ring-amber-400/40' : 'text-slate-400 hover:bg-white/10 hover:text-white'}">
                     <!-- Папка с замком: скрытые коллекции -->
@@ -96,16 +97,16 @@
                 </button>
             {/if}
             {#if hasPin}
-                <button on:click={onLock} on:dblclick|stopPropagation title={$t('menu.lock') + ' · Ctrl+L'} aria-label={$t('menu.lock')}
+                <button on:click={onLock} on:dblclick|stopPropagation title={withHotkey($t('menu.lock'), $hotkeys, 'lock')} aria-label={$t('menu.lock')}
                         class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 </button>
             {/if}
-            <button on:click={onHotkeys} on:dblclick|stopPropagation title={$t('menu.hotkeys') + ' · F1'} aria-label={$t('menu.hotkeys')}
+            <button on:click={onHotkeys} on:dblclick|stopPropagation title={withHotkey($t('menu.hotkeys'), $hotkeys, 'help')} aria-label={$t('menu.hotkeys')}
                     class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
             </button>
-            <button on:click={onSettings} on:dblclick|stopPropagation title={$t('nav.settings') + ' · Ctrl+,'}
+            <button on:click={onSettings} on:dblclick|stopPropagation title={withHotkey($t('nav.settings'), $hotkeys, 'settings')}
                     aria-label={$t('nav.settings')} class="{quickBtn} text-slate-400 hover:bg-white/10 hover:text-white">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
             </button>

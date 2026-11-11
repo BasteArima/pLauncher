@@ -8,12 +8,20 @@
     import Icon from '../Icon.svelte';
     import HotkeyList from '../HotkeyList.svelte';
     import { showHero } from '../../lib/view.js';
+    import { hotkeys, hotkeyOverrides, hkLabel, resetAllHotkeys } from '../../lib/hotkeys.js';
+    import { askConfirm } from '../../lib/ui.js';
     import { btn, input } from './styles.js';
 
     export let langs = [];
     export let appVersion = '';
     export let onChangeLang = (code) => {};
     export let panicLabel = '';
+
+    $: hkHint = $t('hk.edit_hint') + (hkLabel($hotkeys, 'help') ? ' ' + $t('hk.settings_hint', { key: hkLabel($hotkeys, 'help') }) : '');
+    $: hkChanged = Object.keys($hotkeyOverrides).length > 0;
+    async function resetAll() {
+        if (await askConfirm({ title: tr('hk.reset_all'), message: tr('hk.reset_all_confirm'), confirmText: tr('hk.reset_all') })) resetAllHotkeys();
+    }
 
     let updBusy = false;
     let updError = '';
@@ -64,8 +72,13 @@
     {#if updError}<p class="text-xs text-rose-300 break-words mt-2">{updError}</p>{/if}
 </Section>
 
-<Section title={$t('hk.title')} hint={$t('hk.settings_hint')}>
-    <HotkeyList {panicLabel}/>
+<Section title={$t('hk.title')} hint={hkHint}>
+    <HotkeyList {panicLabel} editable/>
+    {#if hkChanged}
+        <div class="mt-4 flex justify-end">
+            <button on:click={resetAll} class="{btn} inline-flex items-center gap-2" data-hotkey-reset-all><Icon name="refresh" size={14}/>{$t('hk.reset_all')}</button>
+        </div>
+    {/if}
 </Section>
 
 <div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">

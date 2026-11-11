@@ -35,9 +35,9 @@
             <div class="text-[10px] uppercase tracking-widest text-indigo-300 mb-1 font-semibold">
                 {game.last_launched_at ? $t('hero.continue') : $t('hero.recent')}
             </div>
-            <h2 class="text-2xl font-bold text-white drop-shadow-lg mb-1.5 line-clamp-1">{game.title}</h2>
+            <h2 class="text-2xl font-bold text-white drop-shadow-lg mb-1.5 line-clamp-1"><span class="spoiler">{game.title}</span></h2>
             <div class="flex items-center gap-2 text-xs text-slate-300 mb-3">
-                <span>{game.version || '—'}</span>
+                <span class="spoiler">{game.version || '—'}</span>
                 {#if game.languages && game.languages.length}
                     <span class="text-slate-600">•</span>
                     <span class="truncate">{game.languages.join(', ')}</span>

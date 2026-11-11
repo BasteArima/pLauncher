@@ -3,6 +3,7 @@
     import { mediaSrc, coverStyle } from '../lib/util.js';
     import { coverBlur, blurCls } from '../lib/privacy.js';
     import { statusInfo } from '../lib/status.js';
+    import { hotkeys, hotkeyIs, withHotkey } from '../lib/hotkeys.js';
     import { selection, selecting, toggleSelected, selectRange, cardShape, ctxGameId } from '../lib/view.js';
     export let game;
     export let onOpen = () => {};
@@ -33,13 +34,16 @@
         if (e.ctrlKey || e.metaKey || $selecting) { toggleSelected(game.id); return; }
         onOpen();
     }
-    // Клавиатура на сфокусированной карточке: Enter — открыть, Ctrl+Enter — играть,
+    // Клавиатура на сфокусированной карточке: Enter — открыть, хоткей «Играть» (Ctrl+Enter) — играть,
     // Пробел — выделить. Стрелки обрабатывает App (переход между карточками).
     function handleKey(e) {
         if (e.target !== e.currentTarget) return;
-        if (e.key === 'Enter') {
+        if (onPlay && hotkeyIs(e, 'play')) {
             e.preventDefault();
-            if ((e.ctrlKey || e.metaKey) && onPlay) onPlay(game); else onOpen();
+            onPlay(game);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            onOpen();
         } else if (e.key === ' ') {
             e.preventDefault();
             toggleSelected(game.id);
@@ -121,7 +125,7 @@
             <!-- Большая кнопка снизу: запуск без захода на страницу игры -->
             <div class="absolute inset-x-2.5 bottom-2.5 {slideBottom}">
                 {#if canPlay}
-                    <button on:click|stopPropagation={() => onPlay(game)} title={$t('btn.play') + ' · Ctrl+Enter'}
+                    <button on:click|stopPropagation={() => onPlay(game)} title={withHotkey($t('btn.play'), $hotkeys, 'play')}
                             class="w-full h-10 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-400 transition-colors">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>
                         {$t('btn.play')}
@@ -138,7 +142,7 @@
 
     <!-- Подпись под обложкой -->
     <div class="pt-2.5 px-0.5 min-w-0">
-        <h3 class="text-sm font-medium text-slate-100 truncate {game.folder_missing ? 'opacity-60' : ''}">{game.title}</h3>
+        <h3 class="spoiler w-fit max-w-full text-sm font-medium text-slate-100 truncate {game.folder_missing ? 'opacity-60' : ''}">{game.title}</h3>
         <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 min-w-0">
             {#if st}
                 <span class="shrink-0 w-1.5 h-1.5 rounded-full {st.dot}"></span>
@@ -146,10 +150,10 @@
                 <span class="shrink-0 text-slate-600">·</span>
             {/if}
             {#if game.update_available}
-                <span class="shrink-0 text-amber-300" title={$t('detail.update_to', { v: game.update_version })}>⬆ {game.update_version}</span>
+                <span class="shrink-0 text-amber-300" title={$t('detail.update_to', { v: game.update_version })}>⬆ <span class="spoiler">{game.update_version}</span></span>
                 <span class="shrink-0 text-slate-600">·</span>
             {/if}
-            <span class="truncate">{game.version || '—'}</span>
+            <span class="spoiler truncate">{game.version || '—'}</span>
             {#if game.folder_missing}
                 <span class="shrink-0 text-amber-400 font-semibold" title={$t('missing.card_hint')}>· ⚠ {$t('missing.badge')}</span>
             {:else if game.exec_path}

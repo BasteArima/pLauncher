@@ -44,6 +44,7 @@
     import { loadShelves, buildShelf, renderShelves, buildCol } from './lib/shelves.js';
     import { isEditableTarget, inputCtxItems } from './lib/inputMenu.js';
     import { discreet, blurMode } from './lib/privacy.js';
+    import { comboFromEvent, hotkeyIs, hotkeys, hkLabel } from './lib/hotkeys.js';
     import { showHero, homeView, ctxGameId, selection, selecting, clearSelection, selectAllVisible, focusNeighbor, stepCardSize, setCardSize, CARD_DEFAULT } from './lib/view.js';
     import { initUpdater, updateModalOpen } from './lib/update.js';
     import { manualGames, manualViewRequest, collectionError, forgetManual, reconcileManualVisibility, openManualGames } from './lib/collectionChoices.js';
@@ -216,6 +217,8 @@
     async function lockNow() {
         try { await Lock(); } catch (err) { showToast(tr('toast.error', { err }), 'error'); }
     }
+    // Дискретный режим прячет и названия: класс на <html> включает «спойлер» у .spoiler (style.css)
+    $: document.documentElement.classList.toggle('is-discreet', $discreet);
     // Показать/спрятать скрытые коллекции (Ctrl+Shift+H). При заданном PIN — спросить его.
     function toggleHidden() {
         if (showHidden) { stopSmartSearch(true); showHidden = false; return; }
@@ -409,7 +412,7 @@
         }
         collectionModal = null;
         await persistCollections();
-        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name }), 'success');
+        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name, key: hkLabel($hotkeys, 'hidden') || '—' }), 'success');
     }
     // Скрыть коллекцию / вернуть в библиотеку (из контекстного меню)
     async function toggleHiddenCol(col) {
@@ -417,7 +420,7 @@
         const hidden = !col.hidden;
         collections = collections.map(c => c.id === col.id ? { ...c, hidden } : c);
         await persistCollections();
-        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name: col.name }), 'success');
+        if (hidden && !showHidden) showToast(tr('privacy.col_hidden_toast', { name: col.name, key: hkLabel($hotkeys, 'hidden') || '—' }), 'success');
     }
     async function deleteCollection(c) {
         const ok = await askConfirm({ title: tr('dlg.delete_collection_title'), message: tr('dlg.delete_collection_msg', { name: c.name }), confirmText: tr('btn.delete'), danger: true });
@@ -999,15 +1002,17 @@
     // preventDefault — такие события здесь пропускаются.
     function handleKeydown(e) {
         if (e.defaultPrevented || locked || pinPrompt) return;
-        const isH = ['h', 'H', 'р', 'Р'].includes(e.key) || e.code === 'KeyH';
-        // Ctrl+Shift+H — показать/спрятать скрытые коллекции
-        if (e.ctrlKey && e.shiftKey && isH) {
+        // Переназначаемые действия (lib/hotkeys.js); сочетание считается по физической клавише
+        const combo = comboFromEvent(e);
+        const is = (id) => hotkeyIs(combo, id);
+        // Показать/спрятать скрытые коллекции (по умолчанию Ctrl+Shift+H)
+        if (is('hidden')) {
             e.preventDefault();
             toggleHidden();
             return;
         }
-        // Дискретный режим (Boss key): Ctrl+H — мгновенно заблюрить/показать обложки
-        if (e.ctrlKey && isH) {
+        // Дискретный режим (Boss key, Ctrl+H): мгновенно скрыть обложки и названия
+        if (is('discreet')) {
             e.preventDefault();
             discreet.update(v => !v);
             return;
@@ -1017,12 +1022,13 @@
         const inInput = isEditableTarget(e.target) || (e.target && e.target.tagName === 'SELECT');
         const modalOpen = needsSetup || showSettings || showRelink || collectionModal || showHotkeys || ctx || $updateModalOpen;
 
-        // F5/Ctrl+R перезагрузили бы страницу WebView (и сбросили состояние): F5 — скан
-        if (e.key === 'F5' || (ctrl && e.code === 'KeyR')) {
+        if (is('scan')) {
             e.preventDefault();
-            if (!modalOpen && e.key === 'F5') handleScan();
+            if (!modalOpen) handleScan();
             return;
         }
+        // F5/Ctrl+R перезагрузили бы страницу WebView (и сбросили состояние) — гасим всегда
+        if (e.key === 'F5' || (ctrl && e.code === 'KeyR')) { e.preventDefault(); return; }
         if (e.key === 'Escape') {
             // Escape закрывает верхний слой: меню → модалка → редактор → выделение → карточка игры
             if (ctx) ctx = null;
@@ -1041,19 +1047,19 @@
             return;
         }
         if (needsSetup) return;
-        if (isEditing && ctrl && e.code === 'KeyS') { e.preventDefault(); saveEdit(); return; }
-        if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !modalOpen) {
+        if (isEditing && is('save')) { e.preventDefault(); saveEdit(); return; }
+        if ((is('nav_back') || is('nav_forward')) && !modalOpen) {
             e.preventDefault();
-            goNav(e.key === 'ArrowLeft' ? -1 : 1);
+            goNav(is('nav_back') ? -1 : 1);
             return;
         }
-        if (e.key === 'F1') { e.preventDefault(); showHotkeys = !showHotkeys; return; }
-        if (ctrl && e.key === ',') { e.preventDefault(); showSettings = true; return; }
-        if (ctrl && e.code === 'KeyL') { e.preventDefault(); if (privacy && privacy.has_pin) lockNow(); return; }
+        if (is('help')) { e.preventDefault(); showHotkeys = !showHotkeys; return; }
+        if (is('settings')) { e.preventDefault(); showSettings = true; return; }
+        if (is('lock')) { e.preventDefault(); if (privacy && privacy.has_pin) lockNow(); return; }
         if (modalOpen) return;
 
-        // Поиск: Ctrl+F или «/»
-        if ((ctrl && e.code === 'KeyF') || (!inInput && e.key === '/')) {
+        // Поиск: Ctrl+F (или своё сочетание) и «/»
+        if (is('search') || (!inInput && e.key === '/')) {
             e.preventDefault();
             if (isEditing) return;
             closeGame();
@@ -1061,20 +1067,20 @@
             return;
         }
         // Размер карточек
-        if (ctrl && (e.key === '=' || e.key === '+')) { e.preventDefault(); stepCardSize(1); return; }
-        if (ctrl && e.key === '-') { e.preventDefault(); stepCardSize(-1); return; }
-        if (ctrl && e.key === '0') { e.preventDefault(); setCardSize(CARD_DEFAULT); return; }
+        if (is('zoom_in')) { e.preventDefault(); stepCardSize(1); return; }
+        if (is('zoom_out')) { e.preventDefault(); stepCardSize(-1); return; }
+        if (is('zoom_reset')) { e.preventDefault(); setCardSize(CARD_DEFAULT); return; }
         if (inInput) return;
 
         // Страница игры: Ctrl+Enter — играть, Backspace — назад
         if (selectedGame) {
             if (gameInfoPreview) {
-                if (ctrl && e.key === 'Enter') e.preventDefault();
+                if (is('play')) e.preventDefault();
                 else if (e.key === 'Backspace') { e.preventDefault(); backFromPreview(); }
                 return;
             }
             if (isEditing) return;
-            if (ctrl && e.key === 'Enter') { e.preventDefault(); playGame(selectedGame); }
+            if (is('play')) { e.preventDefault(); playGame(selectedGame); }
             else if (e.key === 'Backspace') { e.preventDefault(); closeGame(); }
             return;
         }
@@ -1082,8 +1088,8 @@
         // Библиотека: стрелки, выделение
         const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
         if (dirs[e.key] && !e.altKey) { e.preventDefault(); focusNeighbor(dirs[e.key]); return; }
-        if (ctrl && e.code === 'KeyA') { e.preventDefault(); selectAllVisible(); return; }
-        if (e.key === 'Delete' && $selection.size) { e.preventDefault(); bulkRemove([...$selection], loadGames); return; }
+        if (is('select_all')) { e.preventDefault(); selectAllVisible(); return; }
+        if (is('delete') && $selection.size) { e.preventDefault(); bulkRemove([...$selection], loadGames); return; }
     }
     // Ctrl+колесо над библиотекой — размер карточек
     function onMainWheel(e) {

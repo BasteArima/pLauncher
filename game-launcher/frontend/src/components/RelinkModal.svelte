@@ -108,7 +108,7 @@
                             {/if}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="font-bold text-white truncate">{m.title}</div>
+                            <div class="font-bold text-white truncate"><span class="spoiler">{m.title}</span></div>
                             <div class="text-[11px] font-mono text-slate-500 line-through truncate" title={m.old_path}>{m.old_path}</div>
                             {#if m.candidate}
                                 <div class="text-[11px] font-mono text-emerald-300 truncate" title={m.candidate}>→ {m.candidate}</div>

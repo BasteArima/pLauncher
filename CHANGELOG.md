@@ -6,6 +6,15 @@ The text of each GitHub release comes from `docs/releases/vX.Y.Z.md`.
 ## [Unreleased]
 
 ### Added
+- Rebindable keyboard shortcuts in Settings → General: click a combination and press a new one.
+  Conflicts, text-editing combinations and keys without Ctrl/Alt are rejected; each shortcut can be
+  cleared or restored, with Reset all. Bindings follow the physical key, so they work in any keyboard
+  layout. Tooltips, the search hint and help texts show the current combinations.
+- Discreet mode now also hides game titles and versions behind an animated «spoiler» (as in
+  Telegram) on cards, the sidebar, the hero, game pages and statistics. Status and launch type stay visible.
+
+### Changed
+- The «Check game updates» sidebar button uses a cloud icon instead of the up arrow.
 - Pornolab multi-game releases: choose a game from cover rows with a folder-match hint, preview it
   and save its section-specific metadata. Selected sources (`#game=N` plus a saved title) retain
   identity for updates; page caching avoids repeated downloads. Changed or missing sections offer

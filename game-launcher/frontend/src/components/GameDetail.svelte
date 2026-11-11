@@ -278,7 +278,7 @@
             <h3 class={sectionTitle}>{$t('detail.about')}</h3>
             {#if displayGame.description}
                 <p class="text-[15px] text-slate-300 leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-white/5 p-3 -m-3 rounded-xl transition-colors max-w-3xl"
-                   on:click={() => copy(displayGame.description, $t('label.description'))}>{displayGame.description}</p>
+                   on:click={() => copy(displayGame.description, $t('label.description'))}><span class="spoiler">{displayGame.description}</span></p>
             {:else}
                 <p class="text-sm text-slate-500">{$t('detail.no_description')}</p>
             {/if}
@@ -327,7 +327,7 @@
         <section class="{card} p-6 flex flex-col gap-5">
             <div>
                 <h1 class="text-3xl font-bold text-white leading-tight break-words cursor-pointer hover:text-indigo-200 transition-colors"
-                    on:click={() => copy(displayGame.title, $t('label.title'))} title={$t('detail.copy_title')}>{displayGame.title}</h1>
+                    on:click={() => copy(displayGame.title, $t('label.title'))} title={$t('detail.copy_title')}><span class="spoiler">{displayGame.title}</span></h1>
                 {#if displayGame.author || displayGame.engine}
                     <div class="text-sm text-slate-400 mt-1.5">
                         {#if displayGame.author}<span class="cursor-pointer hover:text-white" on:click={() => copy(displayGame.author, $t('detail.author'))}>{displayGame.author}</span>{/if}{#if displayGame.author && displayGame.engine}{' · '}{/if}{#if displayGame.engine}{displayGame.engine}{/if}

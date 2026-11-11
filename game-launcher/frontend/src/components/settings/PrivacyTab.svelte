@@ -7,6 +7,7 @@
     import { GetPrivacy, SavePrivacy, SetPin } from '../../../wailsjs/go/main/App.js';
     import Section from './Section.svelte';
     import Icon from '../Icon.svelte';
+    import { hotkeys, hkLabel } from '../../lib/hotkeys.js';
     import HotkeyInput from '../HotkeyInput.svelte';
     import { btn, input, choice } from './styles.js';
 
@@ -48,7 +49,7 @@
     const idleOptions = [0, 5, 15, 30, 60];
 </script>
 
-<Section title={$t('privacy.covers')} hint={$t('privacy.covers_hint')}>
+<Section title={$t('privacy.covers')} hint={$t('privacy.covers_hint', { key: hkLabel($hotkeys, 'discreet') || '—' })}>
     <div class="grid grid-cols-3 gap-2 mb-3">
         {#each blurOptions as [value, label]}
             <button on:click={() => save({ blur_mode: value })} class={choice(privacy.blur_mode === value)}>
@@ -132,7 +133,7 @@
     <div class="flex items-center gap-2">
         <span class="text-sm text-slate-300 flex-1">{$t('privacy.hidden_count', { n: hiddenCount })}</span>
         <button on:click={onToggleHidden} disabled={!hiddenCount} class={btn}>
-            {showHidden ? $t('privacy.hidden_hide') : $t('privacy.hidden_show')}
+            {showHidden ? $t('privacy.hidden_hide') : $t('privacy.hidden_show') + (hkLabel($hotkeys, 'hidden') ? ' (' + hkLabel($hotkeys, 'hidden') + ')' : '')}
         </button>
     </div>
 </Section>

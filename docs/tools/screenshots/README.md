@@ -120,6 +120,15 @@ Outputs: `out/game-page-checks.json` and `out/game-page-*.png`. `game-page-mocku
 the app sidebar, larger typography/spacing and metadata panel; a 1016px full window stacks the columns.
 These are mock-library checks, not real-game acceptance. This does not regenerate README images.
 
+## Hotkeys and discreet-mode regression
+
+Run `node docs/tools/screenshots/test-hotkeys.cjs` with the same server/Edge setup (`UI_PORT` / `CDP_PORT`).
+It checks the discreet-mode spoiler on card/sidebar/game-page titles (status stays readable), rebinding
+in Settings → General (conflict, modifier and reserved-combination hints, Esc cancel, a Cyrillic layout
+via the physical key), that old combinations stop working, tooltips/search hint follow the binding,
+persistence across reloads (`keep=1`), clearing and Reset all. Outputs: `out/hotkeys-checks.json`,
+`out/hotkeys-*.png`.
+
 ## Launch-file interface regression
 
 Use the same fictional UI server and dedicated Edge CDP instance (`UI_PORT` / `CDP_PORT`), then run:

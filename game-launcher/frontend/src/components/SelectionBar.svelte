@@ -3,6 +3,7 @@
     import { t } from '../i18n.js';
     import { clickOutside } from '../lib/util.js';
     import Icon from './Icon.svelte';
+    import { hotkeys, hkLabel } from '../lib/hotkeys.js';
     import { selection, clearSelection, selectAllVisible } from '../lib/view.js';
     import { bulkProgress, cancelBulk, bulkFavorite, bulkDetectLaunch, bulkRemove, bulkIgnore, bulkCheckUpdates, bulkReparse } from '../lib/bulk.js';
 
@@ -38,7 +39,7 @@
             <button on:click={cancelBulk} class="{btn} text-slate-300 hover:bg-white/10">{$t('btn.cancel')}</button>
         {:else}
             <span class="text-sm font-bold text-white px-2">{ids.length ? $t('sel.count', { n: ids.length }) : $t('sel.pick_hint')}</span>
-            <button on:click={selectAllVisible} class="{btn} text-slate-300 hover:bg-white/10" title="Ctrl+A">{$t('sel.select_all')}</button>
+            <button on:click={selectAllVisible} class="{btn} text-slate-300 hover:bg-white/10" title={hkLabel($hotkeys, 'select_all') || undefined}>{$t('sel.select_all')}</button>
             <span class="w-px h-6 bg-white/10 mx-1"></span>
 
             <div class="relative">

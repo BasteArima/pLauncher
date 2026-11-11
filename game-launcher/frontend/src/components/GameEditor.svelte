@@ -8,6 +8,7 @@
     import { showToast, askConfirm } from '../lib/ui.js';
     import { mediaSrc, coverStyle, coverPosXY, coverZoom, COVER_ZOOM_MAX } from '../lib/util.js';
     import Icon from './Icon.svelte';
+    import { hotkeys, hkLabel } from '../lib/hotkeys.js';
     import LaunchFilesEditor from './LaunchFilesEditor.svelte';
     import {
         SelectCoverImage, CopyCoverToData, SelectScreenshots, CopyScreenshotToData,
@@ -170,7 +171,7 @@
     <span class="font-semibold text-white">{$t('edit.editing')}</span>
     <span class="text-sm text-slate-400">{dirty ? $t('edit.unsaved') : $t('edit.no_changes')}</span>
     <div class="flex-1"></div>
-    <span class="text-xs text-slate-500">{$t('edit.shortcuts')}</span>
+    <span class="text-xs text-slate-500">{$t('edit.shortcuts', { key: hkLabel($hotkeys, 'save') || '—' })}</span>
     <button on:click={onCancel} class="h-9 px-4 rounded-lg border border-white/10 text-sm text-slate-300 hover:text-white hover:bg-white/5">{$t('btn.cancel')}</button>
     <button on:click={onSave} class="h-9 px-4 rounded-lg text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-400">{$t('edit.save')}</button>
 </div>

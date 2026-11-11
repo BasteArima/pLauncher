@@ -127,11 +127,11 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     await shot('ru');
     await setLanguage('en');
     await key('F1'); await delay(100);
-    check('F1 lists all added shortcuts', await evaluate('["Alt+← / Alt+→","Mouse 4 / 5","Ctrl+S","Cancel edit mode","Back from game preview"].every(t=>document.body.innerText.includes(t))'));
+    check('F1 lists all added shortcuts', await evaluate('["Alt+←","Alt+→","Back in history","Forward in history","Mouse 4 / 5","Ctrl+S","Cancel edit mode","Back from game preview"].every(t=>document.body.innerText.includes(t))'));
     await shot('hotkeys');
     await key('Escape');
     await key(',', 'Comma', 2); await delay(100);
-    check('settings share added shortcuts', await evaluate('document.body.innerText.includes("Back from game preview") && document.body.innerText.includes("Mouse 4 / 5")'));
+    check('settings share added shortcuts', await evaluate('document.body.innerText.includes("Back from game preview") && document.body.innerText.includes("Mouse 4 / 5") && !!document.querySelector("button[data-hotkey=save]")'));
     await key('Escape');
     const openEditor = async () => {
       await click('[data-launch-menu]');

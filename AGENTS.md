@@ -34,7 +34,9 @@ The app is fully working. Done so far:
 - **Collections**: manual + dynamic-by-tags; CRUD; sidebar groups & a `collection` shelf type come from
   them; drag a game onto a collection to add it (works for dynamic too via pinned `game_ids`).
 - **Tags & favorites**: auto-tags from parsing + manual editing; favorites (♥) with shelf/filter.
-- **Discreet mode** (👁 in the titlebar / Ctrl+H) blurs all covers. Games without a cover are listed under the
+- **Discreet mode** (👁 in the titlebar / Ctrl+H) blurs all covers and puts game titles/versions under an animated
+  Telegram-like «spoiler»: App toggles `html.is-discreet`, elements with class `spoiler` (style.css) become transparent
+  with drifting dots. Add `spoiler` to any new place that prints a game title. Games without a cover are listed under the
   sidebar filter «No cover» (`activeFilter === 'nocover'`, shown only when there are any) — a to-do list for parsing.
 - **Cover framing** (fill/contain/stretch, focus point, zoom; separate for wide and tall cards), per game, in edit mode.
 - **Play sessions and statistics**: detached `cmd.Wait` monitor retains sessions after UI closure. Game detail
@@ -128,8 +130,12 @@ The app is fully working. Done so far:
   games); list managed in Settings → Library (`GetIgnoredPaths/AddIgnoredPath/RemoveIgnoredPath`). An explicit
   drop/«single game» of an ignored folder adds it and un-ignores it.
 - **SQLite** is opened with `_pragma=busy_timeout(5000)`: background size calculation writes concurrently with UI.
-- **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`); the reference list
-  lives in `lib/hotkeys.js` (F1 window + Settings → General). F5/Ctrl+R are intercepted (a WebView reload would
+- **Hotkeys**: handled in `App.svelte#handleKeydown` (+ Enter/Space on focused `GameCard`). `lib/hotkeys.js` holds
+  rebindable actions (`HOTKEY_ACTIONS`, defaults + hidden synonyms) and the reference list (`HOTKEY_GROUPS`, F1 window +
+  editable list in Settings → General via `HotkeyBinding.svelte`). Combos are strings like `Ctrl+Shift+H` built from
+  `e.code` (layout-independent); overrides live in localStorage `plauncher_hotkeys`. Handlers call `hotkeyIs(e|combo, id)`;
+  labels use `hkLabel($hotkeys, id)` / `withHotkey(text, $hotkeys, id)` — never hard-code a shortcut in UI text or
+  locales (use a `{key}` placeholder). Fixed keys (arrows, Enter, Esc, Backspace, mouse buttons) are not rebindable. F5/Ctrl+R are intercepted (a WebView reload would
   drop state). Card size: slider in `ViewOptions`, Ctrl+wheel, Ctrl +/−/0. The shared F1/settings list also
   includes Alt+←/→ and mouse side buttons (history), Ctrl+S / Esc in edit mode, and Esc/Backspace from preview.
 - **Launcher self-update**: check in `updater.go` (GitHub Releases of `updateRepo`, ldflag; public repo since

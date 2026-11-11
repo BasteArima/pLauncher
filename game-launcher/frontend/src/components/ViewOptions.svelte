@@ -4,6 +4,9 @@
     import { t } from '../i18n.js';
     import { clickOutside } from '../lib/util.js';
     import Icon from './Icon.svelte';
+    import { hotkeys, hkLabel } from '../lib/hotkeys.js';
+    // Сочетания «крупнее / мельче» для подсказки ползунка
+    $: zoomKeys = [hkLabel($hotkeys, 'zoom_in'), hkLabel($hotkeys, 'zoom_out')].filter(Boolean).join(' / ') || '—';
     import { cardSize, setCardSize, CARD_MIN, CARD_MAX, CARD_DEFAULT, selecting, toggleSelectMode, cardShape, homeView } from '../lib/view.js';
 
     export let isHome = false;              // «Все игры»: можно переключить на полки
@@ -43,7 +46,7 @@
                 </div>
                 <input type="range" min={CARD_MIN} max={CARD_MAX} step="5" value={$cardSize}
                        on:input={(e) => setCardSize(e.target.value)} on:dblclick={() => setCardSize(CARD_DEFAULT)}
-                       title={$t('view.card_size_hint')} aria-label={$t('view.card_size_hint')}
+                       title={$t('view.card_size_hint', { key: zoomKeys })} aria-label={$t('view.card_size_hint', { key: zoomKeys })}
                        class="w-full mt-3 accent-indigo-500"/>
             </div>
             <button on:click={() => { open = false; toggleSelectMode(); }}

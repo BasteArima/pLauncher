@@ -104,7 +104,7 @@
         </button>
         <button on:click={onCheckUpdates} disabled={checkingUpdates} title={checkingUpdates ? $t('menu.checking') : $t('menu.check_updates')}
                 aria-label={$t('menu.check_updates')} class={toolBtn}>
-            <svg class="w-4 h-4 {checkingUpdates ? 'animate-pulse' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+            <Icon name="update" size={18} class={checkingUpdates ? 'animate-pulse' : ''}/>
         </button>
     </div>
 
@@ -189,10 +189,10 @@
                                             {#if g.cover_path}
                                                 <img src={mediaSrc(g.cover_path)} alt="" loading="lazy" decoding="async" on:error={(e) => e.target.style.display = 'none'} class="w-full h-full object-cover transition {blurCls($coverBlur, 'icon')}"/>
                                             {:else}
-                                                <span class="text-[10px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
+                                                <span class="spoiler text-[10px] text-slate-500 uppercase">{(g.title || '?').slice(0, 1)}</span>
                                             {/if}
                                         </span>
-                                        <span class="truncate {g.folder_missing ? 'opacity-60' : ''}">{g.title}</span>
+                                        <span class="spoiler truncate {g.folder_missing ? 'opacity-60' : ''}">{g.title}</span>
                                         {#if g.folder_missing}<span class="ml-auto text-amber-400 shrink-0" title={$t('missing.card_hint')}><Icon name="alert" size={13}/></span>{/if}
                                     </button>
                                     {#if canPlay(g) && !$selecting}
